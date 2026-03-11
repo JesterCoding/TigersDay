@@ -38,7 +38,7 @@ java {
 application {
     // Define the main class for the application.
     mainClass = "org.example.App"
-    mainClass.set("GameServer")
+    mainClass.set("Main")
 }
 
 tasks.named<Test>("test") {

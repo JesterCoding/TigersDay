@@ -116,13 +116,6 @@ public class GameServer extends WebSocketServer {
     //  Helpers
     // ═════════════════════════════════════════════════════════════
 
-    /** Sends a message to every connected client. */
-    private void broadcast(String json) {
-        Collection<WebSocket> conns = getConnections();
-        if (conns.isEmpty()) return;
-        conns.forEach(c -> { if (c.isOpen()) c.send(json); });
-    }
-
     private static String error(String msg) {
         return "{\"type\":\"ERROR\",\"message\":\"" + msg.replace("\"", "\\\"") + "\"}";
     }

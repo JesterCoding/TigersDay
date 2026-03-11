@@ -77,8 +77,57 @@
 
         /* ── Move source highlight ────────────────────────────────── */
         .node-group.selected-source .sel-ring { opacity: 1 !important; }
+
+        #settings-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            text-align: right;
+            z-index: 1000; /* Ensures it stays above the game board */
+        }
+
+        #settings-icon {
+            font-size: 30px;
+            background-color: #333; /* Dark circle */
+            color: white;           /* White gear */
+            border: 2px solid white;
+            border-radius: 50%;     /* Makes it a circle */
+            border: none;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        #settings-icon:hover {
+            transform: rotate(90deg);
+        }
+
+        #settings-menu {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
     </style>
 </head>
+
+<div id="settings-container">
+    <button id="settings-icon" onclick="toggleSettings()">⚙</button>
+    <div id="settings-menu" class="hidden">
+        <button onclick="resetGame()">Reset Board</button>
+        <button onclick="saveCounter()">Save Progress</button>
+    </div>
+</div>
+
 <body>
 
 <header>
@@ -228,434 +277,459 @@
 <div id="tooltip"></div>
 
 <script>
-    // ═══════════════════════════════════════════════════════════════
-    //  NODES  –  local copy; authoritative state comes from the server
-    // ═══════════════════════════════════════════════════════════════
-    const NODES = {
-      Bombay:        { x:110, y: 74,  owner:'british', key:true,  coast:true,  labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
-      Hyderabad:     { x:515, y:100,  owner:'british', key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
-      Madras:        { x:618, y:322,  owner:'british', key:true,  coast:true,  labelAnchor:{anchor:'end',    dx:-18, dy:-24} },
-      Srirangapatna: { x:230, y:480,  owner:'mysore',  key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
-      Coimbatore:    { x:305, y:600,  owner:'mysore',  key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
-      Pune:          { x:255, y:128,  owner:'empty',   key:false, coast:false },
-      Koppal:        { x:390, y:178,  owner:'empty',   key:false, coast:false },
-      Vizag:         { x:656, y:162,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
-      Goa:           { x: 94, y:262,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
-      Darwar:        { x:232, y:232,  owner:'mysore',  key:false, coast:false },
-      Anantapur:     { x:470, y:228,  owner:'empty',   key:false, coast:false },
-      Bednore:       { x:300, y:295,  owner:'mysore',  key:false, coast:false },
-      Mangalore:     { x:118, y:398,  owner:'mysore',  key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
-      Bangalore:     { x:350, y:400,  owner:'mysore',  key:false, coast:false },
-      Vellore:       { x:460, y:340,  owner:'empty',   key:false, coast:false },
-      Mahé:          { x:145, y:586,  owner:'mysore',  key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
-      Pondicherry:   { x:610, y:446,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
-      Erode:         { x:405, y:515,  owner:'mysore',  key:false, coast:false },
-      Trichy:        { x:516, y:580,  owner:'empty',   key:false, coast:false },
-      Palgautcherry: { x:248, y:680,  owner:'mysore',  key:false, coast:false },
-      Dindigul:      { x:445, y:670,  owner:'empty',   key:false, coast:false },
-      Travancore:    { x:260, y:830,  owner:'british', key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
-      Ceylon:        { x:534, y:735,  owner:'empty',   key:false, coast:true  },
-    };
 
-    const EDGES = [
-      ['Bombay','Pune'],
-      ['Bombay','Goa',{curve:-0.2}],
-      ['Pune','Koppal'],['Pune','Darwar'],
-      ['Pune','Goa'],
-      ['Hyderabad','Koppal'],
-      ['Hyderabad','Anantapur'],
-      ['Hyderabad','Vizag'],
-      ['Koppal','Anantapur'],
-      ['Koppal','Bednore'],
-      ['Darwar','Goa'],['Darwar','Bednore'],
-      ['Anantapur','Vellore'],
-      ['Goa','Mangalore',{curve:-0.2}],
-      ['Bednore','Mangalore'],
-      ['Bednore','Bangalore'],
-      ['Madras','Vellore'],
-      ['Madras','Pondicherry'],
-      ['Madras','Vizag',{curve:-0.2}],
-      ['Madras','Anantapur'],
-      ['Vellore','Bangalore'],
-      ['Mangalore','Srirangapatna'],
-      ['Bangalore','Srirangapatna'],
-      ['Srirangapatna','Mahé'],
-      ['Srirangapatna','Erode'],
-      ['Erode','Coimbatore'],
-      ['Erode','Trichy'],
-      ['Erode','Pondicherry'],
-      ['Erode','Vellore'],['Pondicherry','Trichy'],
-      ['Mahé','Coimbatore'],['Mahé','Palgautcherry'],['Coimbatore','Palgautcherry'],
-      ['Coimbatore','Dindigul'],['Trichy','Dindigul'],['Palgautcherry','Travancore'],
-      ['Dindigul','Travancore'],['Dindigul','Ceylon'],
-      ['Travancore','Ceylon'],
-    ];
+     function toggleSettings() {
+     const menu = document.getElementById('settings-menu');
+     menu.classList.toggle('hidden');
+     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  ADJACENCY  (for local info-panel display only)
-    // ═══════════════════════════════════════════════════════════════
-    const adjacency = {};
-    for (const [a, b] of EDGES) {
-      (adjacency[a] = adjacency[a] || []).push(b);
-      (adjacency[b] = adjacency[b] || []).push(a);
-    }
-    for (const k of Object.keys(adjacency)) adjacency[k] = [...new Set(adjacency[k])];
+     window.onclick = function(event) {
+         const menu = document.getElementById('settings-menu');
+         const icon = document.getElementById('settings-icon');
+         if (event.target !== icon && !menu.contains(event.target)) {
+             menu.classList.add('hidden');
+         }
+     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  RENDERING
-    // ═══════════════════════════════════════════════════════════════
-    const SVG_NS = 'http://www.w3.org/2000/svg';
-    const ownerColor = { british:'#c0281a', mysore:'#2e7a2e', empty:'#666' };
+     // ═══════════════════════════════════════════════════════════════
+     //  NODES  –  local copy; authoritative state comes from the server
+     // ═══════════════════════════════════════════════════════════════
+     const NODES = {
+       Bombay:        { x:110, y: 74,  owner:'british', key:true,  coast:true,  labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+       Hyderabad:     { x:515, y:100,  owner:'british', key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+       Madras:        { x:618, y:322,  owner:'british', key:true,  coast:true,  labelAnchor:{anchor:'end',    dx:-18, dy:-24} },
+       Srirangapatna: { x:230, y:480,  owner:'mysore',  key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+       Coimbatore:    { x:305, y:600,  owner:'mysore',  key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+       Pune:          { x:255, y:128,  owner:'empty',   key:false, coast:false },
+       Koppal:        { x:390, y:178,  owner:'empty',   key:false, coast:false },
+       Vizag:         { x:656, y:162,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
+       Goa:           { x: 94, y:262,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
+       Darwar:        { x:232, y:232,  owner:'mysore',  key:false, coast:false },
+       Anantapur:     { x:470, y:228,  owner:'empty',   key:false, coast:false },
+       Bednore:       { x:300, y:295,  owner:'mysore',  key:false, coast:false },
+       Mangalore:     { x:118, y:398,  owner:'mysore',  key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
+       Bangalore:     { x:350, y:400,  owner:'mysore',  key:false, coast:false },
+       Vellore:       { x:460, y:340,  owner:'empty',   key:false, coast:false },
+       Mahé:          { x:145, y:586,  owner:'mysore',  key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
+       Pondicherry:   { x:610, y:446,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
+       Erode:         { x:405, y:515,  owner:'mysore',  key:false, coast:false },
+       Trichy:        { x:516, y:580,  owner:'empty',   key:false, coast:false },
+       Palgautcherry: { x:248, y:680,  owner:'mysore',  key:false, coast:false },
+       Dindigul:      { x:445, y:670,  owner:'empty',   key:false, coast:false },
+       Travancore:    { x:260, y:830,  owner:'british', key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
+       Ceylon:        { x:534, y:735,  owner:'empty',   key:false, coast:true  },
+     };
 
-    function splineControlPoint(ax, ay, bx, by, f=0.18) {
-      const mx=(ax+bx)/2, my=(ay+by)/2, dx=bx-ax, dy=by-ay;
-      const len=Math.sqrt(dx*dx+dy*dy);
-      return { cx: mx+(-dy/len)*len*f, cy: my+(dx/len)*len*f };
-    }
+     const EDGES = [
+       ['Bombay','Pune'],
+       ['Bombay','Goa',{curve:-0.2}],
+       ['Pune','Koppal'],['Pune','Darwar'],
+       ['Pune','Goa'],
+       ['Hyderabad','Koppal'],
+       ['Hyderabad','Anantapur'],
+       ['Hyderabad','Vizag'],
+       ['Koppal','Anantapur'],
+       ['Koppal','Bednore'],
+       ['Darwar','Goa'],['Darwar','Bednore'],
+       ['Anantapur','Vellore'],
+       ['Goa','Mangalore',{curve:-0.2}],
+       ['Bednore','Mangalore'],
+       ['Bednore','Bangalore'],
+       ['Madras','Vellore'],
+       ['Madras','Pondicherry'],
+       ['Madras','Vizag',{curve:-0.2}],
+       ['Madras','Anantapur'],
+       ['Vellore','Bangalore'],
+       ['Mangalore','Srirangapatna'],
+       ['Bangalore','Srirangapatna'],
+       ['Srirangapatna','Mahé'],
+       ['Srirangapatna','Erode'],
+       ['Erode','Coimbatore'],
+       ['Erode','Trichy'],
+       ['Erode','Pondicherry'],
+       ['Erode','Vellore'],['Pondicherry','Trichy'],
+       ['Mahé','Coimbatore'],['Mahé','Palgautcherry'],['Coimbatore','Palgautcherry'],
+       ['Coimbatore','Dindigul'],['Trichy','Dindigul'],['Palgautcherry','Travancore'],
+       ['Dindigul','Travancore'],['Dindigul','Ceylon'],
+       ['Travancore','Ceylon'],
+     ];
 
-    function renderEdges() {
-      const layer = document.getElementById('edge-layer');
-      layer.innerHTML = '';
-      for (const edge of EDGES) {
-        const [aName, bName, opts={}] = edge;
-        const a=NODES[aName], b=NODES[bName];
-        if (!a||!b) continue;
-        const {cx,cy} = splineControlPoint(a.x,a.y,b.x,b.y, opts.curve||0.15);
-        const path = document.createElementNS(SVG_NS,'path');
-        path.setAttribute('d',`M ${a.x},${a.y} Q ${cx},${cy} ${b.x},${b.y}`);
-        path.setAttribute('fill','none');
-        path.setAttribute('stroke','#6a4c1e');
-        path.setAttribute('stroke-width','1.6');
-        path.setAttribute('stroke-linecap','round');
-        if (opts.sea) { path.setAttribute('stroke-dasharray','5,4'); path.setAttribute('opacity','0.55'); }
-        else          { path.setAttribute('opacity','0.68'); }
-        layer.appendChild(path);
-      }
-    }
+     // ═══════════════════════════════════════════════════════════════
+     //  ADJACENCY  (for local info-panel display only)
+     // ═══════════════════════════════════════════════════════════════
+     const adjacency = {};
+     for (const [a, b] of EDGES) {
+       (adjacency[a] = adjacency[a] || []).push(b);
+       (adjacency[b] = adjacency[b] || []).push(a);
+     }
+     for (const k of Object.keys(adjacency)) adjacency[k] = [...new Set(adjacency[k])];
 
-    function renderNodes() {
-      const layer = document.getElementById('node-layer');
-      layer.innerHTML = '';
-      for (const [name, data] of Object.entries(NODES)) {
-        const {x, y, owner, key, coast} = data;
-        const la = data.labelAnchor || {anchor:'middle', dx:0, dy: key?-24:-16};
-        const anchor = la.anchor||'middle', ldx=la.dx||0, ldy=la.dy||(key?-24:-16);
-        const g = document.createElementNS(SVG_NS,'g');
-        g.setAttribute('class','node-group');
-        g.setAttribute('transform',`translate(${x},${y})`);
-        g.dataset.name=name; g.dataset.owner=owner;
-        g.dataset.key=String(key); g.dataset.coast=String(coast);
-        g.addEventListener('click', ()=>handleNodeClick(g));
-        g.addEventListener('mousemove', tooltipShow);
-        g.addEventListener('mouseleave', tooltipHide);
+     // ═══════════════════════════════════════════════════════════════
+     //  RENDERING
+     // ═══════════════════════════════════════════════════════════════
+     const SVG_NS = 'http://www.w3.org/2000/svg';
+     const ownerColor = { british:'#c0281a', mysore:'#2e7a2e', empty:'#666' };
 
-        const ring = document.createElementNS(SVG_NS,'circle');
-        ring.setAttribute('class','sel-ring');
-        ring.setAttribute('r', key?'22':'15');
-        ring.setAttribute('fill','none'); ring.setAttribute('stroke','#d4a030');
-        ring.setAttribute('stroke-width','2'); ring.setAttribute('opacity','0');
-        g.appendChild(ring);
+     function splineControlPoint(ax, ay, bx, by, f=0.18) {
+       const mx=(ax+bx)/2, my=(ay+by)/2, dx=bx-ax, dy=by-ay;
+       const len=Math.sqrt(dx*dx+dy*dy);
+       return { cx: mx+(-dy/len)*len*f, cy: my+(dx/len)*len*f };
+     }
 
-        if (key) {
-          const sq = document.createElementNS(SVG_NS,'rect');
-          sq.setAttribute('x','-18'); sq.setAttribute('y','-18');
-          sq.setAttribute('width','36'); sq.setAttribute('height','36');
-          sq.setAttribute('fill','#1c1814'); sq.setAttribute('stroke','#999');
-          sq.setAttribute('stroke-width','1.5');
-          g.appendChild(sq);
-          if (owner==='british') {
-            const p=document.createElementNS(SVG_NS,'rect');
-            p.setAttribute('x','-18');p.setAttribute('y','-18');
-            p.setAttribute('width','36');p.setAttribute('height','36');
-            p.setAttribute('fill','#c0281a');
-            p.setAttribute('filter','url(#nshadow)');
-            g.appendChild(p);
-          } else if (owner==='mysore') {
-            const p=document.createElementNS(SVG_NS,'polygon');
-            p.setAttribute('points','0,-25 25,0 0,25 -25,0');
-            p.setAttribute('fill','#2e7a2e');
-            p.setAttribute('filter','url(#nshadow)');
-            g.appendChild(p);
-          }
-        } else {
-          const circ=document.createElementNS(SVG_NS,'circle');
-          circ.setAttribute('r','10'); circ.setAttribute('fill','#2a2420');
-          circ.setAttribute('stroke','#b0a080'); circ.setAttribute('stroke-width','1.4');
-          g.appendChild(circ);
-          if (owner==='british') {
-            const p=document.createElementNS(SVG_NS,'rect');
-            p.setAttribute('x','-18');p.setAttribute('y','-18');
-            p.setAttribute('width','36');p.setAttribute('height','36');
-            p.setAttribute('fill','#c0281a');
-            p.setAttribute('filter','url(#nshadow)');
-            g.appendChild(p);
-          } else if (owner==='mysore') {
-            const p=document.createElementNS(SVG_NS,'polygon');
-            p.setAttribute('points','0,-25 25,0 0,25 -25,0');
-            p.setAttribute('fill','#2e7a2e');
-            p.setAttribute('filter','url(#nshadow)');
-            g.appendChild(p);
-          }
-        }
+     function renderEdges() {
+       const layer = document.getElementById('edge-layer');
+       layer.innerHTML = '';
+       for (const edge of EDGES) {
+         const [aName, bName, opts={}] = edge;
+         const a=NODES[aName], b=NODES[bName];
+         if (!a||!b) continue;
+         const {cx,cy} = splineControlPoint(a.x,a.y,b.x,b.y, opts.curve||0.15);
+         const path = document.createElementNS(SVG_NS,'path');
+         path.setAttribute('d',`M ${a.x},${a.y} Q ${cx},${cy} ${b.x},${b.y}`);
+         path.setAttribute('fill','none');
+         path.setAttribute('stroke','#6a4c1e');
+         path.setAttribute('stroke-width','1.6');
+         path.setAttribute('stroke-linecap','round');
+         if (opts.sea) { path.setAttribute('stroke-dasharray','5,4'); path.setAttribute('opacity','0.55'); }
+         else          { path.setAttribute('opacity','0.68'); }
+         layer.appendChild(path);
+       }
+     }
 
-        const makeLabel = isHalo => {
-          const t=document.createElementNS(SVG_NS,'text');
-          t.setAttribute('dy',String(ldy)); t.setAttribute('dx',String(ldx));
-          t.setAttribute('text-anchor',anchor);
-          t.setAttribute('font-family', key?'Cinzel,serif':'Cormorant Garamond,serif');
-          t.setAttribute('font-size', key?'22':'20'); t.setAttribute('font-weight','700');
-          if (key) t.setAttribute('letter-spacing','.06em');
-          if (isHalo) {
-            t.setAttribute('stroke','rgba(228,213,155,0.92)'); t.setAttribute('stroke-width','4');
-            t.setAttribute('stroke-linejoin','round'); t.setAttribute('fill','none');
-            t.setAttribute('paint-order','stroke');
-          } else { t.setAttribute('fill','#1a1208'); }
-          t.textContent = name;
-          return t;
-        };
-        g.appendChild(makeLabel(true));
-        g.appendChild(makeLabel(false));
-        layer.appendChild(g);
-      }
-    }
+     function renderNodes() {
+       const layer = document.getElementById('node-layer');
+       layer.innerHTML = '';
+       for (const [name, data] of Object.entries(NODES)) {
+         const {x, y, owner, key, coast} = data;
+         const la = data.labelAnchor || {anchor:'middle', dx:0, dy: key?-24:-16};
+         const anchor = la.anchor||'middle', ldx=la.dx||0, ldy=la.dy||(key?-24:-16);
+         const g = document.createElementNS(SVG_NS,'g');
+         g.setAttribute('class','node-group');
+         g.setAttribute('transform',`translate(${x},${y})`);
+         g.dataset.name=name; g.dataset.owner=owner;
+         g.dataset.key=String(key); g.dataset.coast=String(coast);
+         g.addEventListener('click', ()=>handleNodeClick(g));
+         g.addEventListener('mousemove', tooltipShow);
+         g.addEventListener('mouseleave', tooltipHide);
 
-    // ═══════════════════════════════════════════════════════════════
-    //  INFO PANEL  (local, no server needed)
-    // ═══════════════════════════════════════════════════════════════
-    const tooltip   = document.getElementById('tooltip');
-    const infoPanel = document.getElementById('info-panel');
+         const ring = document.createElementNS(SVG_NS,'circle');
+         ring.setAttribute('class','sel-ring');
+         ring.setAttribute('r', key?'22':'15');
+         ring.setAttribute('fill','none'); ring.setAttribute('stroke','#d4a030');
+         ring.setAttribute('stroke-width','2'); ring.setAttribute('opacity','0');
+         g.appendChild(ring);
 
-    function updateInfoPanel(name, owner, key, coast) {
-      const adj = (adjacency[name]||[]).join(', ') || '—';
-      const col = ownerColor[owner]||'#666';
-      const label = owner==='empty' ? 'Unoccupied' : owner.charAt(0).toUpperCase()+owner.slice(1);
-      infoPanel.innerHTML = `
-        <strong style="font-family:Cinzel,serif;font-size:.82rem">${name}</strong><br>
-        <span style="color:${col}">${label}</span>
-        ${key==='true'  ? ' &nbsp;<em style="font-size:.78rem">⬛ Key City</em>' : ''}
-        ${coast==='true'? '<br><em style="font-size:.78rem">🌊 Coastal</em>'    : ''}
-        <br><span style="color:#8a6830;font-size:.76rem;letter-spacing:.04em">ADJACENT:</span><br>
-        <span style="font-size:.8rem">${adj}</span>
-      `;
-    }
+         if (key) {
+           const sq = document.createElementNS(SVG_NS,'rect');
+           sq.setAttribute('x','-18'); sq.setAttribute('y','-18');
+           sq.setAttribute('width','36'); sq.setAttribute('height','36');
+           sq.setAttribute('fill','#1c1814'); sq.setAttribute('stroke','#999');
+           sq.setAttribute('stroke-width','1.5');
+           g.appendChild(sq);
+           if (owner==='british') {
+             const p=document.createElementNS(SVG_NS,'rect');
+             p.setAttribute('x','-18');p.setAttribute('y','-18');
+             p.setAttribute('width','36');p.setAttribute('height','36');
+             p.setAttribute('fill','#c0281a');
+             p.setAttribute('filter','url(#nshadow)');
+             g.appendChild(p);
+           } else if (owner==='mysore') {
+             const p=document.createElementNS(SVG_NS,'polygon');
+             p.setAttribute('points','0,-25 25,0 0,25 -25,0');
+             p.setAttribute('fill','#2e7a2e');
+             p.setAttribute('filter','url(#nshadow)');
+             g.appendChild(p);
+           }
+         } else {
+           const circ=document.createElementNS(SVG_NS,'circle');
+           circ.setAttribute('r','10'); circ.setAttribute('fill','#2a2420');
+           circ.setAttribute('stroke','#b0a080'); circ.setAttribute('stroke-width','1.4');
+           g.appendChild(circ);
+           if (owner==='british') {
+             const p=document.createElementNS(SVG_NS,'rect');
+             p.setAttribute('x','-18');p.setAttribute('y','-18');
+             p.setAttribute('width','36');p.setAttribute('height','36');
+             p.setAttribute('fill','#c0281a');
+             p.setAttribute('filter','url(#nshadow)');
+             g.appendChild(p);
+           } else if (owner==='mysore') {
+             const p=document.createElementNS(SVG_NS,'polygon');
+             p.setAttribute('points','0,-25 25,0 0,25 -25,0');
+             p.setAttribute('fill','#2e7a2e');
+             p.setAttribute('filter','url(#nshadow)');
+             g.appendChild(p);
+           }
+         }
 
-    function tooltipShow(e) {
-      const g=e.currentTarget;
-      const owner=g.dataset.owner==='empty'?'Unoccupied':g.dataset.owner;
-      tooltip.innerHTML=`<b>${g.dataset.name}</b>${owner}`;
-      tooltip.classList.add('show');
-      tooltip.style.left=(e.clientX+14)+'px'; tooltip.style.top=(e.clientY+14)+'px';
-    }
-    function tooltipHide() { tooltip.classList.remove('show'); }
+         const makeLabel = isHalo => {
+           const t=document.createElementNS(SVG_NS,'text');
+           t.setAttribute('dy',String(ldy)); t.setAttribute('dx',String(ldx));
+           t.setAttribute('text-anchor',anchor);
+           t.setAttribute('font-family', key?'Cinzel,serif':'Cormorant Garamond,serif');
+           t.setAttribute('font-size', key?'22':'20'); t.setAttribute('font-weight','700');
+           if (key) t.setAttribute('letter-spacing','.06em');
+           if (isHalo) {
+             t.setAttribute('stroke','rgba(228,213,155,0.92)'); t.setAttribute('stroke-width','4');
+             t.setAttribute('stroke-linejoin','round'); t.setAttribute('fill','none');
+             t.setAttribute('paint-order','stroke');
+           } else { t.setAttribute('fill','#1a1208'); }
+           t.textContent = name;
+           return t;
+         };
+         g.appendChild(makeLabel(true));
+         g.appendChild(makeLabel(false));
+         layer.appendChild(g);
+       }
+     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  MOVE SELECTION  –  two-click: pick source then destination
-    // ═══════════════════════════════════════════════════════════════
-    let selectedSource = null;   // name of the territory chosen as move source
+     // ═══════════════════════════════════════════════════════════════
+     //  INFO PANEL  (local, no server needed)
+     // ═══════════════════════════════════════════════════════════════
+     const tooltip   = document.getElementById('tooltip');
+     const infoPanel = document.getElementById('info-panel');
 
-    function handleNodeClick(g) {
-      const name  = g.dataset.name;
-      const owner = g.dataset.owner;
+     function updateInfoPanel(name, owner, key, coast) {
+       const adj = (adjacency[name]||[]).join(', ') || '—';
+       const col = ownerColor[owner]||'#666';
+       const label = owner==='empty' ? 'Unoccupied' : owner.charAt(0).toUpperCase()+owner.slice(1);
+       infoPanel.innerHTML = `
+         <strong style="font-family:Cinzel,serif;font-size:.82rem">${name}</strong><br>
+         <span style="color:${col}">${label}</span>
+         ${key==='true'  ? ' &nbsp;<em style="font-size:.78rem">⬛ Key City</em>' : ''}
+         ${coast==='true'? '<br><em style="font-size:.78rem">🌊 Coastal</em>'    : ''}
+         <br><span style="color:#8a6830;font-size:.76rem;letter-spacing:.04em">ADJACENT:</span><br>
+         <span style="font-size:.8rem">${adj}</span>
+       `;
+     }
 
-      updateInfoPanel(name, owner, g.dataset.key, g.dataset.coast);
+     function tooltipShow(e) {
+       const g=e.currentTarget;
+       const owner=g.dataset.owner==='empty'?'Unoccupied':g.dataset.owner;
+       tooltip.innerHTML=`<b>${g.dataset.name}</b>${owner}`;
+       tooltip.classList.add('show');
+       tooltip.style.left=(e.clientX+14)+'px'; tooltip.style.top=(e.clientY+14)+'px';
+     }
+     function tooltipHide() { tooltip.classList.remove('show'); }
 
-      // Clear old selection ring
-      document.querySelectorAll('.sel-ring').forEach(r => r.setAttribute('opacity','0'));
+     // ═══════════════════════════════════════════════════════════════
+     //  MOVE SELECTION  –  two-click: pick source then destination
+     // ═══════════════════════════════════════════════════════════════
+     let selectedSource = null;   // name of the territory chosen as move source
 
-      if (!selectedSource) {
-        // First click: choose the territory to move FROM
-        selectedSource = name;
-        g.querySelector('.sel-ring').setAttribute('opacity','1');
-      } else {
-        if (selectedSource === name) {
-          // Clicked same territory → deselect
-          selectedSource = null;
-        } else {
-          // Second click: send move to server
-          const from = selectedSource;
-          selectedSource = null;
-          sendMove(from, name);
-        }
-      }
-    }
+     function handleNodeClick(g) {
+       const name  = g.dataset.name;
+       const owner = g.dataset.owner;
 
-    // ═══════════════════════════════════════════════════════════════
-    //  WEBSOCKET BRIDGE  –  connects to GameServer.java
-    // ═══════════════════════════════════════════════════════════════
-    const WS_URL = 'ws://localhost:8887';
-    const statusBar       = document.getElementById('status-bar');
-    const gameStatePanel  = document.getElementById('game-state-panel');
+       updateInfoPanel(name, owner, g.dataset.key, g.dataset.coast);
 
-    let ws = null;
+       // Clear old selection ring
+       document.querySelectorAll('.sel-ring').forEach(r => r.setAttribute('opacity','0'));
 
-    function connect() {
-      setStatus('waiting', '⬤ &nbsp;CONNECTING…');
-      ws = new WebSocket(WS_URL);
+       if (!selectedSource) {
+         // First click: choose the territory to move FROM
+         selectedSource = name;
+         g.querySelector('.sel-ring').setAttribute('opacity','1');
+       } else {
+         if (selectedSource === name) {
+           // Clicked same territory → deselect
+           selectedSource = null;
+         } else {
+           // Second click: send move to server
+           const from = selectedSource;
+           selectedSource = null;
+           sendMove(from, name);
+         }
+       }
+     }
 
-      ws.onopen = () => {
-        setStatus('connected', '⬤ &nbsp;SERVER CONNECTED');
-        console.log('[WS] Connected to Java game server');
-      };
+     // ═══════════════════════════════════════════════════════════════
+     //  WEBSOCKET BRIDGE  –  connects to GameServer.java
+     // ═══════════════════════════════════════════════════════════════
+     const WS_URL = 'ws://localhost:8887';
+     const statusBar       = document.getElementById('status-bar');
+     const gameStatePanel  = document.getElementById('game-state-panel');
 
-      ws.onclose = () => {
-        setStatus('disconnected', '⬤ &nbsp;SERVER DISCONNECTED — retrying in 3 s');
-        setTimeout(connect, 3000);   // auto-reconnect
-      };
+     let ws = null;
 
-      ws.onerror = (err) => {
-        console.error('[WS] Error', err);
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          handleServerMessage(msg);
-        } catch(e) {
-          console.error('[WS] Bad JSON', event.data);
-        }
-      };
+    function resetGame() {
+         console.log("Reset button clicked!"); // Debug line
+         if (ws.readyState === WebSocket.OPEN) {
+             const msg = JSON.stringify({ type: 'RESET' });
+             ws.send(msg);
+             console.log("Sent to server: " + msg);
+         } else {
+             console.error("Socket is not open. Check if Java is running!");
+         }
     }
 
-    /**
-     * Central message handler — every inbound packet from Java lands here.
-     *
-     * Message types:
-     *   STATE        → full board snapshot (initial connect / reset)
-     *   MOVE_RESULT  → result of a MOVE or PASS action
-     *   PONG         → response to keepalive ping
-     *   ERROR        → server-side error string
-     */
-    function handleServerMessage(msg) {
-      switch (msg.type) {
+     function connect() {
+       setStatus('waiting', '⬤ &nbsp;CONNECTING…');
+       ws = new WebSocket(WS_URL);
 
-        case 'STATE':
-          applyBoard(msg.board);
-          updateGameStatePanel(msg.turn, msg.maxTurns, msg.phase, msg.winner);
-          break;
+       ws.onopen = () => {
+         setStatus('connected', '⬤ &nbsp;SERVER CONNECTED');
+         console.log('[WS] Connected to Java game server');
+       };
 
-        case 'MOVE_RESULT':
-          if (msg.status === 'invalid') {
-            flashStatus('⚠ &nbsp;' + msg.reason, 1800);
-            console.warn('[MOVE] Invalid:', msg.reason);
-          } else {
-            applyBoard(msg.board);
-            updateGameStatePanel(msg.turn, msg.maxTurns || 4, msg.phase, msg.winner);
-            if (msg.status === 'game_over') {
-              showGameOver(msg.winner);
-            }
-          }
-          break;
+       ws.onclose = () => {
+         setStatus('disconnected', '⬤ &nbsp;SERVER DISCONNECTED — retrying in 3 s');
+         setTimeout(connect, 3000);   // auto-reconnect
+       };
 
-        case 'PONG':
-          console.log('[WS] Pong received');
-          break;
+       ws.onerror = (err) => {
+         console.error('[WS] Error', err);
+       };
 
-        case 'ERROR':
-          console.error('[SERVER ERROR]', msg.message);
-          break;
+       ws.onmessage = (event) => {
+         try {
+           const msg = JSON.parse(event.data);
+           handleServerMessage(msg);
+         } catch(e) {
+           console.error('[WS] Bad JSON', event.data);
+         }
+       };
+     }
 
-        default:
-          console.warn('[WS] Unknown message type:', msg.type);
-      }
-    }
+     /**
+      * Central message handler — every inbound packet from Java lands here.
+      *
+      * Message types:
+      *   STATE        → full board snapshot (initial connect / reset)
+      *   MOVE_RESULT  → result of a MOVE or PASS action
+      *   PONG         → response to keepalive ping
+      *   ERROR        → server-side error string
+      */
+     function handleServerMessage(msg) {
+       switch (msg.type) {
 
-    /**
-     * Overwrite local NODES ownership from the server's authoritative board array,
-     * then re-render so pieces update on screen.
-     *
-     * @param {Array} territories  — the "board" array from the server JSON
-     */
-    function applyBoard(territories) {
-      if (!territories) return;
-      for (const t of territories) {
-        if (NODES[t.name]) {
-          NODES[t.name].owner = t.owner;   // lowercase: 'british'|'mysore'|'empty'
-        }
-      }
-      renderNodes();   // redraw all pieces to reflect new ownership
-    }
+         case 'STATE':
+           applyBoard(msg.board);
+           updateGameStatePanel(msg.turn, msg.maxTurns, msg.phase, msg.winner);
+           break;
 
-    function updateGameStatePanel(turn, maxTurns, phase, winner) {
-      if (winner) {
-        const col = winner === 'british' ? '#c0281a' : '#2e7a2e';
-        gameStatePanel.innerHTML =
-          `<strong style="color:${col}">GAME OVER</strong><br>
-           <span style="color:${col}">${capitalize(winner)} wins!</span>`;
-        return;
-      }
-      const phaseLabel = phase === 'BRITISH_MOVE' ? '🟥 British to move'
-                       : phase === 'MYSORE_MOVE'  ? '🟩 Mysore to move'
-                       : phase;
-      gameStatePanel.innerHTML =
-        `Turn <strong>${turn}</strong> of <strong>${maxTurns}</strong><br>
-         ${phaseLabel}`;
-    }
+         case 'MOVE_RESULT':
+           if (msg.status === 'invalid') {
+             flashStatus('⚠ &nbsp;' + msg.reason, 1800);
+             console.warn('[MOVE] Invalid:', msg.reason);
+           } else {
+             applyBoard(msg.board);
+             updateGameStatePanel(msg.turn, msg.maxTurns || 4, msg.phase, msg.winner);
+             if (msg.status === 'game_over') {
+               showGameOver(msg.winner);
+             }
+           }
+           break;
 
-    // ── Outbound helpers ─────────────────────────────────────────
+         case 'PONG':
+           console.log('[WS] Pong received');
+           break;
 
-    /**
-     * Send a move to Java.
-     * The "player" field is inferred from the current phase shown in the game-state panel.
-     * For a two-player local game the browser just forwards whatever the phase says.
-     */
-    function sendMove(from, to) {
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        flashStatus('⚠ &nbsp;Not connected to server', 1800);
-        return;
-      }
-      // Infer current player from panel text (or default to british)
-      const panelText = gameStatePanel.textContent.toLowerCase();
-      const player = panelText.includes('mysore') ? 'mysore' : 'british';
-      const payload = JSON.stringify({ type:'MOVE', player, from, to });
-      console.log('[WS] Sending:', payload);
-      ws.send(payload);
-    }
+         case 'ERROR':
+           console.error('[SERVER ERROR]', msg.message);
+           break;
 
-    function sendPass() {
-      if (!ws || ws.readyState !== WebSocket.OPEN) return;
-      const panelText = gameStatePanel.textContent.toLowerCase();
-      const player = panelText.includes('mysore') ? 'mysore' : 'british';
-      ws.send(JSON.stringify({ type:'PASS', player }));
-    }
+         default:
+           console.warn('[WS] Unknown message type:', msg.type);
+       }
+     }
 
-    function sendReset() {
-      if (!ws || ws.readyState !== WebSocket.OPEN) return;
-      ws.send(JSON.stringify({ type:'RESET' }));
-    }
+     /**
+      * Overwrite local NODES ownership from the server's authoritative board array,
+      * then re-render so pieces update on screen.
+      *
+      * @param {Array} territories  — the "board" array from the server JSON
+      */
+     function applyBoard(territories) {
+       if (!territories) return;
+       for (const t of territories) {
+         if (NODES[t.name]) {
+           NODES[t.name].owner = t.owner;   // lowercase: 'british'|'mysore'|'empty'
+         }
+       }
+       renderNodes();   // redraw all pieces to reflect new ownership
+     }
 
-    // ── UI helpers ───────────────────────────────────────────────
+     function updateGameStatePanel(turn, maxTurns, phase, winner) {
+       if (winner) {
+         const col = winner === 'british' ? '#c0281a' : '#2e7a2e';
+         gameStatePanel.innerHTML =
+           `<strong style="color:${col}">GAME OVER</strong><br>
+            <span style="color:${col}">${capitalize(winner)} wins!</span>`;
+         return;
+       }
+       const phaseLabel = phase === 'BRITISH_MOVE' ? '🟥 British to move'
+                        : phase === 'MYSORE_MOVE'  ? '🟩 Mysore to move'
+                        : phase;
+       gameStatePanel.innerHTML =
+         `Turn <strong>${turn}</strong> of <strong>${maxTurns}</strong><br>
+          ${phaseLabel}`;
+     }
 
-    function setStatus(cls, html) {
-      statusBar.className = cls;
-      statusBar.innerHTML = html;
-    }
+     // ── Outbound helpers ─────────────────────────────────────────
 
-    let _flashTimer = null;
-    function flashStatus(html, ms) {
-      const prev = statusBar.innerHTML;
-      const prevCls = statusBar.className;
-      setStatus('waiting', html);
-      clearTimeout(_flashTimer);
-      _flashTimer = setTimeout(() => setStatus(prevCls, prev), ms);
-    }
+     /**
+      * Send a move to Java.
+      * The "player" field is inferred from the current phase shown in the game-state panel.
+      * For a two-player local game the browser just forwards whatever the phase says.
+      */
+     function sendMove(from, to) {
+       if (!ws || ws.readyState !== WebSocket.OPEN) {
+         flashStatus('⚠ &nbsp;Not connected to server', 1800);
+         return;
+       }
+       // Infer current player from panel text (or default to british)
+       const panelText = gameStatePanel.textContent.toLowerCase();
+       const player = panelText.includes('mysore') ? 'mysore' : 'british';
+       const payload = JSON.stringify({ type:'MOVE', player, from, to });
+       console.log('[WS] Sending:', payload);
+       ws.send(payload);
+     }
 
-    function showGameOver(winner) {
-      setTimeout(() => {
-        const msg = winner === 'british'
-          ? '🟥 The British East India Company has conquered the Deccan.'
-          : '🟩 Mysore has endured. Tipu Sultan lives to fight another day.';
-        alert(msg);
-      }, 300);
-    }
+     function sendPass() {
+       if (!ws || ws.readyState !== WebSocket.OPEN) return;
+       const panelText = gameStatePanel.textContent.toLowerCase();
+       const player = panelText.includes('mysore') ? 'mysore' : 'british';
+       ws.send(JSON.stringify({ type:'PASS', player }));
+     }
 
-    function capitalize(s) { return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+     function sendReset() {
+       if (!ws || ws.readyState !== WebSocket.OPEN) return;
+       ws.send(JSON.stringify({ type:'RESET' }));
+     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  BOOT
-    // ═══════════════════════════════════════════════════════════════
-    renderEdges();
-    renderNodes();
-    connect();          // open WebSocket → Java server
+     // ── UI helpers ───────────────────────────────────────────────
+
+     function setStatus(cls, html) {
+       statusBar.className = cls;
+       statusBar.innerHTML = html;
+     }
+
+     let _flashTimer = null;
+     function flashStatus(html, ms) {
+       const prev = statusBar.innerHTML;
+       const prevCls = statusBar.className;
+       setStatus('waiting', html);
+       clearTimeout(_flashTimer);
+       _flashTimer = setTimeout(() => setStatus(prevCls, prev), ms);
+     }
+
+     function showGameOver(winner) {
+       setTimeout(() => {
+         const msg = winner === 'british'
+           ? '🟥 The British East India Company has conquered the Deccan.'
+           : '🟩 Mysore has endured. Tipu Sultan lives to fight another day.';
+         alert(msg);
+       }, 300);
+     }
+
+     function capitalize(s) { return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+
+     // ═══════════════════════════════════════════════════════════════
+     //  BOOT
+     // ═══════════════════════════════════════════════════════════════
+     renderEdges();
+     renderNodes();
+     connect();          // open WebSocket → Java server
 </script>
 </body>
 </html>
