@@ -15,6 +15,9 @@ public class Territory {
     private final boolean coastal;
     private final List<String> adjacent = new ArrayList<>();
 
+    // NEW: Tracks if the army here has already moved during the current turn.
+    private       boolean tired = false;
+
     public Territory(String name, Owner owner, boolean keyCity, boolean coastal) {
         this.name    = name;
         this.owner   = owner;
@@ -28,26 +31,29 @@ public class Territory {
     public boolean      isKeyCity()   { return keyCity; }
     public boolean      isCoastal()   { return coastal; }
     public List<String> getAdjacent() { return adjacent; }
+    public boolean      isTired()     { return tired; } // NEW
 
     // ── Mutators ───────────────────────────────────────────────────
-    public void setOwner(Owner o) { this.owner = o; }
+    public void setOwner(Owner o)       { this.owner = o; }
+    public void setTired(boolean tired) { this.tired = tired; } // NEW
 
     void addAdjacent(String other) { adjacent.add(other); }
 
     // ── Serialise to JSON fragment ─────────────────────────────────
     public String toJson() {
         return String.format(
-                "{\"name\":\"%s\",\"owner\":\"%s\",\"keyCity\":%b,\"coastal\":%b,\"adjacent\":[%s]}",
+                "{\"name\":\"%s\",\"owner\":\"%s\",\"keyCity\":%b,\"coastal\":%b,\"tired\":%b,\"adjacent\":[%s]}",
                 name,
                 owner.name().toLowerCase(),
                 keyCity,
                 coastal,
+                tired, // NEW: Added to JSON output so frontend can render exhausted armies
                 String.join(",", adjacent.stream().map(a -> "\"" + a + "\"").toList())
         );
     }
 
     @Override
     public String toString() {
-        return String.format("Territory{%s, owner=%s, key=%b}", name, owner, keyCity);
+        return String.format("Territory{%s, owner=%s, key=%b, tired=%b}", name, owner, keyCity, tired);
     }
 }

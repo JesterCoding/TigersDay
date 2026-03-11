@@ -13,17 +13,18 @@ import java.util.Collection;
  *
  * ── Inbound message types (browser → Java) ────────────────────────────────
  *
- *   MOVE   { "type":"MOVE",  "player":"british"|"mysore", "from":"X", "to":"Y" }
- *   PASS   { "type":"PASS",  "player":"british"|"mysore" }
- *   RESET  { "type":"RESET" }
- *   PING   { "type":"PING"  }
+ * MOVE   { "type":"MOVE",  "player":"british", "from":"X", "to":"Y" }
+ * CARD   { "type":"CARD",  "player":"mysore", "cardName":"..." }       <-- NEW
+ * PASS   { "type":"PASS",  "player":"british"|"mysore" }
+ * RESET  { "type":"RESET" }
+ * PING   { "type":"PING"  }
  *
  * ── Outbound message types (Java → browser) ───────────────────────────────
  *
- *   STATE        full board snapshot          (sent on connect and after RESET)
- *   MOVE_RESULT  result of a MOVE or PASS     (valid/invalid/game_over + board)
- *   PONG         { "type":"PONG" }
- *   ERROR        { "type":"ERROR", "message":"..." }
+ * STATE        full board snapshot          (sent on connect and after RESET)
+ * MOVE_RESULT  result of a MOVE, CARD or PASS (valid/invalid/game_over + board)
+ * PONG         { "type":"PONG" }
+ * ERROR        { "type":"ERROR", "message":"..." }
  */
 public class GameServer extends WebSocketServer {
 
@@ -88,8 +89,18 @@ public class GameServer extends WebSocketServer {
                     broadcast(result.toJson());
                 }
 
+                // NEW: Route the Mysore card action to the updated GameState
+                case "CARD" -> {
+                    String cardName = msg.optString("cardName", "Pass");
+                    MoveResult result = state.playMysoreCard(cardName);
+                    System.out.println("[CARD PLAYED] " + result);
+                    broadcast(result.toJson());
+                }
+
                 case "PASS" -> {
                     String player = msg.getString("player");
+                    // If Mysore passes instead of playing a card, we can route it through applyPass
+                    // or treat it as a blank playMysoreCard("Pass").
                     MoveResult result = state.applyPass(player);
                     System.out.println("[PASS] " + result);
                     broadcast(result.toJson());

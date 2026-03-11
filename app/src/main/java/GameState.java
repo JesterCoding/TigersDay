@@ -1,125 +1,107 @@
+import java.util.HashMap;
+import java.util.List;
+
 /**
- * Single source of truth for all game rules and progression.
- *
- * Turn structure (mirrors the sidebar rules in tiger-day.html):
- *   • The game has MAX_TURNS turns.
- *   • Each turn: British moves first, then Mysore.
- *   • A player may move one of their territories' armies to an adjacent territory.
- *   • Capture: moving into an enemy or empty territory transfers ownership.
- *   • British win: hold all 5 key cities.
- *   • Mysore win: survive all MAX_TURNS turns without British holding all key cities.
+ * Updated GameState for Impulse-based turns.
+ * A turn ends only when all British armies are 'tired'.
  */
 public class GameState {
 
-    // ── Configurable constants ────────────────────────────────────
-    public static final int MAX_TURNS = 4;
+    public static final int MAX_TURNS = 5;
 
-    public enum Phase { BRITISH_MOVE, MYSORE_MOVE, GAME_OVER }
+    public enum Phase {
+        BRITISH_MOVE,
+        MYSORE_CARD,
+        BRITISH_CARD,
+        RESOLVE_BATTLE,
+        GAME_OVER
+    }
 
-    // ── State ─────────────────────────────────────────────────────
-    private final GameBoard board;
     private Phase  phase  = Phase.BRITISH_MOVE;
     private int    turn   = 1;
-    private String winner = null;   // set when the game ends
 
     public GameState() {
-        this.board = new GameBoard();
+
     }
 
     // ── Accessors ─────────────────────────────────────────────────
-    public GameBoard getBoard()   { return board; }
-    public Phase     getPhase()   { return phase; }
-    public int       getTurn()    { return turn;  }
-    public String    getWinner()  { return winner; }
-    public boolean   isOver()     { return phase == Phase.GAME_OVER; }
+    public boolean isOver() { return phase == Phase.GAME_OVER; }
 
     // ═════════════════════════════════════════════════════════════
-    //  CORE ACTION: applyMove
+    //  CORE ACTIONS
     // ═════════════════════════════════════════════════════════════
 
-    /**
-     * Attempt to move a piece from {@code from} to {@code to} on behalf of {@code player}.
-     *
-     * Rules checked:
-     *   1. Game must not already be over.
-     *   2. Player must match the current phase.
-     *   3. Source territory must be owned by the player.
-     *   4. Destination must be adjacent to the source.
-     *   5. Cannot move into a territory you already own (must attack or advance).
-     *
-     * On success, ownership of the destination changes to the player,
-     * the phase advances, and victory is checked.
-     */
     public MoveResult applyMove(String playerStr, String from, String to) {
+        if (isOver()) return MoveResult.invalid("Game Over.");
 
-        // ── Pre-conditions ────────────────────────────────────────
-        if (isOver())
-            return MoveResult.invalid("The game is already over — " + winner + " has won.");
+        Territory.Owner player = parsePlayer(playerStr);
+        if (player == null) return MoveResult.invalid("Unknown player: " + playerStr);
 
-        Territory.Owner player;
-        try {
-            player = Territory.Owner.valueOf(playerStr.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            return MoveResult.invalid("Unknown player: " + playerStr);
-        }
-
-        if (!phaseMatchesPlayer(player))
+        if (!phaseMatchesPlayer(player)) {
             return MoveResult.invalid("It is not " + playerStr + "'s turn (current phase: " + phase + ").");
+        }
 
         Territory src = board.get(from);
         Territory dst = board.get(to);
 
-        if (src == null) return MoveResult.invalid("Unknown territory: " + from);
-        if (dst == null) return MoveResult.invalid("Unknown territory: " + to);
+        // Validation Logic
+        if (src == null || dst == null) return MoveResult.invalid("Invalid territory.");
+        if (src.getOwner() != Territory.Owner.BRITISH) return MoveResult.invalid("No British army there.");
+        if (src.isTired()) return MoveResult.invalid("This army has already moved this turn.");
+        if (!board.isAdjacent(from, to)) return MoveResult.invalid("Not adjacent.");
 
-        if (src.getOwner() != player)
-            return MoveResult.invalid("You do not control " + from + ".");
-
-        if (!board.isAdjacent(from, to))
-            return MoveResult.invalid(from + " is not adjacent to " + to + ".");
-
-        if (dst.getOwner() == player)
-            return MoveResult.invalid("You already control " + to + ".");
-
-        // ── Apply ─────────────────────────────────────────────────
-        dst.setOwner(player);
+        // ── Execute Move ──────────────────────────────────────────
+        // If destination is empty or enemy, British take it
+        dst.setOwner(Territory.Owner.BRITISH);
         src.setOwner(Territory.Owner.EMPTY);
 
-        // ── Victory check ─────────────────────────────────────────
+        // Mark the specific army as tired for this turn
+        dst.setTired(true);
+
+        // ── Check Victory ─────────────────────────────────────────
         if (board.britishControlsAllKeyCities()) {
             return endGame("british");
         }
 
-        // ── Advance phase / turn ──────────────────────────────────
-        advancePhase();
-
-        if (isOver()) {
-            // Turn limit reached after phase advance
-            return endGame("mysore");
-        }
+        // After a British impulse, Mysore gets a chance to play a card
+        phase = Phase.MYSORE_CARD;
 
         return MoveResult.ok(serializeBoard(), turn, phase.name());
     }
 
+    /**
+     * Mysore plays a power card.
+     * After this, we check if the British have any fresh armies left.
+     */
+    public MoveResult playMysoreCard(String cardName) {
+        if (phase != Phase.MYSORE_CARD) return MoveResult.invalid("Not the Mysore card phase.");
+
+        // Logic for specific card effects would go here...
+
+        advanceImpulse();
+        return MoveResult.ok(serializeBoard(), turn, phase.name());
+    }
+
     // ═════════════════════════════════════════════════════════════
-    //  PASS (player skips their move this impulse)
+    //  PASS (player skips their action this impulse)
     // ═════════════════════════════════════════════════════════════
 
     public MoveResult applyPass(String playerStr) {
-        if (isOver())
-            return MoveResult.invalid("The game is already over.");
+        if (isOver()) return MoveResult.invalid("The game is already over.");
 
-        Territory.Owner player;
-        try {
-            player = Territory.Owner.valueOf(playerStr.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            return MoveResult.invalid("Unknown player: " + playerStr);
+        Territory.Owner player = parsePlayer(playerStr);
+        if (player == null) return MoveResult.invalid("Unknown player: " + playerStr);
+
+        if (!phaseMatchesPlayer(player)) {
+            return MoveResult.invalid("It is not " + playerStr + "'s turn.");
         }
 
-        if (!phaseMatchesPlayer(player))
-            return MoveResult.invalid("It is not " + playerStr + "'s turn.");
-
-        advancePhase();
+        // Advance the state based on who passed
+        if (phase == Phase.BRITISH_MOVE) {
+            phase = Phase.MYSORE_CARD;
+        } else if (phase == Phase.MYSORE_CARD) {
+            advanceImpulse();
+        }
 
         if (isOver()) return endGame("mysore");
 
@@ -127,7 +109,7 @@ public class GameState {
     }
 
     // ═════════════════════════════════════════════════════════════
-    //  FULL STATE SNAPSHOT  (sent on initial connect & after each move)
+    //  FULL STATE SNAPSHOT (Used by GameServer on connect)
     // ═════════════════════════════════════════════════════════════
 
     /**
@@ -149,31 +131,19 @@ public class GameState {
     //  PRIVATE HELPERS
     // ═════════════════════════════════════════════════════════════
 
-    private String serializeBoard() {
-        return board.toJson();
-    }
-
-    private boolean phaseMatchesPlayer(Territory.Owner player) {
-        return switch (phase) {
-            case BRITISH_MOVE -> player == Territory.Owner.BRITISH;
-            case MYSORE_MOVE  -> player == Territory.Owner.MYSORE;
-            case GAME_OVER    -> false;
-        };
-    }
-
-    private void advancePhase() {
-        switch (phase) {
-            case BRITISH_MOVE -> phase = Phase.MYSORE_MOVE;
-            case MYSORE_MOVE  -> {
-                if (turn >= MAX_TURNS) {
-                    phase  = Phase.GAME_OVER;
-                    winner = "mysore";           // survived all turns
-                } else {
-                    turn++;
-                    phase = Phase.BRITISH_MOVE;
-                }
+    private void advanceImpulse() {
+        if (board.hasReadyBritishArmies()) {
+            // British still have fresh troops; back to their move
+            phase = Phase.BRITISH_MOVE;
+        } else {
+            // All British armies are tired. End of the Turn.
+            if (turn >= MAX_TURNS) {
+                endGame("mysore");
+            } else {
+                turn++;
+                board.resetTiredStatus(); // Refresh all British armies for the new turn
+                phase = Phase.BRITISH_MOVE;
             }
-            case GAME_OVER -> {}
         }
     }
 
@@ -181,6 +151,26 @@ public class GameState {
         phase  = Phase.GAME_OVER;
         winner = w;
         return MoveResult.gameOver(w, serializeBoard(), turn);
+    }
+
+    private boolean phaseMatchesPlayer(Territory.Owner player) {
+        return switch (phase) {
+            case BRITISH_MOVE -> player == Territory.Owner.BRITISH;
+            case MYSORE_CARD  -> player == Territory.Owner.MYSORE;
+            case GAME_OVER    -> false;
+        };
+    }
+
+    private Territory.Owner parsePlayer(String playerStr) {
+        try {
+            return Territory.Owner.valueOf(playerStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private String serializeBoard() {
+        return board.toJson();
     }
 
     @Override

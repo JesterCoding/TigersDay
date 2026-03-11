@@ -94,8 +94,8 @@ public class GameBoard {
         connect("Trichy",        "Dindigul");
         connect("Palgautcherry", "Travancore");
         connect("Dindigul",      "Travancore");
-        connectSea("Dindigul",   "Ceylon");
-        connectSea("Travancore", "Ceylon");
+        connect("Dindigul",   "Ceylon");
+        connect("Travancore", "Ceylon");
     }
 
     // ═════════════════════════════════════════════════════════════
@@ -151,6 +151,19 @@ public class GameBoard {
         return sj.toString();
     }
 
+    public boolean hasReadyBritishArmies() {
+        return territories.values().stream()
+                .anyMatch(t -> t.getOwner() == Territory.Owner.BRITISH && !t.isTired());
+    }
+
+    /** * Clears the 'tired' flag from all territories at the start of a new turn.
+     */
+    public void resetTiredStatus() {
+        for (Territory t : territories.values()) {
+            t.setTired(false);
+        }
+    }
+
     // ═════════════════════════════════════════════════════════════
     //  PRIVATE HELPERS
     // ═════════════════════════════════════════════════════════════
@@ -163,11 +176,6 @@ public class GameBoard {
         requireBoth(a, b);
         territories.get(a).addAdjacent(b);
         territories.get(b).addAdjacent(a);
-    }
-
-    private void connectSea(String a, String b) {
-        connect(a, b);
-        seaEdges.add(edgeKey(a, b));
     }
 
     /** Canonical undirected edge key so A↔B and B↔A map to the same string. */
