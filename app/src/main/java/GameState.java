@@ -83,6 +83,7 @@ public class GameState {
 
         // ── Apply ─────────────────────────────────────────────────
         dst.setOwner(player);
+        src.setOwner(Territory.Owner.EMPTY);
 
         // ── Victory check ─────────────────────────────────────────
         if (board.britishControlsAllKeyCities()) {
