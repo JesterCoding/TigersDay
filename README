@@ -1,0 +1,66 @@
+# The Tiger's Day — Java Game Server
+
+## Structure
+
+```
+tigers-day/
+├── build.gradle
+├── README.md
+└── src/main/java/com/tigersday/
+    ├── Main.java          ← entry point
+    ├── GameServer.java    ← WebSocket server (port 8887)
+    ├── GameState.java     ← turn/phase/victory logic
+    ├── GameBoard.java     ← board topology (nodes + edges)
+    ├── Territory.java     ← data object for each node
+    └── MoveResult.java    ← result returned after every action
+└── src/main/resources/
+    └── tiger-day.html     ← browser client with WebSocket bridge
+```
+
+## Prerequisites
+
+- Java 17+
+- Gradle 8+ (or use the wrapper: `./gradlew`)
+
+## Run
+
+```bash
+# From the tigers-day/ directory:
+./gradlew run
+```
+
+Server starts at `ws://localhost:8887`.
+
+Open `src/main/resources/tiger-day.html` in a browser.
+The status bar at the top of the sidebar will turn green when connected.
+
+## How to play
+
+1. Click a territory you control (selection ring appears).
+2. Click an adjacent enemy or empty territory to move there.
+3. The server validates the move, updates ownership, and broadcasts the new state.
+4. Victory check runs after every move.
+
+## WebSocket message protocol
+
+### Browser → Java
+| type   | fields                                      |
+|--------|---------------------------------------------|
+| MOVE   | player ("british"\|"mysore"), from, to      |
+| PASS   | player                                      |
+| RESET  | —                                           |
+| PING   | —                                           |
+
+### Java → Browser
+| type        | fields                                              |
+|-------------|-----------------------------------------------------|
+| STATE       | turn, maxTurns, phase, winner, board[]              |
+| MOVE_RESULT | status, reason, turn, phase, winner?, board[]       |
+| PONG        | —                                                   |
+| ERROR       | message                                             |
+
+## Adding an AI player
+
+Add an `AiPlayer` class that calls `state.applyMove("mysore", from, to)` directly
+(no WebSocket needed — it's in the same JVM). After the move, call
+`server.broadcastState()` to push the new state to all connected browsers.
