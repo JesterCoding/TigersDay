@@ -93,6 +93,7 @@ class MoveEngine:
         is_british_move = state.vector[state.IDX_WHO_TO_MOVE_OFFSET]
         is_mysore_card = state.vector[state.IDX_WHO_TO_MOVE_OFFSET + 1]
         is_british_card = state.vector[state.IDX_WHO_TO_MOVE_OFFSET + 2]
+        is_battle = np.sum(state.vector[state.IDX_COMBATANTS_OFFSET:state.IDX_COMBATANTS_OFFSET+23])==1
 
         legal_space = empty + fort
         can_move_from = fresh_army[self.EDGE_SOURCES]
@@ -101,11 +102,25 @@ class MoveEngine:
         trapped_army = (fresh_army & (np.bincount(self.EDGE_SOURCES,weights=legal_moves,minlength=23)==0)) * is_british_move
 
         sepoy_mutiny = state.vector[state.IDX_MYSORE_CARDS_OFFSET + 1] * ((fresh_army + tired_army) & ~self.KEYS) * is_mysore_card
+
         french_alliance = state.vector[state.IDX_MYSORE_CARDS_OFFSET + 2] * ((fort.dot(self.ADJACENCY_MATRIX) > 0) & empty) * is_mysore_card
+
         monsoon = state.vector[state.IDX_MYSORE_CARDS_OFFSET + 3] * fresh_army * is_mysore_card
+
         cavalry_raid = [state.vector[state.IDX_MYSORE_CARDS_OFFSET + 4] * is_mysore_card]
-        forts_on_coast = np.dot(fort.astype(int),self.COASTAL)
-        sea_trade = ~(state.vector[state.IDX_MYSORE_CARDS_OFFSET:state.IDX_MYSORE_CARDS_OFFSET+6]) & (state.CARD_VALUE == forts_on_coast)
+
+        forts_on_coast = np.dot(fort.astype(int),self.COASTAL) * is_mysore_card
+        valid_trades = ~(state.vector[state.IDX_MYSORE_CARDS_OFFSET:state.IDX_MYSORE_CARDS_OFFSET+6]) & (state.CARD_VALUE == forts_on_coast)
+        sea_trade = state.vector[state.IDX_MYSORE_CARDS_OFFSET + 5] * valid_trades * is_mysore_card
+
+        mysore_power = state.vector[state.IDX_MYSORE_CARDS_OFFSET:state.IDX_MYSORE_CARDS_OFFSET+6] * is_mysore_card * is_battle
+
+        mysore3draw = state.vector[state.IDX_MYSORE_CARDS_OFFSET] * ~(state.vector[state.IDX_MYSORE_CARDS_OFFSET+1:state.IDX_MYSORE_CARDS_OFFSET+6])
+        mysore21draw = state.vector[state.IDX_MYSORE_CARDS_OFFSET+1] * ~(state.vector[state.IDX_MYSORE_CARDS_OFFSET+3:state.IDX_MYSORE_CARDS_OFFSET+6])
+        mysore22draw = state.vector[state.IDX_MYSORE_CARDS_OFFSET+2] * ~(state.vector[state.IDX_MYSORE_CARDS_OFFSET+3:state.IDX_MYSORE_CARDS_OFFSET+6])
+        mysore_draw = np.concatenate((mysore3draw,mysore21draw,mysore22draw)) * is_mysore_card
+
+        mysore_pass = [is_mysore_card]
 
         mask = np.concatenate((
             legal_moves,
@@ -114,10 +129,13 @@ class MoveEngine:
             french_alliance,
             monsoon,
             cavalry_raid,
-            sea_trade
+            sea_trade,
+            mysore_power,
+            mysore_draw,
+            mysore_pass
             ))
 
-        return sea_trade
+        return mask
 
 
 
@@ -125,9 +143,11 @@ def main():
     a = MoveEngine()
     default = GameState()
     default.default_setup()
-    default.set_territory_vector_fresh_army("Vizag")
+    default.set_territory_vector_tired_army("Travancore")
+    default.queue_combat_by_name("Travancore", "Palgautcherry")
+    default.set_who_to_move_by_name("Mysore Card")
     default.use_card_mysore_by_name("French Alliance")
-    default.set_territory_vector_empty("Bednore")
+    default.use_card_mysore_by_name("Monsoon")
     print(a.get_legal_moves(default))
 
 if __name__ == "__main__":
