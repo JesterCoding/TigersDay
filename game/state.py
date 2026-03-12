@@ -71,10 +71,10 @@ class GameState:
     def default_setup(self):
         self.reset_cards()
 
-        self.set_territory_vector_active_army("Bombay")
-        self.set_territory_vector_active_army("Hyderabad")
-        self.set_territory_vector_active_army("Madras")
-        self.set_territory_vector_active_army("Travancore")
+        self.set_territory_vector_fresh_army("Bombay")
+        self.set_territory_vector_fresh_army("Hyderabad")
+        self.set_territory_vector_fresh_army("Madras")
+        self.set_territory_vector_fresh_army("Travancore")
 
         self.set_territory_vector_fort("Darwar")
         self.set_territory_vector_fort("Bednore")
@@ -112,7 +112,7 @@ class GameState:
     def use_card_british_by_value(self, british_card_value):
         self.vector[self.IDX_BRITISH_CARDS_OFFSET + british_card_value] = False
 
-    def set_territory_vector_active_army(self, territory):
+    def set_territory_vector_fresh_army(self, territory):
         self.set_territory_vector_empty(territory)
         self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.TERRITORY_TO_IDX[territory]] = True
 
@@ -170,7 +170,6 @@ class GameState:
         self.vector[self.IDX_COMBAT_STRENGTH_OFFSET] = False
         self.vector[self.IDX_COMBAT_STRENGTH_OFFSET + self.CARD_VALUE[card_idx]] = True
 
-    
 
     def __str__(self):
         str = ""

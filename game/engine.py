@@ -32,14 +32,103 @@ class MoveEngine:
     4, 18, 21, 22,     19, 20, 22,          20, 21
     ])
 
+    EDGE_MAP = {
+        (src, dst): i 
+        for i, (src, dst) in enumerate(zip(EDGE_SOURCES, EDGE_DESTS))
+    }
+
+    ADJACENCY_MATRIX = np.array([
+        [0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0],
+        [1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0],
+        [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0],
+    ], dtype=bool)   
+
     # (Bombay, Hyderabad, Madras, Srirangapatna, Coimbatore)
-    KEYS = np.array([0, 1, 2, 3, 4], dtype=np.int8)
+    KEYS = np.array([
+        True,  True,  True,  True,  True,  False, False, False, 
+        False, False, False, False, False, False, False, False, 
+        False, False, False, False, False, False, False
+    ], dtype=bool)
 
     # (Bombay, Madras, Vizag, Goa, Mangalore, Mahé, Pondicherry, Travancore, Ceylon)
-    COASTAL = np.array([0, 2, 7, 8, 12, 15, 16, 21, 22], dtype=np.int8)
+    COASTAL = np.array([
+        True,  False, True,  False, False, False, False, True,  
+        True,  False, False, False, True,  False, False, True,  
+        True,  False, False, False, False, True,  True
+    ], dtype=bool)
 
     def __init__(self):
-        self.vector = np.zeros(562, dtype=float)
-    
-    def mask(self, game: GameState):
+        self.vector = np.zeros(568, dtype=float)
         
+    def get_edge_id(cls, source, dest):
+        """Returns the unique index for a directed edge, or None if no edge exists."""
+        return cls.EDGE_MAP.get((source, dest))
+    
+    def get_legal_moves(self, state: GameState):
+        fresh_army=state.vector[state.IDX_TERRITORIES_OFFSET:state.IDX_TURN_ORDER_OFFSET:3]
+        tired_army=state.vector[state.IDX_TERRITORIES_OFFSET+1:state.IDX_TURN_ORDER_OFFSET:3]
+        fort = state.vector[state.IDX_TERRITORIES_OFFSET+2:state.IDX_TURN_ORDER_OFFSET:3]
+        empty = ~(fresh_army + tired_army + fort)
+
+        is_british_move = state.vector[state.IDX_WHO_TO_MOVE_OFFSET]
+        is_mysore_card = state.vector[state.IDX_WHO_TO_MOVE_OFFSET + 1]
+        is_british_card = state.vector[state.IDX_WHO_TO_MOVE_OFFSET + 2]
+
+        legal_space = empty + fort
+        can_move_from = fresh_army[self.EDGE_SOURCES]
+        can_move_to = legal_space[self.EDGE_DESTS]
+        legal_moves = (can_move_from & can_move_to) * is_british_move
+        trapped_army = (fresh_army & (np.bincount(self.EDGE_SOURCES,weights=legal_moves,minlength=23)==0)) * is_british_move
+
+        sepoy_mutiny = state.vector[state.IDX_MYSORE_CARDS_OFFSET + 1] * ((fresh_army + tired_army) & ~self.KEYS) * is_mysore_card
+        french_alliance = state.vector[state.IDX_MYSORE_CARDS_OFFSET + 2] * ((fort.dot(self.ADJACENCY_MATRIX) > 0) & empty) * is_mysore_card
+        monsoon = state.vector[state.IDX_MYSORE_CARDS_OFFSET + 3] * fresh_army * is_mysore_card
+        cavalry_raid = [state.vector[state.IDX_MYSORE_CARDS_OFFSET + 4] * is_mysore_card]
+        forts_on_coast = np.dot(fort.astype(int),self.COASTAL)
+        sea_trade = ~(state.vector[state.IDX_MYSORE_CARDS_OFFSET:state.IDX_MYSORE_CARDS_OFFSET+6]) & (state.CARD_VALUE == forts_on_coast)
+
+        mask = np.concatenate((
+            legal_moves,
+            trapped_army,
+            sepoy_mutiny,
+            french_alliance,
+            monsoon,
+            cavalry_raid,
+            sea_trade
+            ))
+
+        return sea_trade
+
+
+
+def main():
+    a = MoveEngine()
+    default = GameState()
+    default.default_setup()
+    default.set_territory_vector_fresh_army("Vizag")
+    default.use_card_mysore_by_name("French Alliance")
+    default.set_territory_vector_empty("Bednore")
+    print(a.get_legal_moves(default))
+
+if __name__ == "__main__":
+    main()
