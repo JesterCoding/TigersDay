@@ -35,7 +35,7 @@
         .mysore-card { border-color: #3a6a3a; }
         .british-card { border-color: #8a2a1a; }
         .player-card .card-icon { font-size: 1.05rem; margin-bottom: 3px; display: block; }
-        .player-card .card-name { font-family: 'Cinzel', serif; font-size: .63rem; letter-spacing: .04em; color: var(--ink); line-height: 1.2; margin-bottom: 3px; }
+        .player-card .card-name { font-family: 'Cinzel', serif; font-size: rem; letter-spacing: .04em; color: var(--ink); line-height: 1.2; margin-bottom: 3px; }
         .player-card .card-desc { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: .72rem; color: #6a4a1a; line-height: 1.25; }
         .used-badge { display: none; position: absolute; top: 4px; right: 5px; font-size: .55rem; font-family: 'Cinzel', serif; color: #888; letter-spacing: .05em; }
         .player-card.used .used-badge { display: block; }
@@ -212,7 +212,7 @@ class GameState:
 
     WHO_TO_MOVE = ["British Move", "Mysore Card", "British Card"]
 
-    MYSORE_CARDS = ["Iron Rockets", "Sepoy Mutiny", "French Alliance", "Monsoon", "Cavalry Raid", "Sea Raid"]
+    MYSORE_CARDS = ["Iron Rockets", "Sepoy Mutiny", "French Alliance", "Monsoon", "Cavalry Raid", "Sea Trade"]
     BRITISH_CARDS = ["Wall Breach", "Highlanders", "Royal Navy", "Divide and Rule", "Force March", "Princely States"]
 
     TERRITORY_TO_IDX = {name: i for i, name in enumerate(TERRITORIES)}
@@ -220,14 +220,16 @@ class GameState:
     MYSORE_CARDS_TO_IDX = {name: i for i, name in enumerate(MYSORE_CARDS)}
     BRITISH_CARDS_TO_IDX = {name: i for i, name in enumerate(BRITISH_CARDS)}
 
-    IDX_BRITISH_CARDS_OFFSET = 0  
-    IDX_MYSORE_CARDS_OFFSET = 6   
-    IDX_TERRITORIES_OFFSET = 12    
-    IDX_TURN_ORDER_OFFSET = 81     
-    IDX_WHO_TO_MOVE_OFFSET = 85    
-    IDX_COMBAT_STRENGTH_OFFSET = 88 
-    IDX_COMBATANTS_OFFSET = 92    
-    IDX_COMBATANTS_DEFENDER_OFFSET = 115 
+    CARD_VALUE = [3, 2, 2, 1, 1, 1]
+
+    IDX_BRITISH_CARDS_OFFSET = 0   #index where this information begins
+    IDX_MYSORE_CARDS_OFFSET = 6    # 6 cards for both mysore and british
+    IDX_TERRITORIES_OFFSET = 12    # 23 territories * 3D vectors = 69
+    IDX_TURN_ORDER_OFFSET = 81     # 4 turns (One-hot)
+    IDX_WHO_TO_MOVE_OFFSET = 85    # 3 options (One-hot)
+    IDX_COMBAT_STRENGTH_OFFSET = 88 # 4 options (One-hot): Only ever stored for Mysore
+    IDX_COMBATANTS_OFFSET = 92    # 23x2 Attacker/Defender (One-hot)
+    IDX_COMBATANTS_DEFENDER_OFFSET = 115 #Index from which Defender values start showing up
 
     IDX_BRITISH_CARDS = slice(IDX_BRITISH_CARDS_OFFSET, IDX_BRITISH_CARDS_OFFSET + 6)
     IDX_MYSORE_CARDS = slice(IDX_MYSORE_CARDS_OFFSET, IDX_MYSORE_CARDS_OFFSET + 6)
@@ -239,6 +241,32 @@ class GameState:
 
     def __init__(self):
         self.vector = np.zeros(138, dtype=bool)
+
+    """
+        Bombay:        { x:110, y: 74,  owner:'british', key:true,  coast:true,  labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+        Hyderabad:     { x:515, y:100,  owner:'british', key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+        Madras:        { x:618, y:322,  owner:'british', key:true,  coast:true,  labelAnchor:{anchor:'end',    dx:-18, dy:-24} },
+        Srirangapatna: { x:230, y:480,  owner:'mysore',  key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+        Coimbatore:    { x:305, y:600,  owner:'mysore',  key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+        Pune:          { x:255, y:128,  owner:'empty',   key:false, coast:false },
+        Koppal:        { x:390, y:178,  owner:'empty',   key:false, coast:false },
+        Vizag:         { x:656, y:162,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
+        Goa:           { x: 94, y:262,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
+        Darwar:        { x:232, y:232,  owner:'mysore',  key:false, coast:false },
+        Anantapur:     { x:470, y:228,  owner:'empty',   key:false, coast:false },
+        Bednore:       { x:300, y:295,  owner:'mysore',  key:false, coast:false },
+        Mangalore:     { x:118, y:398,  owner:'mysore',  key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
+        Bangalore:     { x:350, y:400,  owner:'mysore',  key:false, coast:false },
+        Vellore:       { x:460, y:340,  owner:'empty',   key:false, coast:false },
+        Mahé:          { x:145, y:586,  owner:'mysore',  key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
+        Pondicherry:   { x:610, y:446,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
+        Erode:         { x:405, y:515,  owner:'mysore',  key:false, coast:false },
+        Trichy:        { x:516, y:580,  owner:'empty',   key:false, coast:false },
+        Palgautcherry: { x:248, y:680,  owner:'mysore',  key:false, coast:false },
+        Dindigul:      { x:445, y:670,  owner:'empty',   key:false, coast:false },
+        Travancore:    { x:260, y:830,  owner:'british', key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
+        Ceylon:        { x:534, y:735,  owner:'empty',   key:false, coast:true  },
+    """
 
     def default_setup(self):
         self.reset_cards()
@@ -331,6 +359,7 @@ class GameState:
         self.vector[self.IDX_COMBAT_STRENGTH] = False
     
     def queue_combat_by_name(self, attacker_name, defender_name):
+        self.vector[self.IDX_COMBAT_STRENGTH_OFFSET] = True
         self.queue_combat_by_value(self.TERRITORY_TO_IDX[attacker_name], self.TERRITORY_TO_IDX[defender_name])
 
     def queue_combat_by_value(self, attacker_idx, defender_idx):
@@ -338,7 +367,8 @@ class GameState:
         self.vector[self.IDX_COMBATANTS_DEFENDER_OFFSET + defender_idx] = True
 
     def set_combat_strength(self, card_idx):
-        self.vector[self.IDX_COMBAT_STRENGTH_OFFSET + card_idx] = True
+        self.vector[self.IDX_COMBAT_STRENGTH_OFFSET] = False
+        self.vector[self.IDX_COMBAT_STRENGTH_OFFSET + self.CARD_VALUE[card_idx]] = True
 
     def __str__(self):
         str = ""
@@ -363,6 +393,22 @@ def loadSavedState(event=None):
         state.vector = np.array([bool(int(b)) for b in raw_input], dtype=bool)
     except ValueError:
         window.alert("Invalid input! Please provide a string consisting purely of 1s and 0s.")
+        return
+    
+    try:
+        for i in range(12, 136):
+            if all(state.vector[i : i+3]):
+                t_idx = (i - 12) // 3
+                
+                if t_idx in range(len(GameState.TERRITORIES)):
+                    name = GameState.TERRITORIES[t_idx]
+                else:
+                    name = f"Bit {i}"
+                
+                raise ValueError(f"Invalid Binary: Triple consecutive 1s detected starting at {name}")
+
+    except ValueError as e:
+        window.alert(str(e))
         return
 
     for i, territory in enumerate(GameState.TERRITORIES):
@@ -401,7 +447,7 @@ def loadSavedState(event=None):
     turn_num = turn_slice.index(True) + 1 if True in turn_slice else "—"
 
     strength_slice = list(state.vector[GameState.IDX_COMBAT_STRENGTH_OFFSET : GameState.IDX_COMBAT_STRENGTH_OFFSET + 4])
-    combat_strength = strength_slice.index(True) if True in strength_slice else "—"
+    combat_strength = strength_slice.index(True) if True in strength_slice else "0"
 
     attacker_slice = list(state.vector[GameState.IDX_COMBATANTS_OFFSET : GameState.IDX_COMBATANTS_OFFSET + 23])
     attacker_name = GameState.TERRITORIES[attacker_slice.index(True)] if True in attacker_slice else "None"
@@ -444,17 +490,45 @@ var NODES = {
 };
 
 const EDGES = [
-  ['Bombay','Pune'], ['Bombay','Goa',{curve:-0.2}], ['Pune','Koppal'],['Pune','Darwar'], ['Pune','Goa'],
-  ['Hyderabad','Koppal'], ['Hyderabad','Anantapur'], ['Hyderabad','Vizag'], ['Koppal','Anantapur'],
-  ['Koppal','Bednore'], ['Darwar','Goa'], ['Darwar','Bednore'], ['Anantapur','Vellore'],
-  ['Goa','Mangalore',{curve:-0.2}], ['Bednore','Mangalore'], ['Bednore','Bangalore'],
-  ['Madras','Vellore'], ['Madras','Pondicherry'], ['Madras','Vizag',{curve:-0.2}], ['Madras','Anantapur'],
-  ['Vellore','Bangalore'], ['Mangalore','Srirangapatna'], ['Bangalore','Srirangapatna'],
-  ['Srirangapatna','Mahé'], ['Srirangapatna','Erode'], ['Erode','Coimbatore'], ['Erode','Trichy'],
-  ['Erode','Pondicherry'], ['Erode','Vellore'], ['Pondicherry','Trichy'], ['Mahé','Coimbatore'],
-  ['Mahé','Palgautcherry'], ['Coimbatore','Palgautcherry'], ['Coimbatore','Dindigul'],
-  ['Trichy','Dindigul'], ['Palgautcherry','Travancore'], ['Dindigul','Travancore'],
-  ['Dindigul','Ceylon'], ['Travancore','Ceylon'],
+  ['Bombay', 'Pune'],
+  ['Bombay', 'Goa', {curve: -0.2}],
+  ['Hyderabad', 'Koppal'],
+  ['Hyderabad', 'Vizag'],
+  ['Hyderabad', 'Anantapur'],
+  ['Madras', 'Vizag', {curve: -0.2}],
+  ['Madras', 'Anantapur'],
+  ['Madras', 'Vellore'],
+  ['Madras', 'Pondicherry'],
+  ['Srirangapatna', 'Mangalore'],
+  ['Srirangapatna', 'Bangalore'],
+  ['Srirangapatna', 'Mahé'],
+  ['Srirangapatna', 'Erode'],
+  ['Coimbatore', 'Mahé'],
+  ['Coimbatore', 'Erode'],
+  ['Coimbatore', 'Palgautcherry'],
+  ['Coimbatore', 'Dindigul'],
+  ['Pune', 'Koppal'],
+  ['Pune', 'Goa'],
+  ['Pune', 'Darwar'],
+  ['Koppal', 'Anantapur'],
+  ['Koppal', 'Bednore'],
+  ['Goa', 'Darwar'],
+  ['Goa', 'Mangalore', {curve: -0.2}],
+  ['Darwar', 'Bednore'],
+  ['Anantapur', 'Vellore'],
+  ['Bednore', 'Mangalore'],
+  ['Bednore', 'Bangalore'],
+  ['Bangalore', 'Vellore'],
+  ['Vellore', 'Erode'],
+  ['Mahé', 'Palgautcherry'],
+  ['Pondicherry', 'Erode'],
+  ['Pondicherry', 'Trichy'],
+  ['Erode', 'Trichy'],
+  ['Trichy', 'Dindigul'],
+  ['Palgautcherry', 'Travancore'],
+  ['Dindigul', 'Travancore'],
+  ['Dindigul', 'Ceylon'],
+  ['Travancore', 'Ceylon']
 ];
 
 const adjacency = {};

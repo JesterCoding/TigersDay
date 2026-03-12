@@ -20,12 +20,14 @@ class GameState:
     MYSORE_CARDS_TO_IDX = {name: i for i, name in enumerate(MYSORE_CARDS)}
     BRITISH_CARDS_TO_IDX = {name: i for i, name in enumerate(BRITISH_CARDS)}
 
+    CARD_VALUE = [3, 2, 2, 1, 1, 1]
+
     IDX_BRITISH_CARDS_OFFSET = 0   #index where this information begins
     IDX_MYSORE_CARDS_OFFSET = 6    # 6 cards for both mysore and british
     IDX_TERRITORIES_OFFSET = 12    # 23 territories * 3D vectors = 69
     IDX_TURN_ORDER_OFFSET = 81     # 4 turns (One-hot)
     IDX_WHO_TO_MOVE_OFFSET = 85    # 3 options (One-hot)
-    IDX_COMBAT_STRENGTH_OFFSET = 88 # 4 options (One-hot) --> Only ever stored for Mysore
+    IDX_COMBAT_STRENGTH_OFFSET = 88 # 4 options (One-hot): Only ever stored for Mysore
     IDX_COMBATANTS_OFFSET = 92    # 23x2 Attacker/Defender (One-hot)
     IDX_COMBATANTS_DEFENDER_OFFSET = 115 #Index from which Defender values start showing up
 
@@ -128,7 +130,6 @@ class GameState:
 
     def set_turn(self, turn_number):
         """Sets the turn using one-hot encoding (e.g., Turn 2 -> [0, 1, 0, 0])"""
-        assert turn_number >= 1 and turn_number <= 4, "The turn is Out Of Range"
 
         self.vector[self.IDX_TURN_ORDER] = False
         self.vector[self.IDX_TURN_ORDER_OFFSET + (turn_number - 1)] = 1
@@ -158,6 +159,7 @@ class GameState:
         self.vector[self.IDX_COMBAT_STRENGTH] = False
     
     def queue_combat_by_name(self, attacker_name, defender_name):
+        self.vector[self.IDX_COMBAT_STRENGTH_OFFSET] = True
         self.queue_combat_by_value(self.TERRITORY_TO_IDX[attacker_name], self.TERRITORY_TO_IDX[defender_name])
 
     def queue_combat_by_value(self, attacker_idx, defender_idx):
@@ -165,7 +167,10 @@ class GameState:
         self.vector[self.IDX_COMBATANTS_DEFENDER_OFFSET + defender_idx] = True
 
     def set_combat_strength(self, card_idx):
-        self.vector[self.IDX_COMBAT_STRENGTH_OFFSET + card_idx] = True
+        self.vector[self.IDX_COMBAT_STRENGTH_OFFSET] = False
+        self.vector[self.IDX_COMBAT_STRENGTH_OFFSET + self.CARD_VALUE[card_idx]] = True
+
+    
 
     def __str__(self):
         str = ""
@@ -181,10 +186,10 @@ def main():
     default.default_setup()
     default.set_territory_vector_tired_army("Travancore")
     default.queue_combat_by_name("Travancore", "Palgautcherry")
-    default.set_combat_strength(2)
-    default.use_card_mysore_by_name("French Alliance")
+    default.set_combat_strength(0)
+    default.use_card_mysore_by_name("Iron Rockets")
     default.set_who_to_move_by_name("British Card")
-    
+
     print(default)
 
 if __name__ == "__main__":
