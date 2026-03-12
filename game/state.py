@@ -21,8 +21,9 @@ class GameState:
     IDX_TERRITORIES_OFFSET = 12    # 23 territories * 3D vectors = 69
     IDX_TURN_ORDER_OFFSET = 81     # 4 turns (One-hot)
     IDX_WHO_TO_MOVE_OFFSET = 85    # 3 options (One-hot)
-    IDX_COMBAT_STRENGTH_OFFSET = 88 # 4 options (One-hot)
+    IDX_COMBAT_STRENGTH_OFFSET = 88 # 4 options (One-hot) --> Only ever stored for Mysore
     IDX_COMBATANTS_OFFSET = 92    # 23x2 Attacker/Defender (One-hot)
+    IDX_COMBATANTS_DEFENDER_OFFSET = 115 #Index from which Defender values start showing up
 
     IDX_BRITISH_CARDS = slice(IDX_BRITISH_CARDS_OFFSET, IDX_BRITISH_CARDS_OFFSET + 6)
     IDX_MYSORE_CARDS = slice(IDX_MYSORE_CARDS_OFFSET, IDX_MYSORE_CARDS_OFFSET + 6)
@@ -33,7 +34,7 @@ class GameState:
 
 
     def __init__(self):
-        self.vector = np.zeros(138, dtype=np.bool)
+        self.vector = np.zeros(138, dtype=bool)
 
     """
         Bombay:        { x:110, y: 74,  owner:'british', key:true,  coast:true,  labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
@@ -67,13 +68,13 @@ class GameState:
         self.set_territory_vector_active_army("Bombay")
         self.set_territory_vector_active_army("Hyderabad")
         self.set_territory_vector_active_army("Madras")
-        self.set_territory_vector_active_army("Travencore")
+        self.set_territory_vector_active_army("Travancore")
 
         self.set_territory_vector_fort("Darwar")
         self.set_territory_vector_fort("Bednore")
         self.set_territory_vector_fort("Mangalore")
         self.set_territory_vector_fort("Bangalore")
-        self.set_territory_vector_fort("Sriganapatna")
+        self.set_territory_vector_fort("Srirangapatna")
         self.set_territory_vector_fort("Erode")
         self.set_territory_vector_fort("Coimbatore")
         self.set_territory_vector_fort("Mahé")
@@ -94,18 +95,20 @@ class GameState:
         self.vector[self.IDX_MYSORE_CARDS] = True
 
     def set_territory_vector_active_army(self, territory):
+        self.set_territory_vector_empty(territory)
         self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.TERRITORY_TO_IDX[territory]] = True
 
     def set_territory_vector_tired_army(self, territory):
+        self.set_territory_vector_empty(territory)
         self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.TERRITORY_TO_IDX[territory] + 1] = True
 
     def set_territory_vector_fort(self, territory):
+        self.set_territory_vector_empty(territory)
         self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.TERRITORY_TO_IDX[territory] + 2] = True
 
     def set_territory_vector_empty(self, territory):
-        self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.TERRITORY_TO_IDX[territory]] = False
-        self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.TERRITORY_TO_IDX[territory] + 1] = False
-        self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.TERRITORY_TO_IDX[territory] + 2] = False
+        start_idx = self.IDX_TERRITORIES_OFFSET + 3 * self.TERRITORY_TO_IDX[territory]
+        self.vector[start_idx : start_idx + 3] = False
 
     def set_turn(self, turn_number):
         """Sets the turn using one-hot encoding (e.g., Turn 2 -> [0, 1, 0, 0])"""
@@ -123,18 +126,27 @@ class GameState:
     def set_who_to_move_by_name(self, who_to_move):
         self.set_who_to_move_by_value(self.WHO_TO_MOVE_TO_IDX[who_to_move])
 
-    def set_who_to_move_by_value(self, who_to_move):
+    def set_who_to_move_by_value(self, who_to_move_idx):
         self.vector[self.IDX_WHO_TO_MOVE] = False
-        self.vector[self.IDX_WHO_TO_MOVE_OFFSET + who_to_move] = True
+        self.vector[self.IDX_WHO_TO_MOVE_OFFSET + (who_to_move_idx % 3)] = True
 
     def get_who_to_move(self):
         """Returns 0 (British), 1 (Mysore Card), or 2 (British Card)"""
         return np.argmax(self.vector[self.IDX_WHO_TO_MOVE])
     
     def update_who_to_move(self):
-        self.set_who_to_move_by_value(self.get_who_to_move())
+        self.set_who_to_move_by_value(self.get_who_to_move() + 1)
 
     def clear_combat(self):
         self.vector[self.IDX_COMBATANTS] = False
+        self.vector[self.IDX_COMBAT_STRENGTH] = False
     
-    
+    def queue_combat_by_name(self, attacker_name, defender_name):
+        self.queue_combat_by_value(self.TERRITORY_TO_IDX[attacker_name], self.TERRITORY_TO_IDX[defender_name])
+
+    def queue_combat_by_value(self, attacker_idx, defender_idx):
+        self.vector[self.IDX_COMBATANTS_OFFSET + attacker_idx] = True
+        self.vector[self.IDX_COMBATANTS_DEFENDER_OFFSET + defender_idx] = True
+
+    def set_combat_strength(self, card_idx):
+        self.vector[self.IDX_COMBAT_STRENGTH_OFFSET + card_idx] = True
