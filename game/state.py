@@ -12,9 +12,13 @@ class GameState:
 
     WHO_TO_MOVE = ["British Move", "Mysore Card", "British Card"]
 
+    MYSORE_CARDS = ["Iron Rockets", "Sepoy Mutiny", "French Alliance", "Monsoon", "Cavalry Raid", "Sea Trade"]
+    BRITISH_CARDS = ["Wall Breach", "Highlanders", "Royal Navy", "Divide and Rule", "Force March", "Princely States"]
+
     TERRITORY_TO_IDX = {name: i for i, name in enumerate(TERRITORIES)}
-    
     WHO_TO_MOVE_TO_IDX = {name: i for i, name in enumerate(WHO_TO_MOVE)}
+    MYSORE_CARDS_TO_IDX = {name: i for i, name in enumerate(MYSORE_CARDS)}
+    BRITISH_CARDS_TO_IDX = {name: i for i, name in enumerate(BRITISH_CARDS)}
 
     IDX_BRITISH_CARDS_OFFSET = 0   #index where this information begins
     IDX_MYSORE_CARDS_OFFSET = 6    # 6 cards for both mysore and british
@@ -94,6 +98,18 @@ class GameState:
         self.vector[self.IDX_BRITISH_CARDS] = True
         self.vector[self.IDX_MYSORE_CARDS] = True
 
+    def use_card_mysore_by_name(self, mysore_card):
+        self.use_card_mysore_by_value(self.MYSORE_CARDS_TO_IDX[mysore_card])
+
+    def use_card_mysore_by_value(self, mysore_card_value):
+        self.vector[self.IDX_MYSORE_CARDS_OFFSET + mysore_card_value] = False
+
+    def use_card_british_by_name(self, british_card):
+        self.use_card_british_by_value(self.BRITISH_CARDS_TO_IDX[british_card])
+
+    def use_card_british_by_value(self, british_card_value):
+        self.vector[self.IDX_BRITISH_CARDS_OFFSET + british_card_value] = False
+
     def set_territory_vector_active_army(self, territory):
         self.set_territory_vector_empty(territory)
         self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.TERRITORY_TO_IDX[territory]] = True
@@ -164,6 +180,11 @@ def main():
     default = GameState()
     default.default_setup()
     default.set_territory_vector_tired_army("Travancore")
+    default.queue_combat_by_name("Travancore", "Palgautcherry")
+    default.set_combat_strength(2)
+    default.use_card_mysore_by_name("French Alliance")
+    default.set_who_to_move_by_name("British Card")
+    
     print(default)
 
 if __name__ == "__main__":
