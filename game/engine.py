@@ -135,7 +135,7 @@ class MoveEngine:
             mysore_pass
             ))
 
-        return mask
+        #return mask
 
 
 
@@ -148,7 +148,10 @@ def main():
     default.set_who_to_move_by_name("Mysore Card")
     default.use_card_mysore_by_name("French Alliance")
     default.use_card_mysore_by_name("Monsoon")
-    print(a.get_legal_moves(default))
+    #print(a.get_legal_moves(default))
+
+    for i in range(1000):
+        a.get_legal_moves(default)   
 
 if __name__ == "__main__":
     main()
