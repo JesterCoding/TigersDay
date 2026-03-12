@@ -29,15 +29,117 @@
           font-family: 'IM Fell English', serif;
           color: #c9b98a; font-size: 1rem; margin-top: 4px;
         }
-        .layout { display: flex; gap: 18px; align-items: flex-start; width: 100%; max-width: 1120px; }
+
+        /* ── Main layout: [mysore cards] [map] [british cards + sidebar] ── */
+        .layout {
+          display: flex;
+          gap: 12px;
+          align-items: flex-start;
+          width: 100%;
+          max-width: 1100px;
+        }
         .map-card {
-          flex: 1 1 680px;
+          flex: 1 1 660px;
           border: 3px solid var(--border); border-radius: 3px;
           box-shadow: 0 0 0 5px #2a1a08, 0 8px 40px #000d;
-          overflow: hidden; animation: fadeIn 1s ease both .15s;
+          overflow: hidden;
+          animation: fadeIn 1s ease both .15s;
         }
         svg#board { display: block; width: 100%; height: auto; }
-        .sidebar { flex: 0 0 232px; display: flex; flex-direction: column; gap: 14px; animation: fadeIn 1s ease both .3s; }
+
+        /* ── Card columns ─────────────────────────────────────── */
+        .left-section {
+          flex: 0 0 232px;
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+          animation: fadeIn 1s ease both .3s;
+        }
+        .cards-col-header {
+          font-family: 'Cinzel', serif;
+          font-size: .72rem;
+          letter-spacing: .1em;
+          padding: 6px 8px;
+          border-radius: 3px;
+          text-align: center;
+          margin-bottom: 2px;
+        }
+        .mysore-col-header {
+          background: #1a3a1a;
+          color: #7acc7a;
+          border: 1px solid #2e7a2e;
+          box-shadow: 0 0 0 2px #0a1a0a;
+        }
+        .british-col-header {
+          background: #3a1a1a;
+          color: #cc7070;
+          border: 1px solid #c0281a;
+          box-shadow: 0 0 0 2px #1a0a0a;
+        }
+
+        /* Individual card */
+        .player-card {
+          background: var(--parchment);
+          border: 2px solid var(--border);
+          border-radius: 3px;
+          box-shadow: 0 0 0 2px #2a1a08, 0 3px 10px #000a;
+          padding: 8px 9px 7px;
+          cursor: pointer;
+          transition: box-shadow .15s, transform .1s, opacity .2s, filter .2s;
+          position: relative;
+        }
+        .player-card:hover:not(.used) {
+          box-shadow: 0 0 0 2px #2a1a08, 0 5px 18px #0009;
+          transform: translateY(-2px);
+        }
+        .player-card.used {
+          filter: grayscale(1) brightness(.7);
+          opacity: .45;
+          cursor: default;
+          pointer-events: none;
+        }
+        .mysore-card  { border-color: #3a6a3a; }
+        .british-card { border-color: #8a2a1a; }
+        .player-card .card-icon {
+          font-size: 1.05rem;
+          margin-bottom: 3px;
+          display: block;
+        }
+        .player-card .card-name {
+          font-family: 'Cinzel', serif;
+          font-size: .63rem;
+          letter-spacing: .04em;
+          color: var(--ink);
+          line-height: 1.2;
+          margin-bottom: 3px;
+        }
+        .player-card .card-desc {
+          font-family: 'Cormorant Garamond', serif;
+          font-style: italic;
+          font-size: .72rem;
+          color: #6a4a1a;
+          line-height: 1.25;
+        }
+        .used-badge {
+          display: none;
+          position: absolute;
+          top: 4px; right: 5px;
+          font-size: .55rem;
+          font-family: 'Cinzel', serif;
+          color: #888;
+          letter-spacing: .05em;
+        }
+        .player-card.used .used-badge { display: block; }
+
+        /* ── Right panel: british cards + sidebar stacked ── */
+        .right-section {
+          flex: 0 0 232px;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          animation: fadeIn 1s ease both .3s;
+        }
+        .sidebar { display: flex; flex-direction: column; gap: 14px; }
         .panel {
           background: var(--parchment); border: 2px solid var(--border); border-radius: 3px;
           box-shadow: 0 0 0 3px #2a1a08, 0 4px 18px #000a; padding: 14px 16px;
@@ -53,19 +155,20 @@
           font-family: 'IM Fell English', serif; font-style: italic;
           font-size: .86rem; color: #5a3e18; line-height: 1.6; text-align: center;
         }
-        #tooltip {
-          position: fixed; background: #efe0bc; border: 1px solid #7a5c2e; border-radius: 3px;
-          padding: 7px 11px; font-family: 'Cormorant Garamond', serif; font-size: .88rem;
-          color: var(--ink); pointer-events: none; opacity: 0; transition: opacity .15s;
-          z-index: 200; max-width: 170px; box-shadow: 0 3px 12px #0006;
-        }
-        #tooltip.show { opacity: 1; }
-        #tooltip b { font-family: 'Cinzel', serif; font-size: .75rem; display: block; margin-bottom: 2px; }
-        @keyframes fadeIn   { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
-        @keyframes fadeDown { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:none} }
-        .node-group { cursor: pointer; }
 
-        /* ── Status bar ───────────────────────────────────────────── */
+        /* ── Action buttons ─────────────────────────────── */
+        .action-btn {
+          font-family: 'Cinzel', serif; font-size: .68rem; letter-spacing: .06em;
+          background: #2a1f0e; color: #c9b98a;
+          border: 1px solid var(--border); border-radius: 2px;
+          padding: 5px 10px; cursor: pointer; transition: background .15s;
+          width: 100%; margin-bottom: 5px;
+        }
+        .action-btn:hover { background: #3a2f1e; }
+        .action-btn.danger { border-color: #8a2a1a; color: #cc8888; }
+        .action-btn.safe   { border-color: #2a7a2a; color: #88cc88; }
+
+        /* ── Status bar ─────────────────────────────────── */
         #status-bar {
           font-family: 'Cinzel', serif; font-size: .78rem; letter-spacing: .08em;
           padding: 6px 12px; border-radius: 3px; margin-bottom: 4px; text-align: center;
@@ -75,56 +178,55 @@
         #status-bar.disconnected { background: #3a1a1a; color: #c87070; border: 1px solid #7a2a2a; }
         #status-bar.waiting      { background: #2a2a1a; color: #c8c070; border: 1px solid #7a7a2a; }
 
-        /* ── Move source highlight ────────────────────────────────── */
+        /* ── Tooltip ─────────────────────────────────────── */
+        #tooltip {
+          position: fixed; background: #efe0bc; border: 1px solid #7a5c2e; border-radius: 3px;
+          padding: 7px 11px; font-family: 'Cormorant Garamond', serif; font-size: .88rem;
+          color: var(--ink); pointer-events: none; opacity: 0; transition: opacity .15s;
+          z-index: 200; max-width: 170px; box-shadow: 0 3px 12px #0006;
+        }
+        #tooltip.show { opacity: 1; }
+        #tooltip b { font-family: 'Cinzel', serif; font-size: .75rem; display: block; margin-bottom: 2px; }
+
+        /* ── Node selection ring ─────────────────────────── */
+        .node-group { cursor: pointer; }
         .node-group.selected-source .sel-ring { opacity: 1 !important; }
 
+        /* ── Settings ────────────────────────────────────── */
         #settings-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            text-align: right;
-            z-index: 1000; /* Ensures it stays above the game board */
+          position: fixed; top: 20px; right: 20px;
+          text-align: right; z-index: 1000;
         }
-
         #settings-icon {
-            font-size: 30px;
-            background-color: #333; /* Dark circle */
-            color: white;           /* White gear */
-            border: 2px solid white;
-            border-radius: 50%;     /* Makes it a circle */
-            border: none;
-            cursor: pointer;
-            transition: transform 0.3s ease;
+          font-size: 30px; background-color: #333; color: white;
+          border-radius: 50%; border: none; cursor: pointer;
+          transition: transform 0.3s ease;
         }
-
-        #settings-icon:hover {
-            transform: rotate(90deg);
-        }
-
+        #settings-icon:hover { transform: rotate(90deg); }
         #settings-menu {
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid #ccc;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+          background: rgba(255,255,255,.9); border: 1px solid #ccc;
+          padding: 15px; border-radius: 8px; margin-top: 10px;
+          box-shadow: 0 4px 6px rgba(0,0,0,.1);
+          display: flex; flex-direction: column; gap: 8px;
         }
-
-        .hidden {
-            display: none !important;
+        #settings-menu button {
+          font-family: 'Cinzel', serif; font-size: .75rem;
+          padding: 6px 12px; cursor: pointer; border-radius: 2px;
+          border: 1px solid #999; background: #f5f0e8;
         }
+        .hidden { display: none !important; }
 
+        @keyframes fadeIn   { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+        @keyframes fadeDown { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:none} }
     </style>
 </head>
 
 <div id="settings-container">
     <button id="settings-icon" onclick="toggleSettings()">⚙</button>
     <div id="settings-menu" class="hidden">
-        <button onclick="resetGame()">Reset Board</button>
-        <button onclick="saveCounter()">Save Progress</button>
+        <button onclick="sendReset()">Reset Board</button>
+        <button onclick="sendUndo()">↩ Undo Last Move</button>
+        <button onclick="saveState()">💾 Save Progress</button>
     </div>
 </div>
 
@@ -136,6 +238,47 @@
 </header>
 
 <div class="layout">
+
+    <!-- ══ LEFT: MYSORE CARDS ══════════════════════════════ -->
+    <div class="left-section" id="mysore-col">
+        <div class="cards-col-header mysore-col-header">🟩 MYSORE</div>
+        <div id="mysore-cards-list"></div>
+        <div class="panel">
+                <h2>LEGEND</h2>
+                <ul>
+                    <li>
+                        <svg width="24" height="24"><rect x="2" y="2" width="20" height="20" fill="#1c1814" stroke="#999" stroke-width="1.5"/></svg>
+                        Key City
+                    </li>
+                    <li>
+                        <svg width="24" height="24"><circle cx="12" cy="12" r="7" fill="#2a2420" stroke="#b0a080" stroke-width="1.4"/></svg>
+                        Territory
+                    </li>
+                    <li>
+                        <svg width="24" height="24"><rect x="4" y="4" width="16" height="16" fill="#c0281a"/></svg>
+                        Fresh Army
+                    </li>
+                    <li>
+                        <svg width="24" height="24">
+                            <rect x="4" y="4" width="16" height="16" fill="#c0281a" opacity=".5"/>
+                            <line x1="4" y1="4" x2="20" y2="20" stroke="white" stroke-width="2.5"/>
+                        </svg>
+                        Tired Army
+                    </li>
+                    <li>
+                        <svg width="24" height="24"><polygon points="12,2 22,12 12,22 2,12" fill="#2e7a2e" stroke="#eee" stroke-width=".8"/></svg>
+                        Fort / Mysore Army
+                    </li>
+                </ul>
+            </div>
+        <div class="panel">
+                <p style="font-size:.8rem;color:#5a3e18">Game designed by Krish Singh.</p>
+                <p style="font-size:.8rem;color:#5a3e18">Game coded by Kshitij Tomar.</p>
+                <p style="font-size:.8rem;color:#5a3e18">Made in 2026.</p>
+        </div>
+    </div>
+
+    <!-- ══ CENTER: MAP (SVG COMPLETELY UNCHANGED) ══════════ -->
     <div class="map-card">
         <svg id="board" viewBox="0 0 760 880" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -199,9 +342,6 @@
                   font-family="IM Fell English,serif" font-style="italic"
                   font-size="13" fill="#2a5a7a" opacity=".75">Palk Strait</text>
 
-            <g id="edge-layer"></g>
-            <g id="node-layer"></g>
-
             <g transform="translate(688,808)" opacity=".45">
                 <circle r="27" fill="none" stroke="#6a4c1e" stroke-width="1.2"/>
                 <line x1="0" y1="-27" x2="0" y2="27" stroke="#6a4c1e" stroke-width="1"/>
@@ -220,56 +360,52 @@
                     INDIA · c. 1700s
                 </text>
             </g>
+
+            <g id="edge-layer"></g>
+            <g id="node-layer"></g>
         </svg>
     </div>
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
+    <!-- ══ RIGHT: BRITISH CARDS + SIDEBAR ══════════════════ -->
+    <div class="right-section">
 
-        <!-- Server status -->
-        <div id="status-bar" class="disconnected">⬤ &nbsp;NOT CONNECTED TO SERVER</div>
+        <!-- British cards -->
+        <div class="left-section" id="british-col" style="flex:none">
+            <div class="cards-col-header british-col-header">🟥 BRITISH</div>
+            <div id="british-cards-list"></div>
+        </div>
 
-        <div class="panel">
-            <h2>TURN SEQUENCE</h2>
-            <p>When all of the Armies become tired, the turn ends. The game only has 4 turns, consisting of impulses.</p>
-            <br>
-            <p><em>Impulse:</em> British move a Fresh army. Each side may play their respective power card. Battles resolved, if any.</p>
-        </div>
-        <div class="panel">
-            <h2>GAME STATE</h2>
-            <div id="game-state-panel" style="font-size:.86rem;color:#5a3e18;line-height:1.7">
-                <em>Waiting for server…</em>
+        <!-- Sidebar panels -->
+        <div class="sidebar">
+            <div id="status-bar" class="disconnected">⬤ &nbsp;NOT CONNECTED</div>
+
+            <div class="panel">
+                <h2>GAME STATE</h2>
+                <div id="game-state-panel" style="font-size:.86rem;color:#5a3e18;line-height:1.7">
+                    <em>Waiting for server…</em>
+                </div>
+
+                <div style="margin-top:15px; border-top: 1px solid #d2b48c; pt: 10px;">
+                    <label for="save-input" style="font-size: 0.7rem; font-weight: bold; color: #5a3e18;">LOAD SAVED STATE:</label>
+                    <textarea id="save-input" 
+                            placeholder="Paste state string here..." 
+                            style="width: 100%; height: 50px; font-family: monospace; font-size: 0.75rem; margin-top: 5px; border: 1px solid #bc9a6c; border-radius: 4px; padding: 4px; resize: none;"></textarea>
+                    <button class="action-btn safe" style="width: 100%; margin-top: 5px;" onclick="loadSavedState()">📥 Load State</button>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid #d2b48c; margin: 15px 0;">
             </div>
-        </div>
-        <div class="panel">
-            <h2>VICTORY</h2>
-            <p>🟥 <strong>British</strong> — Hold all 5 key cities.</p>
-            <br>
-            <p>🟩 <strong>Mysore</strong> — Survive for 4 turns.</p>
-        </div>
-        <div class="panel">
-            <h2>LEGEND</h2>
-            <ul>
-                <li><svg width="24" height="24"><rect x="2" y="2" width="20" height="20" fill="#1c1814" stroke="#999" stroke-width="1.5"/></svg> Key </li>
-                <li><svg width="24" height="24"><circle cx="12" cy="12" r="7" fill="#2a2420" stroke="#b0a080" stroke-width="1.4"/></svg> Territory</li>
-                <li><svg width="24" height="24"><rect x="6" y="6" width="12" height="12" fill="#c0281a" stroke="#eee" stroke-width=".8"/></svg> Army</li>
-                <li><svg width="24" height="24"><polygon points="12,2 22,12 12,22 2,12" fill="#2e7a2e" stroke="#eee" stroke-width=".8"/></svg> Fort</li>
-            </ul>
-        </div>
-        <div class="panel">
-            <h2>SELECTED TERRITORY</h2>
-            <div id="info-panel" style="font-size:.86rem;color:#5a3e18;line-height:1.6">
-                <em>Click any territory on the map.</em>
+
+            <div class="panel">
+                <h2>SELECTED TERRITORY</h2>
+                <div id="info-panel" style="font-size:.86rem;color:#5a3e18;line-height:1.6">
+                    <em>Click any territory.</em>
+                </div>
+                <div id="action-buttons" style="margin-top:9px;display:none;flex-direction:column;gap:4px">
+                    <button class="action-btn" onclick="setTired()">😴 Set Army Tired</button>
+                    <button class="action-btn" onclick="setActive()">⚡ Refresh Army</button>
+                </div>
             </div>
-        </div>
-        <div class="panel">
-            <p class="quote">"Better to live one day as a tiger than a thousand years as a sheep."</p>
-            <p style="text-align:center;font-size:.74rem;color:#7a5c30;margin-top:7px">— Last words of Tipu Sultan</p>
-        </div>
-        <div class="panel">
-            <p class="info-panel">Game designed by Krish Singh.</p>
-            <p style="info-panel">Game coded by Kshitij Tomar.</p>
-            <p style="info-panel">Made in 2026.</p>
         </div>
     </div>
 </div>
@@ -278,465 +414,561 @@
 
 <script>
 
-     function toggleSettings() {
-     const menu = document.getElementById('settings-menu');
-     menu.classList.toggle('hidden');
-     }
+// ═══════════════════════════════════════════════════════════════
+//  STATIC DATA
+// ═══════════════════════════════════════════════════════════════
+const NODES = {
+  Bombay:        { x:110, y: 74,  owner:'british', armyType:'active',  key:true,  coast:true,  labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+  Hyderabad:     { x:515, y:100,  owner:'british', armyType:'active',  key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+  Madras:        { x:618, y:322,  owner:'british', armyType:'active',  key:true,  coast:true,  labelAnchor:{anchor:'end',    dx:-18, dy:-24} },
+  Srirangapatna: { x:230, y:480,  owner:'mysore',  armyType:'fort',    key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+  Coimbatore:    { x:305, y:600,  owner:'mysore',  armyType:'fort',    key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+  Pune:          { x:255, y:128,  owner:'empty',   armyType:'empty',   key:false, coast:false },
+  Koppal:        { x:390, y:178,  owner:'empty',   armyType:'empty',   key:false, coast:false },
+  Vizag:         { x:656, y:162,  owner:'empty',   armyType:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
+  Goa:           { x: 94, y:262,  owner:'empty',   armyType:'empty',   key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
+  Darwar:        { x:232, y:232,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
+  Anantapur:     { x:470, y:228,  owner:'empty',   armyType:'empty',   key:false, coast:false },
+  Bednore:       { x:300, y:295,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
+  Mangalore:     { x:118, y:398,  owner:'mysore',  armyType:'fort',    key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
+  Bangalore:     { x:350, y:400,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
+  Vellore:       { x:460, y:340,  owner:'empty',   armyType:'empty',   key:false, coast:false },
+  'Mahé':        { x:145, y:586,  owner:'mysore',  armyType:'fort',    key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
+  Pondicherry:   { x:610, y:446,  owner:'empty',   armyType:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
+  Erode:         { x:405, y:515,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
+  Trichy:        { x:516, y:580,  owner:'empty',   armyType:'empty',   key:false, coast:false },
+  Palgautcherry: { x:248, y:680,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
+  Dindigul:      { x:445, y:670,  owner:'empty',   armyType:'empty',   key:false, coast:false },
+  Travancore:    { x:260, y:830,  owner:'british', armyType:'active',  key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
+  Ceylon:        { x:534, y:735,  owner:'empty',   armyType:'empty',   key:false, coast:true  },
+};
 
-     window.onclick = function(event) {
-         const menu = document.getElementById('settings-menu');
-         const icon = document.getElementById('settings-icon');
-         if (event.target !== icon && !menu.contains(event.target)) {
-             menu.classList.add('hidden');
-         }
-     }
+const EDGES = [
+  ['Bombay','Pune'],
+  ['Bombay','Goa',{curve:-0.2}],
+  ['Pune','Koppal'],['Pune','Darwar'],
+  ['Pune','Goa'],
+  ['Hyderabad','Koppal'],
+  ['Hyderabad','Anantapur'],
+  ['Hyderabad','Vizag'],
+  ['Koppal','Anantapur'],
+  ['Koppal','Bednore'],
+  ['Darwar','Goa'],
+  ['Darwar','Bednore'],
+  ['Anantapur','Vellore'],
+  ['Goa','Mangalore',{curve:-0.2}],
+  ['Bednore','Mangalore'],
+  ['Bednore','Bangalore'],
+  ['Madras','Vellore'],
+  ['Madras','Pondicherry'],
+  ['Madras','Vizag',{curve:-0.2}],
+  ['Madras','Anantapur'],
+  ['Vellore','Bangalore'],
+  ['Mangalore','Srirangapatna'],
+  ['Bangalore','Srirangapatna'],
+  ['Srirangapatna','Mahé'],
+  ['Srirangapatna','Erode'],
+  ['Erode','Coimbatore'],
+  ['Erode','Trichy'],
+  ['Erode','Pondicherry'],
+  ['Erode','Vellore'],
+  ['Pondicherry','Trichy'],
+  ['Mahé','Coimbatore'],
+  ['Mahé','Palgautcherry'],
+  ['Coimbatore','Palgautcherry'],
+  ['Coimbatore','Dindigul'],
+  ['Trichy','Dindigul'],
+  ['Palgautcherry','Travancore'],
+  ['Dindigul','Travancore'],
+  ['Dindigul','Ceylon'],
+  ['Travancore','Ceylon'],
+];
 
-     // ═══════════════════════════════════════════════════════════════
-     //  NODES  –  local copy; authoritative state comes from the server
-     // ═══════════════════════════════════════════════════════════════
-     const NODES = {
-       Bombay:        { x:110, y: 74,  owner:'british', key:true,  coast:true,  labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
-       Hyderabad:     { x:515, y:100,  owner:'british', key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
-       Madras:        { x:618, y:322,  owner:'british', key:true,  coast:true,  labelAnchor:{anchor:'end',    dx:-18, dy:-24} },
-       Srirangapatna: { x:230, y:480,  owner:'mysore',  key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
-       Coimbatore:    { x:305, y:600,  owner:'mysore',  key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
-       Pune:          { x:255, y:128,  owner:'empty',   key:false, coast:false },
-       Koppal:        { x:390, y:178,  owner:'empty',   key:false, coast:false },
-       Vizag:         { x:656, y:162,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
-       Goa:           { x: 94, y:262,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
-       Darwar:        { x:232, y:232,  owner:'mysore',  key:false, coast:false },
-       Anantapur:     { x:470, y:228,  owner:'empty',   key:false, coast:false },
-       Bednore:       { x:300, y:295,  owner:'mysore',  key:false, coast:false },
-       Mangalore:     { x:118, y:398,  owner:'mysore',  key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
-       Bangalore:     { x:350, y:400,  owner:'mysore',  key:false, coast:false },
-       Vellore:       { x:460, y:340,  owner:'empty',   key:false, coast:false },
-       Mahé:          { x:145, y:586,  owner:'mysore',  key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
-       Pondicherry:   { x:610, y:446,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
-       Erode:         { x:405, y:515,  owner:'mysore',  key:false, coast:false },
-       Trichy:        { x:516, y:580,  owner:'empty',   key:false, coast:false },
-       Palgautcherry: { x:248, y:680,  owner:'mysore',  key:false, coast:false },
-       Dindigul:      { x:445, y:670,  owner:'empty',   key:false, coast:false },
-       Travancore:    { x:260, y:830,  owner:'british', key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
-       Ceylon:        { x:534, y:735,  owner:'empty',   key:false, coast:true  },
-     };
+// ── Adjacency map (built from EDGES) ──────────────────────────
+const adjacency = {};
+for (const [a, b] of EDGES) {
+  (adjacency[a] = adjacency[a] || []).push(b);
+  (adjacency[b] = adjacency[b] || []).push(a);
+}
+for (const k of Object.keys(adjacency)) adjacency[k] = [...new Set(adjacency[k])];
 
-     const EDGES = [
-       ['Bombay','Pune'],
-       ['Bombay','Goa',{curve:-0.2}],
-       ['Pune','Koppal'],['Pune','Darwar'],
-       ['Pune','Goa'],
-       ['Hyderabad','Koppal'],
-       ['Hyderabad','Anantapur'],
-       ['Hyderabad','Vizag'],
-       ['Koppal','Anantapur'],
-       ['Koppal','Bednore'],
-       ['Darwar','Goa'],
-       ['Darwar','Bednore'],
-       ['Anantapur','Vellore'],
-       ['Goa','Mangalore',{curve:-0.2}],
-       ['Bednore','Mangalore'],
-       ['Bednore','Bangalore'],
-       ['Madras','Vellore'],
-       ['Madras','Pondicherry'],
-       ['Madras','Vizag',{curve:-0.2}],
-       ['Madras','Anantapur'],
-       ['Vellore','Bangalore'],
-       ['Mangalore','Srirangapatna'],
-       ['Bangalore','Srirangapatna'],
-       ['Srirangapatna','Mahé'],
-       ['Srirangapatna','Erode'],
-       ['Erode','Coimbatore'],
-       ['Erode','Trichy'],
-       ['Erode','Pondicherry'],
-       ['Erode','Vellore'],
-       ['Pondicherry','Trichy'],
-       ['Mahé','Coimbatore'],
-       ['Mahé','Palgautcherry'],
-       ['Coimbatore','Palgautcherry'],
-       ['Coimbatore','Dindigul'],
-       ['Trichy','Dindigul'],
-       ['Palgautcherry','Travancore'],
-       ['Dindigul','Travancore'],
-       ['Dindigul','Ceylon'],
-       ['Travancore','Ceylon'],
-     ];
+// ── Card definitions ───────────────────────────────────────────
+const BRITISH_CARD_DATA = [
+  { name: 'Wall Breach (3)',      icon: '💥',  desc: 'High-power breach action' },
+  { name: 'Highlanders (2)',      icon: '🟥',  desc: 'Deploy a Fresh Red Cube on Coast' },
+  { name: 'Royal Navy (2)',       icon: '⚓',  desc: 'Move an Anchor to any Coast' },
+  { name: 'Divide and Rule (1)',  icon: '🤝',  desc: 'Move a Green Diamond not in a Key' },
+  { name: 'Force March (1)',      icon: '🥾',  desc: 'Move a Tired Red Cube' },
+  { name: 'Princely States (1)',  icon: '🏰',  desc: 'Deploy a Tired Red Cube in a Key' },
+];
 
-     // ═══════════════════════════════════════════════════════════════
-     //  ADJACENCY  (for local info-panel display only)
-     // ═══════════════════════════════════════════════════════════════
-     const adjacency = {};
-     for (const [a, b] of EDGES) {
-       (adjacency[a] = adjacency[a] || []).push(b);
-       (adjacency[b] = adjacency[b] || []).push(a);
-     }
-     for (const k of Object.keys(adjacency)) adjacency[k] = [...new Set(adjacency[k])];
+const MYSORE_CARD_DATA = [
+  { name: 'Iron Rockets (3)',     icon: '🚀',  desc: 'High-power rocket strike' },
+  { name: 'Sepoy Mutiny (2)',     icon: '⚔️',  desc: 'Remove a Red Cube not in a Key' },
+  { name: 'French Alliance (2)',  icon: '💠',  desc: 'Deploy a Green Diamond adjacent to another' },
+  { name: 'Monsoon (1)',          icon: '🌧️',  desc: 'Flip a Fresh Red Cube to Tired' },
+  { name: 'Cavalry Raid (1)',     icon: '🏇',  desc: 'Force British to discard a card' },
+  { name: 'Sea Trade (1)',        icon: '🪙',  desc: 'Draw cards equal to Green Diamonds on Coast' },
+];
 
-     // ═══════════════════════════════════════════════════════════════
-     //  RENDERING
-     // ═══════════════════════════════════════════════════════════════
-     const SVG_NS = 'http://www.w3.org/2000/svg';
-     const ownerColor = { british:'#c0281a', mysore:'#2e7a2e', empty:'#666' };
+// ═══════════════════════════════════════════════════════════════
+//  RENDERING
+// ═══════════════════════════════════════════════════════════════
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
-     function splineControlPoint(ax, ay, bx, by, f=0.18) {
-       const mx=(ax+bx)/2, my=(ay+by)/2, dx=bx-ax, dy=by-ay;
-       const len=Math.sqrt(dx*dx+dy*dy);
-       return { cx: mx+(-dy/len)*len*f, cy: my+(dx/len)*len*f };
-     }
+function splineControlPoint(ax, ay, bx, by, f=0.18) {
+  const mx=(ax+bx)/2, my=(ay+by)/2, dx=bx-ax, dy=by-ay;
+  const len=Math.sqrt(dx*dx+dy*dy);
+  return { cx: mx+(-dy/len)*len*f, cy: my+(dx/len)*len*f };
+}
 
-     function renderEdges() {
-       const layer = document.getElementById('edge-layer');
-       layer.innerHTML = '';
-       for (const edge of EDGES) {
-         const [aName, bName, opts={}] = edge;
-         const a=NODES[aName], b=NODES[bName];
-         if (!a||!b) continue;
-         const {cx,cy} = splineControlPoint(a.x,a.y,b.x,b.y, opts.curve||0.15);
-         const path = document.createElementNS(SVG_NS,'path');
-         path.setAttribute('d',`M ${a.x},${a.y} Q ${cx},${cy} ${b.x},${b.y}`);
-         path.setAttribute('fill','none');
-         path.setAttribute('stroke','#6a4c1e');
-         path.setAttribute('stroke-width','1.6');
-         path.setAttribute('stroke-linecap','round');
-         if (opts.sea) { path.setAttribute('stroke-dasharray','5,4'); path.setAttribute('opacity','0.55'); }
-         else          { path.setAttribute('opacity','0.68'); }
-         layer.appendChild(path);
-       }
-     }
+function renderEdges() {
+  const layer = document.getElementById('edge-layer');
+  layer.innerHTML = '';
+  for (const edge of EDGES) {
+    const [aName, bName, opts={}] = edge;
+    const a=NODES[aName], b=NODES[bName];
+    if (!a||!b) continue;
+    const {cx,cy} = splineControlPoint(a.x,a.y,b.x,b.y, opts.curve||0.15);
+    const path = document.createElementNS(SVG_NS,'path');
+    path.setAttribute('d',`M ${a.x},${a.y} Q ${cx},${cy} ${b.x},${b.y}`);
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke','#6a4c1e');
+    path.setAttribute('stroke-width','1.6');
+    path.setAttribute('stroke-linecap','round');
+    if (opts.sea) { path.setAttribute('stroke-dasharray','5,4'); path.setAttribute('opacity','0.55'); }
+    else          { path.setAttribute('opacity','0.68'); }
+    layer.appendChild(path);
+  }
+}
 
-     function renderNodes() {
-       const layer = document.getElementById('node-layer');
-       layer.innerHTML = '';
-       for (const [name, data] of Object.entries(NODES)) {
-         const {x, y, owner, key, coast} = data;
-         const la = data.labelAnchor || {anchor:'middle', dx:0, dy: key?-24:-16};
-         const anchor = la.anchor||'middle', ldx=la.dx||0, ldy=la.dy||(key?-24:-16);
-         const g = document.createElementNS(SVG_NS,'g');
-         g.setAttribute('class','node-group');
-         g.setAttribute('transform',`translate(${x},${y})`);
-         g.dataset.name=name; g.dataset.owner=owner;
-         g.dataset.key=String(key); g.dataset.coast=String(coast);
-         g.addEventListener('click', ()=>handleNodeClick(g));
-         g.addEventListener('mousemove', tooltipShow);
-         g.addEventListener('mouseleave', tooltipHide);
+function renderNodes() {
+  const layer = document.getElementById('node-layer');
+  layer.innerHTML = '';
+  for (const [name, data] of Object.entries(NODES)) {
+    const {x, y, owner, key, coast} = data;
+    const armyType = data.armyType || 'empty';
+    const la = data.labelAnchor || {anchor:'middle', dx:0, dy: key?-24:-16};
+    const anchor = la.anchor||'middle', ldx=la.dx||0, ldy=la.dy||(key?-24:-16);
 
-         const ring = document.createElementNS(SVG_NS,'circle');
-         ring.setAttribute('class','sel-ring');
-         ring.setAttribute('r', key?'22':'15');
-         ring.setAttribute('fill','none'); ring.setAttribute('stroke','#d4a030');
-         ring.setAttribute('stroke-width','2'); ring.setAttribute('opacity','0');
-         g.appendChild(ring);
+    const g = document.createElementNS(SVG_NS,'g');
+    g.setAttribute('class','node-group');
+    g.setAttribute('transform',`translate(${x},${y})`);
+    g.dataset.name=name; g.dataset.owner=owner;
+    g.dataset.armyType=armyType;
+    g.dataset.key=String(key); g.dataset.coast=String(coast);
+    g.addEventListener('click', ()=>handleNodeClick(g));
+    g.addEventListener('mousemove', tooltipShow);
+    g.addEventListener('mouseleave', tooltipHide);
 
-         if (key) {
-           const sq = document.createElementNS(SVG_NS,'rect');
-           sq.setAttribute('x','-18'); sq.setAttribute('y','-18');
-           sq.setAttribute('width','36'); sq.setAttribute('height','36');
-           sq.setAttribute('fill','#1c1814'); sq.setAttribute('stroke','#999');
-           sq.setAttribute('stroke-width','1.5');
-           g.appendChild(sq);
-           if (owner==='british') {
-             const p=document.createElementNS(SVG_NS,'rect');
-             p.setAttribute('x','-18');p.setAttribute('y','-18');
-             p.setAttribute('width','36');p.setAttribute('height','36');
-             p.setAttribute('fill','#c0281a');
-             p.setAttribute('filter','url(#nshadow)');
-             g.appendChild(p);
-           } else if (owner==='mysore') {
-             const p=document.createElementNS(SVG_NS,'polygon');
-             p.setAttribute('points','0,-25 25,0 0,25 -25,0');
-             p.setAttribute('fill','#2e7a2e');
-             p.setAttribute('filter','url(#nshadow)');
-             g.appendChild(p);
-           }
-         } else {
-           const circ=document.createElementNS(SVG_NS,'circle');
-           circ.setAttribute('r','10'); circ.setAttribute('fill','#2a2420');
-           circ.setAttribute('stroke','#b0a080'); circ.setAttribute('stroke-width','1.4');
-           g.appendChild(circ);
-           if (owner==='british') {
-             const p=document.createElementNS(SVG_NS,'rect');
-             p.setAttribute('x','-18');p.setAttribute('y','-18');
-             p.setAttribute('width','36');p.setAttribute('height','36');
-             p.setAttribute('fill','#c0281a');
-             p.setAttribute('filter','url(#nshadow)');
-             g.appendChild(p);
-           } else if (owner==='mysore') {
-             const p=document.createElementNS(SVG_NS,'polygon');
-             p.setAttribute('points','0,-25 25,0 0,25 -25,0');
-             p.setAttribute('fill','#2e7a2e');
-             p.setAttribute('filter','url(#nshadow)');
-             g.appendChild(p);
-           }
-         }
+    // Selection ring
+    const ring = document.createElementNS(SVG_NS,'circle');
+    ring.setAttribute('class','sel-ring');
+    ring.setAttribute('r', key?'22':'15');
+    ring.setAttribute('fill','none'); ring.setAttribute('stroke','#d4a030');
+    ring.setAttribute('stroke-width','2'); ring.setAttribute('opacity','0');
+    g.appendChild(ring);
 
-         const makeLabel = isHalo => {
-           const t=document.createElementNS(SVG_NS,'text');
-           t.setAttribute('dy',String(ldy)); t.setAttribute('dx',String(ldx));
-           t.setAttribute('text-anchor',anchor);
-           t.setAttribute('font-family', key?'Cinzel,serif':'Cormorant Garamond,serif');
-           t.setAttribute('font-size', key?'22':'20'); t.setAttribute('font-weight','700');
-           if (key) t.setAttribute('letter-spacing','.06em');
-           if (isHalo) {
-             t.setAttribute('stroke','rgba(228,213,155,0.92)'); t.setAttribute('stroke-width','4');
-             t.setAttribute('stroke-linejoin','round'); t.setAttribute('fill','none');
-             t.setAttribute('paint-order','stroke');
-           } else { t.setAttribute('fill','#1a1208'); }
-           t.textContent = name;
-           return t;
-         };
-         g.appendChild(makeLabel(true));
-         g.appendChild(makeLabel(false));
-         layer.appendChild(g);
-       }
-     }
-
-     // ═══════════════════════════════════════════════════════════════
-     //  INFO PANEL  (local, no server needed)
-     // ═══════════════════════════════════════════════════════════════
-     const tooltip   = document.getElementById('tooltip');
-     const infoPanel = document.getElementById('info-panel');
-
-     function updateInfoPanel(name, owner, key, coast) {
-       const adj = (adjacency[name]||[]).join(', ') || '—';
-       const col = ownerColor[owner]||'#666';
-       const label = owner==='empty' ? 'Unoccupied' : owner.charAt(0).toUpperCase()+owner.slice(1);
-       infoPanel.innerHTML = `
-         <strong style="font-family:Cinzel,serif;font-size:.82rem">${name}</strong><br>
-         <span style="color:${col}">${label}</span>
-         ${key==='true'  ? ' &nbsp;<em style="font-size:.78rem">⬛ Key City</em>' : ''}
-         ${coast==='true'? '<br><em style="font-size:.78rem">🌊 Coastal</em>'    : ''}
-         <br><span style="color:#8a6830;font-size:.76rem;letter-spacing:.04em">ADJACENT:</span><br>
-         <span style="font-size:.8rem">${adj}</span>
-       `;
-     }
-
-     function tooltipShow(e) {
-       const g=e.currentTarget;
-       const owner=g.dataset.owner==='empty'?'Unoccupied':g.dataset.owner;
-       tooltip.innerHTML=`<b>${g.dataset.name}</b>${owner}`;
-       tooltip.classList.add('show');
-       tooltip.style.left=(e.clientX+14)+'px'; tooltip.style.top=(e.clientY+14)+'px';
-     }
-     function tooltipHide() { tooltip.classList.remove('show'); }
-
-     // ═══════════════════════════════════════════════════════════════
-     //  MOVE SELECTION  –  two-click: pick source then destination
-     // ═══════════════════════════════════════════════════════════════
-     let selectedSource = null;   // name of the territory chosen as move source
-
-     function handleNodeClick(g) {
-       const name  = g.dataset.name;
-       const owner = g.dataset.owner;
-
-       updateInfoPanel(name, owner, g.dataset.key, g.dataset.coast);
-
-       // Clear old selection ring
-       document.querySelectorAll('.sel-ring').forEach(r => r.setAttribute('opacity','0'));
-
-       if (!selectedSource) {
-         // First click: choose the territory to move FROM
-         selectedSource = name;
-         g.querySelector('.sel-ring').setAttribute('opacity','1');
-       } else {
-         if (selectedSource === name) {
-           // Clicked same territory → deselect
-           selectedSource = null;
-         } else {
-           // Second click: send move to server
-           const from = selectedSource;
-           selectedSource = null;
-           sendMove(from, name);
-         }
-       }
-     }
-
-     // ═══════════════════════════════════════════════════════════════
-     //  WEBSOCKET BRIDGE  –  connects to GameServer.java
-     // ═══════════════════════════════════════════════════════════════
-     const WS_URL = 'ws://localhost:8887';
-     const statusBar       = document.getElementById('status-bar');
-     const gameStatePanel  = document.getElementById('game-state-panel');
-
-     let ws = null;
-
-    function resetGame() {
-         console.log("Reset button clicked!"); // Debug line
-         if (ws.readyState === WebSocket.OPEN) {
-             const msg = JSON.stringify({ type: 'RESET' });
-             ws.send(msg);
-             console.log("Sent to server: " + msg);
-         } else {
-             console.error("Socket is not open. Check if Java is running!");
-         }
+    // ── Territory base shape (key = square, non-key = circle) ──
+    if (key) {
+      const sq = document.createElementNS(SVG_NS,'rect');
+      sq.setAttribute('x','-18'); sq.setAttribute('y','-18');
+      sq.setAttribute('width','36'); sq.setAttribute('height','36');
+      sq.setAttribute('fill','#1c1814'); sq.setAttribute('stroke','#999');
+      sq.setAttribute('stroke-width','1.5');
+      g.appendChild(sq);
+    } else {
+      const circ=document.createElementNS(SVG_NS,'circle');
+      circ.setAttribute('r','10'); circ.setAttribute('fill','#2a2420');
+      circ.setAttribute('stroke','#b0a080'); circ.setAttribute('stroke-width','1.4');
+      g.appendChild(circ);
     }
 
-     function connect() {
-       setStatus('waiting', '⬤ &nbsp;CONNECTING…');
-       ws = new WebSocket(WS_URL);
+    // ── Army / fort piece ───────────────────────────────────────
+    if (armyType === 'fort') {
+      // Mysore fort: solid green diamond
+      const p = document.createElementNS(SVG_NS,'polygon');
+      p.setAttribute('points','0,-22 22,0 0,22 -22,0');
+      p.setAttribute('fill','#2e7a2e');
+      p.setAttribute('filter','url(#nshadow)');
+      g.appendChild(p);
 
-       ws.onopen = () => {
-         setStatus('connected', '⬤ &nbsp;SERVER CONNECTED');
-         console.log('[WS] Connected to Java game server');
-       };
+    } else if (armyType === 'active' || armyType === 'tired') {
+      const isTired = armyType === 'tired';
+      const opacity = isTired ? '0.55' : '1';
 
-       ws.onclose = () => {
-         setStatus('disconnected', '⬤ &nbsp;SERVER DISCONNECTED — retrying in 3 s');
-         setTimeout(connect, 3000);   // auto-reconnect
-       };
+      if (owner === 'british') {
+        const p = document.createElementNS(SVG_NS,'rect');
+        p.setAttribute('x','-18'); p.setAttribute('y','-18');
+        p.setAttribute('width','36'); p.setAttribute('height','36');
+        p.setAttribute('fill','#c0281a');
+        p.setAttribute('opacity', opacity);
+        p.setAttribute('filter','url(#nshadow)');
+        g.appendChild(p);
+      } else if (owner === 'mysore') {
+        const p = document.createElementNS(SVG_NS,'polygon');
+        p.setAttribute('points','0,-25 25,0 0,25 -25,0');
+        p.setAttribute('fill','#2e7a2e');
+        p.setAttribute('opacity', opacity);
+        p.setAttribute('filter','url(#nshadow)');
+        g.appendChild(p);
+      }
 
-       ws.onerror = (err) => {
-         console.error('[WS] Error', err);
-       };
+      // Tired indicator: a white diagonal slash
+      if (isTired) {
+        const slash = document.createElementNS(SVG_NS,'line');
+        slash.setAttribute('x1','-13'); slash.setAttribute('y1','-13');
+        slash.setAttribute('x2','13'); slash.setAttribute('y2','13');
+        slash.setAttribute('stroke','rgba(255,255,255,0.85)');
+        slash.setAttribute('stroke-width','3');
+        slash.setAttribute('stroke-linecap','round');
+        g.appendChild(slash);
+        // Small "Z" to reinforce "tired"
+        const zt = document.createElementNS(SVG_NS,'text');
+        zt.setAttribute('x','10'); zt.setAttribute('y','-10');
+        zt.setAttribute('font-family','Cinzel,serif');
+        zt.setAttribute('font-size','9');
+        zt.setAttribute('font-weight','700');
+        zt.setAttribute('fill','rgba(255,255,255,0.9)');
+        zt.setAttribute('stroke','rgba(0,0,0,0.5)');
+        zt.setAttribute('stroke-width','1');
+        zt.textContent = 'Z';
+        g.appendChild(zt);
+      }
+    }
 
-       ws.onmessage = (event) => {
-         try {
-           const msg = JSON.parse(event.data);
-           handleServerMessage(msg);
-         } catch(e) {
-           console.error('[WS] Bad JSON', event.data);
-         }
-       };
-     }
+    // ── Labels ─────────────────────────────────────────────────
+    const makeLabel = isHalo => {
+      const t=document.createElementNS(SVG_NS,'text');
+      t.setAttribute('dy',String(ldy)); t.setAttribute('dx',String(ldx));
+      t.setAttribute('text-anchor',anchor);
+      t.setAttribute('font-family', key?'Cinzel,serif':'Cormorant Garamond,serif');
+      t.setAttribute('font-size', key?'22':'20'); t.setAttribute('font-weight','700');
+      if (key) t.setAttribute('letter-spacing','.06em');
+      if (isHalo) {
+        t.setAttribute('stroke','rgba(228,213,155,0.92)'); t.setAttribute('stroke-width','4');
+        t.setAttribute('stroke-linejoin','round'); t.setAttribute('fill','none');
+        t.setAttribute('paint-order','stroke');
+      } else { t.setAttribute('fill','#1a1208'); }
+      t.textContent = name;
+      return t;
+    };
+    g.appendChild(makeLabel(true));
+    g.appendChild(makeLabel(false));
+    layer.appendChild(g);
+  }
+}
 
-     /**
-      * Central message handler — every inbound packet from Java lands here.
-      *
-      * Message types:
-      *   STATE        → full board snapshot (initial connect / reset)
-      *   MOVE_RESULT  → result of a MOVE or PASS action
-      *   PONG         → response to keepalive ping
-      *   ERROR        → server-side error string
-      */
-     function handleServerMessage(msg) {
-       switch (msg.type) {
+// ── Render card panels ─────────────────────────────────────────
+function renderCards(britishAvail, mysoreAvail) {
+  const bList = document.getElementById('british-cards-list');
+  const mList = document.getElementById('mysore-cards-list');
+  bList.innerHTML = '';
+  mList.innerHTML = '';
 
-         case 'STATE':
-           applyBoard(msg.board);
-           updateGameStatePanel(msg.turn, msg.maxTurns, msg.phase, msg.winner);
-           break;
+  BRITISH_CARD_DATA.forEach((card, i) => {
+    const div = document.createElement('div');
+    const usable = britishAvail[i];
+    div.className = 'player-card british-card' + (usable ? '' : ' used');
+    div.innerHTML = `
+      <span class="used-badge">USED</span>
+      <span class="card-icon">${card.icon}</span>
+      <div class="card-name">${card.name}</div>
+      <div class="card-desc">${card.desc}</div>
+    `;
+    if (usable) {
+      div.title = 'Click to play this card';
+      div.addEventListener('click', () => playCard('british', i));
+    }
+    bList.appendChild(div);
+  });
 
-         case 'MOVE_RESULT':
-           if (msg.status === 'invalid') {
-             flashStatus('⚠ &nbsp;' + msg.reason, 1800);
-             console.warn('[MOVE] Invalid:', msg.reason);
-           } else {
-             applyBoard(msg.board);
-             updateGameStatePanel(msg.turn, msg.maxTurns || 4, msg.phase, msg.winner);
-             if (msg.status === 'game_over') {
-               showGameOver(msg.winner);
-             }
-           }
-           break;
+  MYSORE_CARD_DATA.forEach((card, i) => {
+    const div = document.createElement('div');
+    const usable = mysoreAvail[i];
+    div.className = 'player-card mysore-card' + (usable ? '' : ' used');
+    div.innerHTML = `
+      <span class="used-badge">USED</span>
+      <span class="card-icon">${card.icon}</span>
+      <div class="card-name">${card.name}</div>
+      <div class="card-desc">${card.desc}</div>
+    `;
+    if (usable) {
+      div.title = 'Click to play this card';
+      div.addEventListener('click', () => playCard('mysore', i));
+    }
+    mList.appendChild(div);
+  });
+}
 
-         case 'PONG':
-           console.log('[WS] Pong received');
-           break;
+// ═══════════════════════════════════════════════════════════════
+//  INFO PANEL
+// ═══════════════════════════════════════════════════════════════
+const tooltip   = document.getElementById('tooltip');
+const infoPanel = document.getElementById('info-panel');
+const actionBtns = document.getElementById('action-buttons');
 
-         case 'ERROR':
-           console.error('[SERVER ERROR]', msg.message);
-           break;
+let selectedTerritoryName = null;
 
-         default:
-           console.warn('[WS] Unknown message type:', msg.type);
-       }
-     }
+function updateInfoPanel(name, owner, armyType, key, coast) {
+  selectedTerritoryName = name;
+  const adj = (adjacency[name]||[]).join(', ') || '—';
+  const ownerColor = { british:'#c0281a', mysore:'#2e7a2e', empty:'#666' };
+  const col = ownerColor[owner]||'#666';
+  const label = owner==='empty' ? 'Unoccupied' : owner.charAt(0).toUpperCase()+owner.slice(1);
+  const armyLabel = { active:'⚔ Fresh Army', tired:'😴 Tired Army', fort:'🏰 Fort', empty:'—' };
+  infoPanel.innerHTML = `
+    <strong style="font-family:Cinzel,serif;font-size:.82rem">${name}</strong><br>
+    <span style="color:${col}">${label}</span>
+    &nbsp;<em style="font-size:.78rem">${armyLabel[armyType]||''}</em>
+    ${key==='true'  ? '<br><em style="font-size:.78rem">⬛ Key City</em>' : ''}
+    ${coast==='true'? '<br><em style="font-size:.78rem">🌊 Coastal</em>'  : ''}
+    <br><span style="color:#8a6830;font-size:.76rem;letter-spacing:.04em">ADJACENT:</span><br>
+    <span style="font-size:.8rem">${adj}</span>
+  `;
+  // Show action buttons only if there's an army here
+  const hasArmy = armyType === 'active' || armyType === 'tired';
+  actionBtns.style.display = hasArmy ? 'flex' : 'none';
+}
 
-     /**
-      * Overwrite local NODES ownership from the server's authoritative board array,
-      * then re-render so pieces update on screen.
-      *
-      * @param {Array} territories  — the "board" array from the server JSON
-      */
-     function applyBoard(territories) {
-       if (!territories) return;
-       for (const t of territories) {
-         if (NODES[t.name]) {
-           NODES[t.name].owner = t.owner;   // lowercase: 'british'|'mysore'|'empty'
-         }
-       }
-       renderNodes();   // redraw all pieces to reflect new ownership
-     }
+function tooltipShow(e) {
+  const g=e.currentTarget;
+  const armyType = g.dataset.armyType || 'empty';
+  const owner = g.dataset.owner==='empty' ? 'Unoccupied' : g.dataset.owner;
+  const armyLabel = { active:' · Fresh', tired:' · Tired', fort:' · Fort', empty:'' };
+  tooltip.innerHTML=`<b>${g.dataset.name}</b>${owner}${armyLabel[armyType]||''}`;
+  tooltip.classList.add('show');
+  tooltip.style.left=(e.clientX+14)+'px'; tooltip.style.top=(e.clientY+14)+'px';
+}
+function tooltipHide() { tooltip.classList.remove('show'); }
 
-     function updateGameStatePanel(turn, maxTurns, phase, winner) {
-       if (winner) {
-         const col = winner === 'british' ? '#c0281a' : '#2e7a2e';
-         gameStatePanel.innerHTML =
-           `<strong style="color:${col}">GAME OVER</strong><br>
-            <span style="color:${col}">${capitalize(winner)} wins!</span>`;
-         return;
-       }
-       const phaseLabel = phase === 'BRITISH_MOVE' ? '🟥 British to move'
-                        : phase === 'MYSORE_MOVE'  ? '🟩 Mysore to move'
-                        : phase;
-       gameStatePanel.innerHTML =
-         `Turn <strong>${turn}</strong> of <strong>${maxTurns}</strong><br>
-          ${phaseLabel}`;
-     }
+// ═══════════════════════════════════════════════════════════════
+//  MOVE SELECTION  (two-click: source → destination)
+// ═══════════════════════════════════════════════════════════════
+let selectedSource = null;
 
-     // ── Outbound helpers ─────────────────────────────────────────
+function handleNodeClick(g) {
+  const name     = g.dataset.name;
+  const owner    = g.dataset.owner;
+  const armyType = g.dataset.armyType || 'empty';
 
-     /**
-      * Send a move to Java.
-      * The "player" field is inferred from the current phase shown in the game-state panel.
-      * For a two-player local game the browser just forwards whatever the phase says.
-      */
-     function sendMove(from, to) {
-       if (!ws || ws.readyState !== WebSocket.OPEN) {
-         flashStatus('⚠ &nbsp;Not connected to server', 1800);
-         return;
-       }
-       // Infer current player from panel text (or default to british)
-       const panelText = gameStatePanel.textContent.toLowerCase();
-       const player = panelText.includes('mysore') ? 'mysore' : 'british';
-       const payload = JSON.stringify({ type:'MOVE', player, from, to });
-       console.log('[WS] Sending:', payload);
-       ws.send(payload);
-     }
+  updateInfoPanel(name, owner, armyType, g.dataset.key, g.dataset.coast);
 
-     function sendPass() {
-       if (!ws || ws.readyState !== WebSocket.OPEN) return;
-       const panelText = gameStatePanel.textContent.toLowerCase();
-       const player = panelText.includes('mysore') ? 'mysore' : 'british';
-       ws.send(JSON.stringify({ type:'PASS', player }));
-     }
+  // Clear old ring
+  document.querySelectorAll('.sel-ring').forEach(r => r.setAttribute('opacity','0'));
 
-     function sendReset() {
-       if (!ws || ws.readyState !== WebSocket.OPEN) return;
-       ws.send(JSON.stringify({ type:'RESET' }));
-     }
+  if (!selectedSource) {
+    selectedSource = name;
+    g.querySelector('.sel-ring').setAttribute('opacity','1');
+  } else {
+    if (selectedSource === name) {
+      selectedSource = null;   // deselect
+    } else {
+      const from = selectedSource;
+      selectedSource = null;
+      sendMove(from, name);
+    }
+  }
+}
 
-     // ── UI helpers ───────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  WEBSOCKET
+// ═══════════════════════════════════════════════════════════════
+const WS_URL = 'ws://localhost:8887';
+const statusBar      = document.getElementById('status-bar');
+const gameStatePanel = document.getElementById('game-state-panel');
 
-     function setStatus(cls, html) {
-       statusBar.className = cls;
-       statusBar.innerHTML = html;
-     }
+let ws = null;
+let lastState = null;   // for save
 
-     let _flashTimer = null;
-     function flashStatus(html, ms) {
-       const prev = statusBar.innerHTML;
-       const prevCls = statusBar.className;
-       setStatus('waiting', html);
-       clearTimeout(_flashTimer);
-       _flashTimer = setTimeout(() => setStatus(prevCls, prev), ms);
-     }
+function connect() {
+  setStatus('waiting', '⬤ &nbsp;CONNECTING…');
+  ws = new WebSocket(WS_URL);
 
-     function showGameOver(winner) {
-       setTimeout(() => {
-         const msg = winner === 'british'
-           ? '🟥 The British East India Company has conquered the Deccan.'
-           : '🟩 Mysore has endured. Tipu Sultan lives to fight another day.';
-         alert(msg);
-       }, 300);
-     }
+  ws.onopen = () => {
+    setStatus('connected', '⬤ &nbsp;SERVER CONNECTED');
+    console.log('[WS] Connected');
+  };
+  ws.onclose = () => {
+    setStatus('disconnected', '⬤ &nbsp;SERVER DISCONNECTED — retrying in 3 s');
+    setTimeout(connect, 3000);
+  };
+  ws.onerror = (err) => console.error('[WS] Error', err);
 
-     function capitalize(s) { return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+  ws.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      handleServerMessage(msg);
+    } catch(e) { console.error('[WS] Bad JSON', event.data); }
+  };
+}
 
-     // ═══════════════════════════════════════════════════════════════
-     //  BOOT
-     // ═══════════════════════════════════════════════════════════════
-     renderEdges();
-     renderNodes();
-     connect();          // open WebSocket → Java server
+function handleServerMessage(msg) {
+  switch (msg.type) {
+
+    case 'STATE':
+      lastState = msg;
+      applyBoard(msg.territories);
+      renderCards(msg.britishCards, msg.mysoreCards);
+      updateGameStatePanel(msg.turn, msg.maxTurns, msg.whoToMove, msg.winner);
+      break;
+
+    case 'MOVE_RESULT':
+      if (msg.status === 'invalid') {
+        flashStatus('⚠ &nbsp;' + msg.reason, 1800);
+      } else {
+        applyBoard(msg.territories);
+        renderCards(msg.britishCards || [], msg.mysoreCards || []);
+        updateGameStatePanel(msg.turn, msg.maxTurns||4, msg.whoToMove, msg.winner);
+        if (msg.winner) showGameOver(msg.winner);
+      }
+      break;
+
+    case 'GAME_OVER':
+      showGameOver(msg.winner);
+      break;
+
+    case 'PONG':
+      console.log('[WS] Pong');
+      break;
+
+    case 'ERROR':
+      console.error('[SERVER]', msg.message);
+      break;
+
+    default:
+      console.warn('[WS] Unknown type:', msg.type);
+  }
+}
+
+function applyBoard(territories) {
+  if (!territories) return;
+  for (const t of territories) {
+    if (NODES[t.name]) {
+      NODES[t.name].owner    = t.owner;
+      NODES[t.name].armyType = t.armyType;
+    }
+  }
+  renderNodes();
+}
+
+function updateGameStatePanel(turn, maxTurns, whoToMove, winner) {
+  if (winner) {
+    const col = winner === 'british' ? '#c0281a' : '#2e7a2e';
+    gameStatePanel.innerHTML =
+      `<strong style="color:${col}">GAME OVER</strong><br>
+       <span style="color:${col}">${capitalize(winner)} wins!</span>`;
+    return;
+  }
+  const phaseColor = whoToMove === 'British Move' ? '#c0281a'
+                   : whoToMove === 'Mysore Card'  ? '#2e7a2e'
+                   : '#c8a030';
+  gameStatePanel.innerHTML =
+    `Turn <strong>${turn}</strong> of <strong>${maxTurns}</strong><br>
+     <span style="color:${phaseColor};font-weight:700">${whoToMove||'—'}</span>`;
+}
+
+// ── Outbound helpers ───────────────────────────────────────────
+function sendMove(from, to) {
+  send({ type:'MOVE', from, to });
+}
+function playCard(player, cardIndex) {
+  send({ type:'CARD_PLAY', player, cardIndex });
+}
+function setTired() {
+  if (selectedTerritoryName) send({ type:'SET_TIRED', territory: selectedTerritoryName });
+}
+function setActive() {
+  if (selectedTerritoryName) send({ type:'SET_ACTIVE', territory: selectedTerritoryName });
+}
+function sendNextPhase() { send({ type:'NEXT_PHASE' }); }
+function sendUndo()       { send({ type:'UNDO' }); }
+function sendReset()      { send({ type:'RESET' }); }
+
+function send(obj) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    flashStatus('⚠ &nbsp;Not connected to server', 1800);
+    return;
+  }
+  ws.send(JSON.stringify(obj));
+}
+
+// ── Save state as JSON download ────────────────────────────────
+function saveState() {
+  if (!lastState) { alert('No state to save yet.'); return; }
+  const blob = new Blob([JSON.stringify(lastState, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `tigers-day-turn${lastState.turn || 1}.json`;
+  a.click();
+}
+
+// ── UI helpers ─────────────────────────────────────────────────
+function setStatus(cls, html) {
+  statusBar.className = cls;
+  statusBar.innerHTML = html;
+}
+let _flashTimer = null;
+function flashStatus(html, ms) {
+  const prev = statusBar.innerHTML, prevCls = statusBar.className;
+  setStatus('waiting', html);
+  clearTimeout(_flashTimer);
+  _flashTimer = setTimeout(() => setStatus(prevCls, prev), ms);
+}
+function showGameOver(winner) {
+  setTimeout(() => {
+    const m = winner === 'british'
+      ? '🟥 The British East India Company has conquered the Deccan.'
+      : '🟩 Mysore has endured. Tipu Sultan lives to fight another day.';
+    alert(m);
+  }, 300);
+}
+function capitalize(s) { return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+
+function toggleSettings() {
+  document.getElementById('settings-menu').classList.toggle('hidden');
+}
+
+function loadSavedState() {
+    const rawInput = document.getElementById('save-input').value;
+    
+    // Split input by lines so you can update multiple nodes at once
+    const lines = rawInput.split('\n');
+
+    lines.forEach(line => {
+        // Expected format: "Bombay: british, active"
+        if (line.includes(':')) {
+            const [location, data] = line.split(':');
+            const [newOwner, newType] = data.split(',').map(s => s.trim().toLowerCase());
+
+            const nodeKey = location.trim();
+
+            // Check if the location exists in our NODES object
+            if (NODES[nodeKey]) {
+                NODES[nodeKey].owner = newOwner;
+                NODES[nodeKey].armyType = newType;
+                console.log(`Updated ${nodeKey}: ${newOwner}, ${newType}`);
+            }
+        }
+    });
+
+    // VERY IMPORTANT: After updating the data, redraw the board
+    renderBoard(); 
+}
+
+window.onclick = function(e) {
+  const menu = document.getElementById('settings-menu');
+  const icon = document.getElementById('settings-icon');
+  if (e.target !== icon && !menu.contains(e.target)) menu.classList.add('hidden');
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════════════════
+renderEdges();
+renderNodes();
+renderCards([true,true,true,true,true,true], [true,true,true,true,true,true]);
+connect();
 </script>
 </body>
 </html>
