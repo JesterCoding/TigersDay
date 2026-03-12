@@ -1,33 +1,140 @@
 import numpy as np
 
 class GameState:
+
+    TERRITORIES = [
+    "Bombay", "Hyderabad", "Madras", "Srirangapatna", "Coimbatore",
+    "Pune", "Koppal", "Vizag", "Goa", "Darwar", "Anantapur",
+    "Bednore", "Mangalore", "Bangalore", "Vellore", "Mahé",
+    "Pondicherry", "Erode", "Trichy", "Palgautcherry", "Dindigul",
+    "Travancore", "Ceylon"
+    ]
+
+    WHO_TO_MOVE = ["British Move", "Mysore Card", "British Card"]
+
+    TERRITORY_TO_IDX = {name: i for i, name in enumerate(TERRITORIES)}
+    
+    WHO_TO_MOVE_TO_IDX = {name: i for i, name in enumerate(WHO_TO_MOVE)}
+
+    IDX_BRITISH_CARDS_OFFSET = 0   #index where this information begins
+    IDX_MYSORE_CARDS_OFFSET = 6    # 6 cards for both mysore and british
+    IDX_TERRITORIES_OFFSET = 12    # 23 territories * 3D vectors = 69
+    IDX_TURN_ORDER_OFFSET = 81     # 4 turns (One-hot)
+    IDX_WHO_TO_MOVE_OFFSET = 85    # 3 options (One-hot)
+    IDX_COMBAT_STRENGTH_OFFSET = 88 # 4 options (One-hot)
+    IDX_COMBATANTS_OFFSET = 92    # 23x2 Attacker/Defender (One-hot)
+
+    IDX_BRITISH_CARDS = slice(IDX_BRITISH_CARDS_OFFSET, IDX_BRITISH_CARDS_OFFSET + 6)
+    IDX_MYSORE_CARDS = slice(IDX_MYSORE_CARDS_OFFSET, IDX_MYSORE_CARDS_OFFSET + 6)
+    IDX_TURN_ORDER = slice(IDX_TURN_ORDER_OFFSET, IDX_TURN_ORDER_OFFSET + 4)
+    IDX_WHO_TO_MOVE = slice(IDX_WHO_TO_MOVE_OFFSET, IDX_WHO_TO_MOVE_OFFSET + 3)
+    IDX_COMBAT_STRENGTH = slice(IDX_COMBAT_STRENGTH_OFFSET, IDX_COMBAT_STRENGTH_OFFSET + 4)
+    IDX_COMBATANTS = slice(IDX_COMBATANTS_OFFSET, IDX_COMBATANTS_OFFSET + 46)
+
+
     def __init__(self):
         self.vector = np.zeros(138, dtype=np.bool)
-        
-        self.IDX_BRITISH_CARDS = slice(0, 6)
-        self.IDX_MYSORE_CARDS = slice(6, 12)
-        self.IDX_TERRITORIES = slice(12, 81)    # 23 territories * 3D vectors = 69
-        self.IDX_TURN_ORDER = slice(81, 85)     # 4 turns (One-hot)
-        self.IDX_WHO_TO_MOVE = slice(85, 88)    # 3 options (One-hot)
-        self.IDX_COMBAT_STRENGTH = slice(88, 92) # 4 options (One-hot)
-        self.IDX_COMBATANTS = slice(92, 138)    # 23x2 Attacker/Defender (One-hot)
 
-    def defaultGame(self):
-        self.vector[self.IDX_BRITISH_CARDS] = True
-        self.vector[self.IDX_MYSORE_CARDS] = True
+    """
+        Bombay:        { x:110, y: 74,  owner:'british', key:true,  coast:true,  labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+        Hyderabad:     { x:515, y:100,  owner:'british', key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+        Madras:        { x:618, y:322,  owner:'british', key:true,  coast:true,  labelAnchor:{anchor:'end',    dx:-18, dy:-24} },
+        Srirangapatna: { x:230, y:480,  owner:'mysore',  key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+        Coimbatore:    { x:305, y:600,  owner:'mysore',  key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+        Pune:          { x:255, y:128,  owner:'empty',   key:false, coast:false },
+        Koppal:        { x:390, y:178,  owner:'empty',   key:false, coast:false },
+        Vizag:         { x:656, y:162,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
+        Goa:           { x: 94, y:262,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
+        Darwar:        { x:232, y:232,  owner:'mysore',  key:false, coast:false },
+        Anantapur:     { x:470, y:228,  owner:'empty',   key:false, coast:false },
+        Bednore:       { x:300, y:295,  owner:'mysore',  key:false, coast:false },
+        Mangalore:     { x:118, y:398,  owner:'mysore',  key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
+        Bangalore:     { x:350, y:400,  owner:'mysore',  key:false, coast:false },
+        Vellore:       { x:460, y:340,  owner:'empty',   key:false, coast:false },
+        Mahé:          { x:145, y:586,  owner:'mysore',  key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
+        Pondicherry:   { x:610, y:446,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
+        Erode:         { x:405, y:515,  owner:'mysore',  key:false, coast:false },
+        Trichy:        { x:516, y:580,  owner:'empty',   key:false, coast:false },
+        Palgautcherry: { x:248, y:680,  owner:'mysore',  key:false, coast:false },
+        Dindigul:      { x:445, y:670,  owner:'empty',   key:false, coast:false },
+        Travancore:    { x:260, y:830,  owner:'british', key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
+        Ceylon:        { x:534, y:735,  owner:'empty',   key:false, coast:true  },
+    """
+
+    def default_setup(self):
+        self.reset_cards()
+
+        self.set_territory_vector_active_army("Bombay")
+        self.set_territory_vector_active_army("Hyderabad")
+        self.set_territory_vector_active_army("Madras")
+        self.set_territory_vector_active_army("Travencore")
+
+        self.set_territory_vector_fort("Darwar")
+        self.set_territory_vector_fort("Bednore")
+        self.set_territory_vector_fort("Mangalore")
+        self.set_territory_vector_fort("Bangalore")
+        self.set_territory_vector_fort("Sriganapatna")
+        self.set_territory_vector_fort("Erode")
+        self.set_territory_vector_fort("Coimbatore")
+        self.set_territory_vector_fort("Mahé")
+        self.set_territory_vector_fort("Palgautcherry")
+
+        self.set_turn(1)
+        self.set_who_to_move_by_name("British Move")
+
 
     def copy(self):
         """Crucial for MCTS: Creates a fast, deep copy of the state."""
         new_state = GameState()
         new_state.vector = np.copy(self.vector)
         return new_state
+    
+    def reset_cards(self):
+        self.vector[self.IDX_BRITISH_CARDS] = True
+        self.vector[self.IDX_MYSORE_CARDS] = True
 
-    # --- Helper methods to read/write without messing with raw indices ---
+    def set_territory_vector_active_army(self, territory):
+        self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.TERRITORY_TO_IDX[territory]] = True
+
+    def set_territory_vector_tired_army(self, territory):
+        self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.TERRITORY_TO_IDX[territory] + 1] = True
+
+    def set_territory_vector_fort(self, territory):
+        self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.TERRITORY_TO_IDX[territory] + 2] = True
+
+    def set_territory_vector_empty(self, territory):
+        self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.TERRITORY_TO_IDX[territory]] = False
+        self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.TERRITORY_TO_IDX[territory] + 1] = False
+        self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.TERRITORY_TO_IDX[territory] + 2] = False
+
     def set_turn(self, turn_number):
         """Sets the turn using one-hot encoding (e.g., Turn 2 -> [0, 1, 0, 0])"""
-        self.vector[self.IDX_TURN_ORDER] = 0.0
-        self.vector[81 + (turn_number - 1)] = 1.0
+        assert turn_number >= 1 and turn_number <= 4, "The turn is Out Of Range"
+
+        self.vector[self.IDX_TURN_ORDER] = False
+        self.vector[self.IDX_TURN_ORDER_OFFSET + (turn_number - 1)] = 1
+
+    def get_turn(self):
+        return np.argmax(self.vector[self.IDX_TURN_ORDER]) + 1
+    
+    def update_turn(self):
+        self.set_turn(self.get_turn() + 1)
+    
+    def set_who_to_move_by_name(self, who_to_move):
+        self.set_who_to_move_by_value(self.WHO_TO_MOVE_TO_IDX[who_to_move])
+
+    def set_who_to_move_by_value(self, who_to_move):
+        self.vector[self.IDX_WHO_TO_MOVE] = False
+        self.vector[self.IDX_WHO_TO_MOVE_OFFSET + who_to_move] = True
 
     def get_who_to_move(self):
         """Returns 0 (British), 1 (Mysore Card), or 2 (British Card)"""
         return np.argmax(self.vector[self.IDX_WHO_TO_MOVE])
+    
+    def update_who_to_move(self):
+        self.set_who_to_move_by_value(self.get_who_to_move())
+
+    def clear_combat(self):
+        self.vector[self.IDX_COMBATANTS] = False
+    
+    
