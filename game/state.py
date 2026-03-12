@@ -150,3 +150,22 @@ class GameState:
 
     def set_combat_strength(self, card_idx):
         self.vector[self.IDX_COMBAT_STRENGTH_OFFSET + card_idx] = True
+
+    def __str__(self):
+        str = ""
+        for i in range(138):
+            if self.vector[i]:
+                str += "1"
+            else:
+                str += "0"
+        return str
+
+def main():
+    default = GameState()
+    default.default_setup()
+    default.set_territory_vector_tired_army("Travancore")
+    print(default)
+
+if __name__ == "__main__":
+    main()
+    
