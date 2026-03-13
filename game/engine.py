@@ -1,5 +1,8 @@
 import numpy as np
-from state import GameState
+try:
+    from game.state import GameState
+except ImportError:
+    from state import GameState
 
 class MoveEngine:
     EDGE_SOURCES = np.array([
