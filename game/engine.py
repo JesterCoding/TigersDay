@@ -259,8 +259,8 @@ class MoveEngine:
                     node_name = self.INDEX_MAP[idx]
                     print(f"{name}: {node_name}")
                 elif move_type == "edge":
-                    src_name = self.INDEX_MAP[self.EDGE_SOURCES[idx]] # type: ignore
-                    dest_name = self.INDEX_MAP[self.EDGE_DESTS[idx]] # type: ignore
+                    src_name = self.INDEX_MAP[int(self.EDGE_SOURCES[idx])] 
+                    dest_name = self.INDEX_MAP[int(self.EDGE_DESTS[idx])] 
                     print(f"{name}: {src_name} -> {dest_name}")
                 elif move_type == "bcard":
                     card_name = GameState.BRITISH_CARDS[idx]
@@ -272,7 +272,7 @@ class MoveEngine:
                     print(f"{name}")
                 elif move_type == "rn_matrix":
                     source_node = self.INDEX_MAP[idx // len(self.COASTAL_INDICES)]
-                    dest_node = self.INDEX_MAP[self.COASTAL_INDICES[idx % len(self.COASTAL_INDICES)]] # type: ignore
+                    dest_node = self.INDEX_MAP[int(self.COASTAL_INDICES[idx % len(self.COASTAL_INDICES)])] 
                     print(f"{name}: {source_node} -> {dest_node}")
 
             
@@ -287,6 +287,7 @@ def main():
     default.queue_combat_by_name("Travancore", "Palgautcherry")
     default.set_who_to_move_by_name("British Card")
     default.use_card_mysore_by_name("French Alliance")
+    default.use_card_british_by_name("Princely States")
     default.use_card_mysore_by_name("Monsoon")
 
     a.print_legal_moves(a.get_legal_moves(default))
