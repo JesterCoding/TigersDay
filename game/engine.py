@@ -32,14 +32,35 @@ class MoveEngine:
     4, 18, 21, 22,     19, 20, 22,          20, 21
     ])
 
-    EDGE_MAP = {
-        (src, dst): i 
-        for i, (src, dst) in enumerate(zip(EDGE_SOURCES, EDGE_DESTS))
-    }
-
     EDGES = 78
 
     NODES = 23
+
+    INDEX_MAP = {
+    0: "Bombay",
+    1: "Hyderabad",
+    2: "Madras",
+    3: "Srirangapatna",
+    4: "Coimbatore",
+    5: "Pune",
+    6: "Koppal",
+    7: "Vizag",
+    8: "Goa",
+    9: "Darwar",
+    10: "Anantapur",
+    11: "Bednore",
+    12: "Mangalore",
+    13: "Bangalore",
+    14: "Vellore",
+    15: "Mahé",
+    16: "Pondicherry",
+    17: "Erode",
+    18: "Trichy",
+    19: "Palgautcherry",
+    20: "Dindigul",
+    21: "Travancore",
+    22: "Ceylon"
+    }
 
     ADJACENCY_MATRIX = np.array([
         [0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -91,19 +112,19 @@ class MoveEngine:
         ("Sepoy Mutiny", NODES, "node"),
         ("French Alliance", NODES, "node"),
         ("Monsoon", NODES, "node"),
-        ("Cavalry Raid", 1, "card"),
+        ("Cavalry Raid", 1, "blank"),
         ("Sea Trade", 6, "card"),
         ("Mysore Power", 6, "card"),
         ("Draw Iron Rockets", 5, "card"),
         ("Draw Sepoy Mutiny", 3, "card"),
         ("Draw French Alliance", 3, "card"),
-        ("Pass Mysore", 1, "card"),
+        ("Pass Mysore", 1, "blank"),
         ("Highlanders", NODES, "node"),
         ("Royal Navy", NODES*len(COASTAL_INDICES), "rn_matrix"),
         ("Divide and Rule", EDGES, "edge"),
         ("Force March", EDGES, "edge"),
         ("Princely States", NODES, "node"),
-        ("British Power", 6, "card"),
+        ("British Power", 6, "blank"),
         ("Draw Wall Breach", 5, "card"),
         ("Draw Highlanders", 3, "card"),
         ("Draw Royal Navy", 3, "card"),
@@ -112,10 +133,6 @@ class MoveEngine:
 
     def __init__(self):
         self.vector = np.zeros(568, dtype=float)
-        
-    def get_edge_id(cls, source, dest):
-        """Returns the unique index for a directed edge, or None if no edge exists."""
-        return cls.EDGE_MAP.get((source, dest))
     
     def get_legal_moves(self, state: GameState):
         fresh_army=state.vector[state.IDX_TERRITORIES_OFFSET:state.IDX_TURN_ORDER_OFFSET:3]
@@ -130,14 +147,14 @@ class MoveEngine:
         is_mysore_card = state.vector[state.IDX_WHO_TO_MOVE_OFFSET + 1]
         is_british_card = state.vector[state.IDX_WHO_TO_MOVE_OFFSET + 2]
 
-        attacker = state.vector[state.IDX_COMBATANTS_OFFSET:state.IDX_COMBATANTS_OFFSET+state.NODES]
-        defender = state.vector[state.IDX_COMBATANTS_OFFSET+state.NODES:state.IDX_COMBATANTS_OFFSET+2*state.NODES]
+        attacker = state.vector[state.IDX_COMBATANTS_OFFSET:state.IDX_COMBATANTS_OFFSET+self.NODES]
+        defender = state.vector[state.IDX_COMBATANTS_OFFSET+self.NODES:state.IDX_COMBATANTS_OFFSET+2*self.NODES]
         is_battle = np.sum(attacker)==1
 
         if is_british_move:
             legal_moves = (fresh_army[self.EDGE_SOURCES] & legal_dest[self.EDGE_DESTS])
 
-            trapped_army = (fresh_army & (np.bincount(self.EDGE_SOURCES,weights=legal_moves,minlength=state.NODES)==0))
+            trapped_army = (fresh_army & (np.bincount(self.EDGE_SOURCES,weights=legal_moves,minlength=self.NODES)==0))
 
             phase1 = np.concatenate((
                 legal_moves,
@@ -222,10 +239,26 @@ class MoveEngine:
 
         return mask
     
-    def print_legal_moves(self, mask):
-        offset = 0
-        for action_name
-        mask
+
+def print_legal_moves(self, mask):
+    offset = 0
+    for name, size, move_type in self.MOVE_SPACE:
+        memory_chunk = mask[offset: offset+size]
+        valid_local_moves = np.where(memory_chunk)[0]
+
+        for idx in valid_local_moves:
+            iterator = offset + idx
+            
+            if move_type == "node":
+                node_name = self.INDEX_MAP[idx]
+                print(f"[{name}]: [{node_name}]")
+            elif move_type == "edge":
+                src_name = self.INDEX_MAP[self.EDGE_SOURCES[idx]]
+                dest_name = self.INDEX_MAP[self.EDGE_DESTS[idx]]
+                print(f"[{name}]: [{src_name}] -> [{dest_name}]")
+            elif move_type == "card":
+                card_name = 
+
 
 def main():
     a = MoveEngine()
@@ -237,6 +270,9 @@ def main():
     default.use_card_mysore_by_name("French Alliance")
     default.use_card_mysore_by_name("Monsoon")
     print(a.get_legal_moves(default))
+    
+    for _ in range(10000000):
+        a.get_legal_moves(default)
 
 if __name__ == "__main__":
     main()
