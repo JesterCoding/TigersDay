@@ -77,6 +77,10 @@ class MoveEngine:
         True,  False, False, False, False, True,  True
     ], dtype=bool)
 
+    KEY_INDICES = np.where(KEYS)[0]
+
+    COASTAL_INDICES = np.where(COASTAL)[0]
+
     def __init__(self):
         self.vector = np.zeros(568, dtype=float)
         
@@ -90,17 +94,20 @@ class MoveEngine:
         fort = state.vector[state.IDX_TERRITORIES_OFFSET+2:state.IDX_TURN_ORDER_OFFSET:3]
         empty = ~(fresh_army + tired_army + fort)
         mysore_cards = state.vector[state.IDX_MYSORE_CARDS_OFFSET:state.IDX_MYSORE_CARDS_OFFSET+6]
+        british_cards = state.vector[state.IDX_BRITISH_CARDS_OFFSET:state.IDX_BRITISH_CARDS_OFFSET+6]
+        legal_dest = empty + fort
 
         is_british_move = state.vector[state.IDX_WHO_TO_MOVE_OFFSET]
         is_mysore_card = state.vector[state.IDX_WHO_TO_MOVE_OFFSET + 1]
         is_british_card = state.vector[state.IDX_WHO_TO_MOVE_OFFSET + 2]
-        is_battle = np.sum(state.vector[state.IDX_COMBATANTS_OFFSET:state.IDX_COMBATANTS_OFFSET+23])==1
+
+        attacker = state.vector[state.IDX_COMBATANTS_OFFSET:state.IDX_COMBATANTS_OFFSET+23]
+        defender = state.vector[state.IDX_COMBATANTS_OFFSET+23:state.IDX_COMBATANTS_OFFSET+46]
+        is_battle = np.sum(attacker)==1
 
         if is_british_move:
-            legal_space = empty + fort
-            can_move_from = fresh_army[self.EDGE_SOURCES]
-            can_move_to = legal_space[self.EDGE_DESTS]
-            legal_moves = (can_move_from & can_move_to)
+            legal_moves = (fresh_army[self.EDGE_SOURCES] & legal_dest[self.EDGE_DESTS])
+
             trapped_army = (fresh_army & (np.bincount(self.EDGE_SOURCES,weights=legal_moves,minlength=23)==0))
 
             phase1 = np.concatenate((
@@ -111,23 +118,23 @@ class MoveEngine:
             phase1 = np.zeros(101, dtype=bool)
 
         if is_mysore_card:
-            sepoy_mutiny = state.vector[state.IDX_MYSORE_CARDS_OFFSET + 1] * ((fresh_army + tired_army) & ~self.KEYS)
+            sepoy_mutiny = mysore_cards[1] * ((fresh_army + tired_army) & ~self.KEYS)
 
-            french_alliance = state.vector[state.IDX_MYSORE_CARDS_OFFSET + 2] * ((fort.dot(self.ADJACENCY_MATRIX) > 0) & empty)
+            french_alliance = mysore_cards[2] * ((fort.dot(self.ADJACENCY_MATRIX) > 0) & empty)
 
-            monsoon = state.vector[state.IDX_MYSORE_CARDS_OFFSET + 3] * fresh_army
+            monsoon = mysore_cards[3] * fresh_army
 
-            cavalry_raid = [state.vector[state.IDX_MYSORE_CARDS_OFFSET + 4]]
+            cavalry_raid = [mysore_cards[4]]
 
             forts_on_coast = np.dot(fort.astype(int),self.COASTAL)
             valid_trades = ~mysore_cards & (state.CARD_VALUE == forts_on_coast)
-            sea_trade = state.vector[state.IDX_MYSORE_CARDS_OFFSET + 5] * valid_trades
+            sea_trade = mysore_cards[5] * valid_trades
 
-            mysore_power = state.vector[state.IDX_MYSORE_CARDS_OFFSET:state.IDX_MYSORE_CARDS_OFFSET+6] * is_battle
+            mysore_power = mysore_cards * is_battle
 
-            mysore3draw = state.vector[state.IDX_MYSORE_CARDS_OFFSET] * ~mysore_cards[1:6]
-            mysore21draw = state.vector[state.IDX_MYSORE_CARDS_OFFSET+1] * ~mysore_cards[3:6]
-            mysore22draw = state.vector[state.IDX_MYSORE_CARDS_OFFSET+2] * ~mysore_cards[3:6]
+            mysore3draw = mysore_cards[0] * ~mysore_cards[1:6]
+            mysore21draw = mysore_cards[1] * ~mysore_cards[3:6]
+            mysore22draw = mysore_cards[2] * ~mysore_cards[3:6]
             mysore_draw = np.concatenate((mysore3draw,mysore21draw,mysore22draw))
 
             mysore_pass = [True]
@@ -143,14 +150,36 @@ class MoveEngine:
                 mysore_pass
             ))
         else:
-            phase2 = np.zeros(89, dtype=bool)
+            phase2 = np.zeros(94, dtype=bool)
+
+        if is_british_card:
+            highlanders = british_cards[1] * empty[self.COASTAL_INDICES]
+
+            royal_navy = british_cards[2] * np.outer((fresh_army + tired_army),legal_dest[self.COASTAL_INDICES]).flatten()
+
+            divide_and_rule = british_cards[3] * ((fort & ~self.KEYS)[self.EDGE_SOURCES] & empty[self.EDGE_DESTS])
+
+            force_march = british_cards[4] * (tired_army[self.EDGE_SOURCES] & (legal_dest & ~defender)[self.EDGE_DESTS])
+
+            princely_states = british_cards[5] * empty[self.KEY_INDICES]
+
+            phase3 = np.concatenate((
+                highlanders,
+                royal_navy,
+                divide_and_rule,
+                force_march,
+                princely_states
+            ))
+        else:
+            phase3 = np.zeros(395, dtype=bool)
 
         mask = np.concatenate((
             phase1,
-            phase2
-            ))
+            phase2,
+            phase3
+        ))
 
-        return mask
+        return force_march
 
 def main():
     a = MoveEngine()
@@ -158,12 +187,10 @@ def main():
     default.default_setup()
     default.set_territory_vector_tired_army("Travancore")
     default.queue_combat_by_name("Travancore", "Palgautcherry")
-    default.set_who_to_move_by_name("Mysore Card")
+    default.set_who_to_move_by_name("British Card")
     default.use_card_mysore_by_name("French Alliance")
     default.use_card_mysore_by_name("Monsoon")
     print(a.get_legal_moves(default))
-    for i in range(10000000):
-        a.get_legal_moves(default)
 
 if __name__ == "__main__":
     main()
