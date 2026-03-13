@@ -37,6 +37,10 @@ class MoveEngine:
         for i, (src, dst) in enumerate(zip(EDGE_SOURCES, EDGE_DESTS))
     }
 
+    EDGES = 78
+
+    NODES = 23
+
     ADJACENCY_MATRIX = np.array([
         [0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -81,6 +85,31 @@ class MoveEngine:
 
     COASTAL_INDICES = np.where(COASTAL)[0]
 
+    MOVE_SPACE = [
+        ("Move", EDGES, "edge"),
+        ("Tire", NODES, "node"),
+        ("Sepoy Mutiny", NODES, "node"),
+        ("French Alliance", NODES, "node"),
+        ("Monsoon", NODES, "node"),
+        ("Cavalry Raid", 1, "card"),
+        ("Sea Trade", 6, "card"),
+        ("Mysore Power", 6, "card"),
+        ("Draw Iron Rockets", 5, "card"),
+        ("Draw Sepoy Mutiny", 3, "card"),
+        ("Draw French Alliance", 3, "card"),
+        ("Pass Mysore", 1, "card"),
+        ("Highlanders", NODES, "node"),
+        ("Royal Navy", NODES*len(COASTAL_INDICES), "rn_matrix"),
+        ("Divide and Rule", EDGES, "edge"),
+        ("Force March", EDGES, "edge"),
+        ("Princely States", NODES, "node"),
+        ("British Power", 6, "card"),
+        ("Draw Wall Breach", 5, "card"),
+        ("Draw Highlanders", 3, "card"),
+        ("Draw Royal Navy", 3, "card"),
+        ("Pass British", 1, "card")
+    ]
+
     def __init__(self):
         self.vector = np.zeros(568, dtype=float)
         
@@ -101,14 +130,14 @@ class MoveEngine:
         is_mysore_card = state.vector[state.IDX_WHO_TO_MOVE_OFFSET + 1]
         is_british_card = state.vector[state.IDX_WHO_TO_MOVE_OFFSET + 2]
 
-        attacker = state.vector[state.IDX_COMBATANTS_OFFSET:state.IDX_COMBATANTS_OFFSET+23]
-        defender = state.vector[state.IDX_COMBATANTS_OFFSET+23:state.IDX_COMBATANTS_OFFSET+46]
+        attacker = state.vector[state.IDX_COMBATANTS_OFFSET:state.IDX_COMBATANTS_OFFSET+state.NODES]
+        defender = state.vector[state.IDX_COMBATANTS_OFFSET+state.NODES:state.IDX_COMBATANTS_OFFSET+2*state.NODES]
         is_battle = np.sum(attacker)==1
 
         if is_british_move:
             legal_moves = (fresh_army[self.EDGE_SOURCES] & legal_dest[self.EDGE_DESTS])
 
-            trapped_army = (fresh_army & (np.bincount(self.EDGE_SOURCES,weights=legal_moves,minlength=23)==0))
+            trapped_army = (fresh_army & (np.bincount(self.EDGE_SOURCES,weights=legal_moves,minlength=state.NODES)==0))
 
             phase1 = np.concatenate((
                 legal_moves,
@@ -192,6 +221,11 @@ class MoveEngine:
         ))
 
         return mask
+    
+    def print_legal_moves(self, mask):
+        offset = 0
+        for action_name
+        mask
 
 def main():
     a = MoveEngine()
