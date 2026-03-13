@@ -2,7 +2,7 @@ import numpy as np
 
 class GameState:
 
-    TERRITORIES = [
+    NODES = [
     "Bombay", "Hyderabad", "Madras", "Srirangapatna", "Coimbatore",
     "Pune", "Koppal", "Vizag", "Goa", "Darwar", "Anantapur",
     "Bednore", "Mangalore", "Bangalore", "Vellore", "Mahé",
@@ -15,7 +15,7 @@ class GameState:
     MYSORE_CARDS = ["Iron Rockets", "Sepoy Mutiny", "French Alliance", "Monsoon", "Cavalry Raid", "Sea Trade"]
     BRITISH_CARDS = ["Wall Breach", "Highlanders", "Royal Navy", "Divide and Rule", "Force March", "Princely States"]
 
-    NODE_TO_IDX = {name: i for i, name in enumerate(TERRITORIES)}
+    NODE_TO_IDX = {name: i for i, name in enumerate(NODES)}
     WHO_TO_MOVE_TO_IDX = {name: i for i, name in enumerate(WHO_TO_MOVE)}
     MYSORE_CARDS_TO_IDX = {name: i for i, name in enumerate(MYSORE_CARDS)}
     BRITISH_CARDS_TO_IDX = {name: i for i, name in enumerate(BRITISH_CARDS)}
@@ -24,7 +24,7 @@ class GameState:
 
     IDX_BRITISH_CARDS_OFFSET = 0   #index where this information begins
     IDX_MYSORE_CARDS_OFFSET = 6    # 6 cards for both mysore and british
-    IDX_TERRITORIES_OFFSET = 12    # 23 territories * 3D vectors = 69
+    IDX_NODES_OFFSET = 12    # 23 nodes * 3D vectors = 69
     IDX_TURN_ORDER_OFFSET = 81     # 4 turns (One-hot)
     IDX_WHO_TO_MOVE_OFFSET = 85    # 3 options (One-hot)
     IDX_COMBAT_STRENGTH_OFFSET = 88 # 4 options (One-hot): Only ever stored for Mysore
@@ -39,7 +39,6 @@ class GameState:
     IDX_ATTACKER = slice(IDX_ATTACKER_OFFSET, IDX_ATTACKER_OFFSET + 23)
     IDX_DEFENDER = slice(IDX_DEFENDER_OFFSET, IDX_DEFENDER_OFFSET + 23)
 
-
     def __init__(self):
         self.vector = np.zeros(138, dtype=bool)
         # store as integer behind the scenes, one hot for the AI, -1 is blank
@@ -48,69 +47,68 @@ class GameState:
         self._card_strength = -1
 
     def default_setup(self):
-        self.reset_cards()
+        self.mysore_cards = True
+        self.british_cards = True
 
-        self.set_node_fresh_army("Bombay")
-        self.set_node_fresh_army("Hyderabad")
-        self.set_node_fresh_army("Madras")
-        self.set_node_fresh_army("Travancore")
+        self.set_node_fresh_army(self.NODE_TO_IDX["Bombay"])
+        self.set_node_fresh_army(self.NODE_TO_IDX["Hyderabad"])
+        self.set_node_fresh_army(self.NODE_TO_IDX["Madras"])
+        self.set_node_fresh_army(self.NODE_TO_IDX["Travancore"])
 
-        self.set_node_fort("Darwar")
-        self.set_node_fort("Bednore")
-        self.set_node_fort("Mangalore")
-        self.set_node_fort("Bangalore")
-        self.set_node_fort("Srirangapatna")
-        self.set_node_fort("Erode")
-        self.set_node_fort("Coimbatore")
-        self.set_node_fort("Mahé")
-        self.set_node_fort("Palgautcherry")
+        self.set_node_fort(self.NODE_TO_IDX["Darwar"])
+        self.set_node_fort(self.NODE_TO_IDX["Bednore"])
+        self.set_node_fort(self.NODE_TO_IDX["Mangalore"])
+        self.set_node_fort(self.NODE_TO_IDX["Bangalore"])
+        self.set_node_fort(self.NODE_TO_IDX["Srirangapatna"])
+        self.set_node_fort(self.NODE_TO_IDX["Erode"])
+        self.set_node_fort(self.NODE_TO_IDX["Coimbatore"])
+        self.set_node_fort(self.NODE_TO_IDX["Mahé"])
+        self.set_node_fort(self.NODE_TO_IDX["Palgautcherry"])
 
-        self.set_turn(1)
-        self.set_who_to_move_by_name("British Move")
+        self.turn = 1
+        self.to_move = 0
 
     def copy(self):
         """Crucial for MCTS: Creates a fast, deep copy of the state."""
         new_state = GameState()
         new_state.vector = np.copy(self.vector)
+        new_state._attacker = self._attacker
+        new_state._defender = self._defender
+        new_state._card_strength = self._card_strength
         return new_state
 
     def set_node_fresh_army(self, node):
         self.set_node_empty(node)
-        self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.NODE_TO_IDX[node]] = True
+        self.vector[self.IDX_NODES_OFFSET + 3 * node] = True
 
     def set_node_tired_army(self, node):
         self.set_node_empty(node)
-        self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.NODE_TO_IDX[node] + 1] = True
+        self.vector[self.IDX_NODES_OFFSET + 3 * node + 1] = True
 
     def set_node_fort(self, node):
         self.set_node_empty(node)
-        self.vector[self.IDX_TERRITORIES_OFFSET + 3 * self.NODE_TO_IDX[node] + 2] = True
+        self.vector[self.IDX_NODES_OFFSET + 3 * node + 2] = True
 
     def set_node_empty(self, node):
-        start_idx = self.IDX_TERRITORIES_OFFSET + 3 * self.NODE_TO_IDX[node]
+        start_idx = self.IDX_NODES_OFFSET + 3 * node
         self.vector[start_idx : start_idx + 3] = False
 
     def clear_combat(self):
         self.attacker = -1 
         self.defender = -1
-        self.card_strength =- 1
-
-    def turn_refresh(self):
-        self.turn += 1
-        self.mysore_cards = True
-        self.british_cards = True
+        self.card_strength = -1
 
     @property
     def fresh_armies(self):
-        return self.vector[self.IDX_TERRITORIES_OFFSET : self.IDX_TURN_ORDER_OFFSET : 3]
+        return self.vector[self.IDX_NODES_OFFSET : self.IDX_TURN_ORDER_OFFSET : 3]
 
     @property
     def tired_armies(self):
-        return self.vector[self.IDX_TERRITORIES_OFFSET + 1 : self.IDX_TURN_ORDER_OFFSET : 3]
+        return self.vector[self.IDX_NODES_OFFSET + 1 : self.IDX_TURN_ORDER_OFFSET : 3]
 
     @property
     def forts(self):
-        return self.vector[self.IDX_TERRITORIES_OFFSET + 2 : self.IDX_TURN_ORDER_OFFSET : 3]
+        return self.vector[self.IDX_NODES_OFFSET + 2 : self.IDX_TURN_ORDER_OFFSET : 3]
 
     @property
     def empty(self):
@@ -194,13 +192,6 @@ class GameState:
 
 def main():
     default = GameState()
-    default.default_setup()
-    default.set_node_tired_army("Travancore")
-    default.queue_combat_by_name("Travancore", "Palgautcherry")
-    default.set_combat_strength(0)
-    default.use_card_mysore_by_name("Iron Rockets")
-    default.set_who_to_move_by_name("British Card")
-
     print(default)
 
 if __name__ == "__main__":
