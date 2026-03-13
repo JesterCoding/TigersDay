@@ -51,8 +51,24 @@ def get_next_state(state, move):
                     next_state.set_territory_vector_tired_army(node_name)
             elif move_type == "edge":
                 src_name = MoveEngine.INDEX_MAP[int(MoveEngine.EDGE_SOURCES[idx])] 
-                dest_name = MoveEngine.INDEX_MAP[int(MoveEngine.EDGE_DESTS[idx])] 
-                print(f"{name}: {src_name} -> {dest_name}")
+                dest_name = MoveEngine.INDEX_MAP[int(MoveEngine.EDGE_DESTS[idx])]
+                is_fort_defending = state.vector[state.IDX_TERRITORIES_OFFSET + (3 * dest_name) + 2]
+                if name == "Move":
+                    if is_fort_defending:
+                        next_state.queue_combat_by_name(src_name, dest_name)
+                    else:
+                        next_state.set_territory_vector_empty(src_name)
+                        next_state.set_territory_vector_tired_army(dest_name)
+                elif name == "Force March":
+                    if is_fort_defending:
+                        # todo
+                        break
+                    else:
+                        next_state.set_territory_vector_empty(src_name)
+                        next_state.set_territory_vector_tired_army(dest_name)
+                elif name == "Divide and Rule":
+                    next_state.set_territory_vector_empty(src_name)
+                    next_state.set_territory_vector_fort(dest_name)
             elif move_type == "bcard":
                 card_name = GameState.BRITISH_CARDS[idx]
                 print(f"{name}: {card_name}")
