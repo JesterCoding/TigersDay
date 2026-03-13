@@ -10,12 +10,13 @@ from ai.mcts import MCTS
 
 
 class TrainingExample:
-    __slots__ = ['state_vector', 'mcts_policy', 'outcome']
+    __slots__ = ['state_vector', 'mcts_policy', 'outcome', 'stage']
 
-    def __init__(self, state_vector, mcts_policy, outcome=None):
+    def __init__(self, state_vector, mcts_policy, outcome=None, stage=None):
         self.state_vector = state_vector    # np.array (138,)
         self.mcts_policy = mcts_policy      # np.array (636,)
         self.outcome = outcome              # float: +1 or -1 (filled after game)
+        self.stage = stage                  # int: curriculum stage (for analysis)
 
 
 class Trainer:
@@ -33,7 +34,7 @@ class Trainer:
         'checkpoint_dir': 'ai/checkpoints/',
     }
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, curriculum=None):
         self.config = {**self.DEFAULT_CONFIG, **(config or {})}
         self.model = TigerNet()
         self.optimizer = optim.Adam(
@@ -45,13 +46,17 @@ class Trainer:
         self.mcts = MCTS(self.model, num_simulations=self.config['num_simulations'])
         self.updater = GameUpdater()
         self.checker = WinChecker()
+        self.curriculum = curriculum
 
-    def self_play_game(self):
+    def self_play_game(self, position_fn=None, stage=None):
         """Play one full game via self-play, collecting training examples.
-        Returns list of TrainingExample (outcomes filled in at the end).
+        Returns (list of TrainingExample, game_result).
         """
-        state = GameState()
-        state.default_setup()
+        if position_fn is not None:
+            state = position_fn()
+        else:
+            state = GameState()
+            state.default_setup()
 
         examples = []
         move_count = 0
@@ -66,6 +71,7 @@ class Trainer:
             examples.append(TrainingExample(
                 state_vector=state.vector.astype(np.float32).copy(),
                 mcts_policy=mcts_policy.copy(),
+                stage=stage,
             ))
 
             # Apply move
@@ -96,7 +102,7 @@ class Trainer:
             else:
                 ex.outcome = float(-game_result)
 
-        return examples
+        return examples, game_result
 
     def train_step(self):
         """Sample a batch from replay buffer and perform one gradient step.
@@ -136,12 +142,36 @@ class Trainer:
     def run_iteration(self, iteration_num):
         """One iteration of AlphaZero: self-play + training."""
         # Self-play phase
-        print(f"Iteration {iteration_num}: Self-play...")
+        if self.curriculum:
+            stage_label = f" [Stage {self.curriculum.current_stage}]"
+        else:
+            stage_label = ""
+        print(f"Iteration {iteration_num}: Self-play...{stage_label}")
+
         for game_num in range(self.config['num_games_per_iteration']):
-            examples = self.self_play_game()
+            if self.curriculum:
+                position_state, stage_used = self.curriculum.generate_position()
+                # Wrap in a lambda that returns the pre-built state
+                pos_fn = lambda s=position_state: s
+                examples, game_result = self.self_play_game(
+                    position_fn=pos_fn, stage=stage_used)
+                self.curriculum.record_result(game_result, stage_used)
+                winner = "British" if game_result == 1 else "Mysore"
+                print(f"  Game {game_num + 1}/{self.config['num_games_per_iteration']}: "
+                      f"{len(examples)} moves, {winner} wins (stage {stage_used})")
+            else:
+                examples, game_result = self.self_play_game()
+                print(f"  Game {game_num + 1}/{self.config['num_games_per_iteration']}: "
+                      f"{len(examples)} moves")
             self.replay_buffer.extend(examples)
-            print(f"  Game {game_num + 1}/{self.config['num_games_per_iteration']}: "
-                  f"{len(examples)} moves")
+
+        # Check curriculum graduation
+        if self.curriculum:
+            self.curriculum.check_graduation()
+            stats = self.curriculum.get_stage_stats()
+            for key, val in stats.items():
+                if key != 'current_stage' and 'wr' in key:
+                    print(f"  {key}: {val:.1%}")
 
         # Training phase
         print(f"Iteration {iteration_num}: Training...")
