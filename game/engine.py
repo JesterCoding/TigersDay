@@ -163,12 +163,24 @@ class MoveEngine:
 
             princely_states = british_cards[5] * (empty & self.KEYS)
 
+            british_power = british_cards * is_battle
+
+            british3draw = british_cards[0] * ~british_cards[1:6]
+            british21draw = british_cards[1] * ~british_cards[3:6]
+            british22draw = british_cards[2] * ~british_cards[3:6]
+            british_draw = np.concatenate((british3draw,british21draw,british22draw))
+
+            british_pass = [True]
+
             phase3 = np.concatenate((
                 highlanders,
                 royal_navy,
                 divide_and_rule,
                 force_march,
-                princely_states
+                princely_states,
+                british_power,
+                british_draw,
+                british_pass
             ))
         else:
             phase3 = np.zeros(427, dtype=bool)
