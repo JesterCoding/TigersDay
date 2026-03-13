@@ -42,32 +42,6 @@ class GameState:
     def __init__(self):
         self.vector = np.zeros(138, dtype=bool)
 
-    """
-        Bombay:        { x:110, y: 74,  owner:'british', key:true,  coast:true,  labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
-        Hyderabad:     { x:515, y:100,  owner:'british', key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
-        Madras:        { x:618, y:322,  owner:'british', key:true,  coast:true,  labelAnchor:{anchor:'end',    dx:-18, dy:-24} },
-        Srirangapatna: { x:230, y:480,  owner:'mysore',  key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
-        Coimbatore:    { x:305, y:600,  owner:'mysore',  key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
-        Pune:          { x:255, y:128,  owner:'empty',   key:false, coast:false },
-        Koppal:        { x:390, y:178,  owner:'empty',   key:false, coast:false },
-        Vizag:         { x:656, y:162,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
-        Goa:           { x: 94, y:262,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
-        Darwar:        { x:232, y:232,  owner:'mysore',  key:false, coast:false },
-        Anantapur:     { x:470, y:228,  owner:'empty',   key:false, coast:false },
-        Bednore:       { x:300, y:295,  owner:'mysore',  key:false, coast:false },
-        Mangalore:     { x:118, y:398,  owner:'mysore',  key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
-        Bangalore:     { x:350, y:400,  owner:'mysore',  key:false, coast:false },
-        Vellore:       { x:460, y:340,  owner:'empty',   key:false, coast:false },
-        Mahé:          { x:145, y:586,  owner:'mysore',  key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
-        Pondicherry:   { x:610, y:446,  owner:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
-        Erode:         { x:405, y:515,  owner:'mysore',  key:false, coast:false },
-        Trichy:        { x:516, y:580,  owner:'empty',   key:false, coast:false },
-        Palgautcherry: { x:248, y:680,  owner:'mysore',  key:false, coast:false },
-        Dindigul:      { x:445, y:670,  owner:'empty',   key:false, coast:false },
-        Travancore:    { x:260, y:830,  owner:'british', key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
-        Ceylon:        { x:534, y:735,  owner:'empty',   key:false, coast:true  },
-    """
-
     def default_setup(self):
         self.reset_cards()
 
@@ -88,7 +62,6 @@ class GameState:
 
         self.set_turn(1)
         self.set_who_to_move_by_name("British Move")
-
 
     def copy(self):
         """Crucial for MCTS: Creates a fast, deep copy of the state."""
@@ -127,15 +100,9 @@ class GameState:
     def set_territory_vector_empty(self, territory):
         start_idx = self.IDX_TERRITORIES_OFFSET + 3 * self.TERRITORY_TO_IDX[territory]
         self.vector[start_idx : start_idx + 3] = False
-
-    def set_turn(self, turn_number):
-        """Sets the turn using one-hot encoding (e.g., Turn 2 -> [0, 1, 0, 0])"""
-
-        self.vector[self.IDX_TURN_ORDER] = False
-        self.vector[self.IDX_TURN_ORDER_OFFSET + (turn_number - 1)] = 1
     
     def next_turn(self):
-        self.set_turn(self.turn + 1)
+        self.turn += 1
     
     def set_who_to_move_by_name(self, who_to_move):
         self.set_who_to_move_by_value(self.WHO_TO_MOVE_TO_IDX[who_to_move])
@@ -165,15 +132,15 @@ class GameState:
 
     @property
     def fresh_armies(self):
-        self.vector[self.IDX_TERRITORIES_OFFSET : self.IDX_TURN_ORDER_OFFSET : 3]
+        return self.vector[self.IDX_TERRITORIES_OFFSET : self.IDX_TURN_ORDER_OFFSET : 3]
 
     @property
     def tired_armies(self):
-        self.vector[self.IDX_TERRITORIES_OFFSET + 1 : self.IDX_TURN_ORDER_OFFSET : 3]
+        return self.vector[self.IDX_TERRITORIES_OFFSET + 1 : self.IDX_TURN_ORDER_OFFSET : 3]
 
     @property
     def forts(self):
-        self.vector[self.IDX_TERRITORIES_OFFSET + 2 : self.IDX_TURN_ORDER_OFFSET : 3]
+        return self.vector[self.IDX_TERRITORIES_OFFSET + 2 : self.IDX_TURN_ORDER_OFFSET : 3]
 
     @property
     def empty(self):
@@ -182,18 +149,36 @@ class GameState:
     @property
     def mysore_cards(self):
         return self.vector[self.IDX_MYSORE_CARDS]
+    
+    @mysore_cards.setter
+    def mysore_cards(self, values):
+        self.vector[self.IDX_MYSORE_CARDS] = values
 
     @property
     def british_cards(self):
         return self.vector[self.IDX_BRITISH_CARDS]
     
+    @british_cards.setter
+    def british_cards(self, values):
+        self.vector[self.IDX_BRITISH_CARDS] = values
+
     @property
     def to_move(self):
         return np.argmax(self.vector[self.IDX_WHO_TO_MOVE])
     
+    @to_move.setter
+    def to_move(self, to_move_idx):
+        self.vector[self.IDX_WHO_TO_MOVE] = False
+        self.vector[self.IDX_WHO_TO_MOVE_OFFSET + (to_move_idx % 3)] = True
+
     @property
     def turn(self):
         return np.argmax(self.vector[self.IDX_TURN_ORDER]) + 1
+    
+    @turn.setter
+    def turn(self, turn_number):
+        self.vector[self.IDX_TURN_ORDER] = False
+        self.vector[self.IDX_TURN_ORDER_OFFSET + (turn_number - 1)] = 1
 
     def __str__(self):
         str = ""
