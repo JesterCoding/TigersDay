@@ -115,21 +115,21 @@ class MoveEngine:
         ("French Alliance", NODES, "node"),
         ("Monsoon", NODES, "node"),
         ("Cavalry Raid", 1, "blank"),
-        ("Sea Trade", CARDS, "card"),
-        ("Mysore Power", CARDS, "card"),
-        ("Draw Iron Rockets", CARDS, "card"),
-        ("Draw Sepoy Mutiny", CARDS, "card"),
-        ("Draw French Alliance", CARDS, "card"),
+        ("Sea Trade", CARDS, "mcard"),
+        ("Mysore Power", CARDS, "mcard"),
+        ("Draw Iron Rockets", CARDS, "mcard"),
+        ("Draw Sepoy Mutiny", CARDS, "mcard"),
+        ("Draw French Alliance", CARDS, "mcard"),
         ("Pass Mysore", 1, "blank"),
         ("Highlanders", NODES, "node"),
         ("Royal Navy", NODES*len(COASTAL_INDICES), "rn_matrix"),
         ("Divide and Rule", EDGES, "edge"),
         ("Force March", EDGES, "edge"),
         ("Princely States", NODES, "node"),
-        ("British Power", CARDS, "card"),
-        ("Draw Wall Breach", CARDS, "card"),
-        ("Draw Highlanders", CARDS, "card"),
-        ("Draw Royal Navy", CARDS, "card"),
+        ("British Power", CARDS, "bcard"),
+        ("Draw Wall Breach", CARDS, "bcard"),
+        ("Draw Highlanders", CARDS, "bcard"),
+        ("Draw Royal Navy", CARDS, "bcard"),
         ("Pass British", 1, "blank")
     ]
 
@@ -257,16 +257,24 @@ class MoveEngine:
             for idx in valid_local_moves:
                 if move_type == "node":
                     node_name = self.INDEX_MAP[idx]
-                    print(f"[{name}]: [{node_name}]")
+                    print(f"{name}: {node_name}")
                 elif move_type == "edge":
-                    src_name = self.INDEX_MAP[self.EDGE_SOURCES[idx]]
-                    dest_name = self.INDEX_MAP[self.EDGE_DESTS[idx]]
-                    print(f"[{name}]: [{src_name}] -> [{dest_name}]")
-                elif move_type == "card":
+                    src_name = self.INDEX_MAP[self.EDGE_SOURCES[idx]] # type: ignore
+                    dest_name = self.INDEX_MAP[self.EDGE_DESTS[idx]] # type: ignore
+                    print(f"{name}: {src_name} -> {dest_name}")
+                elif move_type == "bcard":
                     card_name = GameState.BRITISH_CARDS[idx]
-                    print(f"[{name}]: {card_name}")
+                    print(f"{name}: {card_name}")
+                elif move_type == "mcard":
+                    card_name = GameState.MYSORE_CARDS[idx]
+                    print(f"{name}: {card_name}")
                 elif move_type == "blank":
-                    print(f"[{name}]")
+                    print(f"{name}")
+                elif move_type == "rn_matrix":
+                    source_node = self.INDEX_MAP[idx // len(self.COASTAL_INDICES)]
+                    dest_node = self.INDEX_MAP[self.COASTAL_INDICES[idx % len(self.COASTAL_INDICES)]] # type: ignore
+                    print(f"{name}: {source_node} -> {dest_node}")
+
             
             offset += size
 
@@ -281,7 +289,7 @@ def main():
     default.use_card_mysore_by_name("French Alliance")
     default.use_card_mysore_by_name("Monsoon")
 
-    print_legal_moves(a.get_legal_moves(default))
+    a.print_legal_moves(a.get_legal_moves(default))
     
 
 if __name__ == "__main__":
