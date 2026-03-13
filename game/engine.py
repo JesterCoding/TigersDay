@@ -153,7 +153,7 @@ class MoveEngine:
             phase2 = np.zeros(94, dtype=bool)
 
         if is_british_card:
-            highlanders = british_cards[1] * empty[self.COASTAL_INDICES]
+            highlanders = british_cards[1] * (empty & self.COASTAL)
 
             royal_navy = british_cards[2] * np.outer((fresh_army + tired_army),legal_dest[self.COASTAL_INDICES]).flatten()
 
@@ -161,7 +161,7 @@ class MoveEngine:
 
             force_march = british_cards[4] * (tired_army[self.EDGE_SOURCES] & (legal_dest & ~defender)[self.EDGE_DESTS])
 
-            princely_states = british_cards[5] * empty[self.KEY_INDICES]
+            princely_states = british_cards[5] * (empty & self.KEYS)
 
             phase3 = np.concatenate((
                 highlanders,
@@ -171,7 +171,7 @@ class MoveEngine:
                 princely_states
             ))
         else:
-            phase3 = np.zeros(395, dtype=bool)
+            phase3 = np.zeros(427, dtype=bool)
 
         mask = np.concatenate((
             phase1,
@@ -179,7 +179,7 @@ class MoveEngine:
             phase3
         ))
 
-        return force_march
+        return mask
 
 def main():
     a = MoveEngine()
