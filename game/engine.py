@@ -180,9 +180,12 @@ class MoveEngine:
 
             mysore_power = mysore_cards * is_battle
 
-            mysore3draw = mysore_cards[0] * ~mysore_cards[1:6]
-            mysore21draw = mysore_cards[1] * ~mysore_cards[3:6]
-            mysore22draw = mysore_cards[2] * ~mysore_cards[3:6]
+            mysore3draw = np.zeros(6, dtype=bool)
+            mysore21draw = np.zeros(6, dtype=bool)
+            mysore22draw = np.zeros(6, dtype=bool)
+            mysore3draw[1:6] = mysore_cards[0] * ~mysore_cards[1:6]
+            mysore21draw[3:6] = mysore_cards[1] * ~mysore_cards[3:6]
+            mysore22draw[3:6] = mysore_cards[2] * ~mysore_cards[3:6]
             mysore_draw = np.concatenate((mysore3draw,mysore21draw,mysore22draw))
 
             mysore_pass = [True]
@@ -213,9 +216,12 @@ class MoveEngine:
 
             british_power = british_cards * is_battle
 
-            british3draw = british_cards[0] * ~british_cards[1:6]
-            british21draw = british_cards[1] * ~british_cards[3:6]
-            british22draw = british_cards[2] * ~british_cards[3:6]
+            british3draw = np.zeros(6, dtype=bool)
+            british21draw = np.zeros(6, dtype=bool)
+            british22draw = np.zeros(6, dtype=bool)
+            british3draw[1:6] = british_cards[0] * ~british_cards[1:6]
+            british21draw[3:6] = british_cards[1] * ~british_cards[3:6]
+            british22draw[3:6] = british_cards[2] * ~british_cards[3:6]
             british_draw = np.concatenate((british3draw,british21draw,british22draw))
 
             british_pass = [True]
