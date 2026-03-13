@@ -242,25 +242,27 @@ class MoveEngine:
         return mask
     
 
-def print_legal_moves(self, mask):
-    offset = 0
-    for name, size, move_type in self.MOVE_SPACE:
-        memory_chunk = mask[offset: offset+size]
-        valid_local_moves = np.where(memory_chunk)[0]
+    def print_legal_moves(self, mask):
+        offset = 0
+        for name, size, move_type in MoveEngine.MOVE_SPACE:
+            memory_chunk = mask[offset: offset+size]
+            valid_local_moves = np.where(memory_chunk)[0]
 
-        for idx in valid_local_moves:
-            if move_type == "node":
-                node_name = self.INDEX_MAP[idx]
-                print(f"[{name}]: [{node_name}]")
-            elif move_type == "edge":
-                src_name = self.INDEX_MAP[self.EDGE_SOURCES[idx]]
-                dest_name = self.INDEX_MAP[self.EDGE_DESTS[idx]]
-                print(f"[{name}]: [{src_name}] -> [{dest_name}]")
-            elif move_type == "card":
-                card_name = GameState.BRITISH_CARDS[idx]
-                print(f"[{name}]: {card_name}")
-            elif move_type == "blank":
-                print(f"[{name}]")
+            for idx in valid_local_moves:
+                if move_type == "node":
+                    node_name = self.INDEX_MAP[idx]
+                    print(f"[{name}]: [{node_name}]")
+                elif move_type == "edge":
+                    src_name = self.INDEX_MAP[self.EDGE_SOURCES[idx]]
+                    dest_name = self.INDEX_MAP[self.EDGE_DESTS[idx]]
+                    print(f"[{name}]: [{src_name}] -> [{dest_name}]")
+                elif move_type == "card":
+                    card_name = GameState.BRITISH_CARDS[idx]
+                    print(f"[{name}]: {card_name}")
+                elif move_type == "blank":
+                    print(f"[{name}]")
+            
+            offset += size
 
 
 def main():
@@ -272,10 +274,9 @@ def main():
     default.set_who_to_move_by_name("British Card")
     default.use_card_mysore_by_name("French Alliance")
     default.use_card_mysore_by_name("Monsoon")
-    print(a.get_legal_moves(default))
+
+    print_legal_moves(a.get_legal_moves(default))
     
-    for _ in range(10000000):
-        a.get_legal_moves(default)
 
 if __name__ == "__main__":
     main()
