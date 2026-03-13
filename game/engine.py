@@ -283,12 +283,7 @@ def main():
     a = MoveEngine()
     default = GameState()
     default.default_setup()
-    default.set_territory_vector_tired_army("Travancore")
-    default.queue_combat_by_name("Travancore", "Palgautcherry")
-    default.set_who_to_move_by_name("British Card")
-    default.use_card_mysore_by_name("French Alliance")
-    default.use_card_british_by_name("Princely States")
-    default.use_card_mysore_by_name("Monsoon")
+    default.set_who_to_move_by_name("Mysore Card")
 
     a.print_legal_moves(a.get_legal_moves(default))
     
