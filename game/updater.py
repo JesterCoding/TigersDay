@@ -2,6 +2,7 @@ import numpy as np
 from state import GameState
 from engine import MoveEngine
 
+# meant to be utilized at the end of the turn
 
 def isMysoreWin(state):
     fresh_army=state.vector[state.IDX_TERRITORIES_OFFSET:state.IDX_TURN_ORDER_OFFSET:3]
