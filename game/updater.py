@@ -85,5 +85,16 @@ def get_next_state(state, move):
         offset += size
     return next_state
 
+def is_battle_won(state, defender, net_card_strength):
+    #todo
+    adjacent_mask = MoveEngine.ADJACENCY_MATRIX[defender]
+    return True
+
+def resolve_battles(state, attacker, defender, net_card_strength):
+    #todo
+    #first battle from state, second battle from parameters
+    discards = []
+    return discards
+
 if __name__ == "__main__":
     main()
