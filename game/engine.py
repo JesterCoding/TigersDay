@@ -155,7 +155,7 @@ class MoveEngine:
         if is_british_card:
             highlanders = british_cards[1] * (empty & self.COASTAL)
 
-            royal_navy = british_cards[2] * np.outer((fresh_army + tired_army),legal_dest[self.COASTAL_INDICES]).flatten()
+            royal_navy = british_cards[2] * np.outer((fresh_army + tired_army), (legal_dest & ~defender)[self.COASTAL_INDICES]).flatten()
 
             divide_and_rule = british_cards[3] * ((fort & ~self.KEYS)[self.EDGE_SOURCES] & empty[self.EDGE_DESTS])
 
