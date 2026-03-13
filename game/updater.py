@@ -26,19 +26,48 @@ def main():
     print(isMysoreWin(default))
     print(isBritishWin(default))
 
-    default2 = GameState()
-    default2.default_setup()
-    default2.set_turn(4)
-    print(isMysoreWin(default2))
-    print(isBritishWin(default2))
+    get_next_state(default, 0)
 
-    default2.set_territory_vector_tired_army("Travancore")
-    default2.set_territory_vector_tired_army("Bombay")
-    default2.set_territory_vector_tired_army("Madras")
-    default2.set_territory_vector_tired_army("Hyderabad")
-
-    print(isMysoreWin(default2))
-    print(isBritishWin(default2))
+def get_next_state(state, move):
+    # state GSR vector, move int
+    next_state = state.copy()
+    offset = 0
+    for name, size, move_type in MoveEngine.MOVE_SPACE:
+        if offset <= move < offset + size:
+            idx = move - offset
+            if move_type == "node":
+                node_name = MoveEngine.INDEX_MAP[idx]
+                if name == "Tire":
+                    next_state.set_territory_vector_tired_army(node_name)
+                elif name == "Sepoy Mutiny":
+                    next_state.set_territory_vector_empty(node_name)
+                elif name == "French Alliance":
+                    next_state.set_territory_vector_fort(node_name)
+                elif name == "Monsoon":
+                    next_state.set_territory_vector_tired_army(node_name)
+                elif name == "Highlanders":
+                    next_state.set_territory_vector_fresh_army(node_name)
+                elif name == "Princely States":
+                    next_state.set_territory_vector_tired_army(node_name)
+            elif move_type == "edge":
+                src_name = MoveEngine.INDEX_MAP[int(MoveEngine.EDGE_SOURCES[idx])] 
+                dest_name = MoveEngine.INDEX_MAP[int(MoveEngine.EDGE_DESTS[idx])] 
+                print(f"{name}: {src_name} -> {dest_name}")
+            elif move_type == "bcard":
+                card_name = GameState.BRITISH_CARDS[idx]
+                print(f"{name}: {card_name}")
+            elif move_type == "mcard":
+                card_name = GameState.MYSORE_CARDS[idx]
+                print(f"{name}: {card_name}")
+            elif move_type == "blank":
+                print(f"{name}")
+            elif move_type == "rn_matrix":
+                source_node = MoveEngine.INDEX_MAP[idx // len(MoveEngine.COASTAL_INDICES)]
+                dest_node = MoveEngine.INDEX_MAP[int(MoveEngine.COASTAL_INDICES[idx % len(MoveEngine.COASTAL_INDICES)])] 
+                print(f"{name}: {source_node} -> {dest_node}")
+            break
+        offset += size
+    return next_state
 
 if __name__ == "__main__":
     main()
