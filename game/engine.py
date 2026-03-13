@@ -36,6 +36,8 @@ class MoveEngine:
 
     NODES = 23
 
+    CARDS = 6
+
     INDEX_MAP = {
     0: "Bombay",
     1: "Hyderabad",
@@ -113,26 +115,26 @@ class MoveEngine:
         ("French Alliance", NODES, "node"),
         ("Monsoon", NODES, "node"),
         ("Cavalry Raid", 1, "blank"),
-        ("Sea Trade", 6, "card"),
-        ("Mysore Power", 6, "card"),
-        ("Draw Iron Rockets", 5, "card"),
-        ("Draw Sepoy Mutiny", 3, "card"),
-        ("Draw French Alliance", 3, "card"),
+        ("Sea Trade", CARDS, "card"),
+        ("Mysore Power", CARDS, "card"),
+        ("Draw Iron Rockets", CARDS, "card"),
+        ("Draw Sepoy Mutiny", CARDS, "card"),
+        ("Draw French Alliance", CARDS, "card"),
         ("Pass Mysore", 1, "blank"),
         ("Highlanders", NODES, "node"),
         ("Royal Navy", NODES*len(COASTAL_INDICES), "rn_matrix"),
         ("Divide and Rule", EDGES, "edge"),
         ("Force March", EDGES, "edge"),
         ("Princely States", NODES, "node"),
-        ("British Power", 6, "blank"),
-        ("Draw Wall Breach", 5, "card"),
-        ("Draw Highlanders", 3, "card"),
-        ("Draw Royal Navy", 3, "card"),
-        ("Pass British", 1, "card")
+        ("British Power", CARDS, "card"),
+        ("Draw Wall Breach", CARDS, "card"),
+        ("Draw Highlanders", CARDS, "card"),
+        ("Draw Royal Navy", CARDS, "card"),
+        ("Pass British", 1, "blank")
     ]
 
     def __init__(self):
-        self.vector = np.zeros(568, dtype=float)
+        self.vector = np.zeros(636, dtype=float)
     
     def get_legal_moves(self, state: GameState):
         fresh_army=state.vector[state.IDX_TERRITORIES_OFFSET:state.IDX_TURN_ORDER_OFFSET:3]
@@ -196,7 +198,7 @@ class MoveEngine:
                 mysore_pass
             ))
         else:
-            phase2 = np.zeros(94, dtype=bool)
+            phase2 = np.zeros(101, dtype=bool)
 
         if is_british_card:
             highlanders = british_cards[1] * (empty & self.COASTAL)
@@ -229,7 +231,7 @@ class MoveEngine:
                 british_pass
             ))
         else:
-            phase3 = np.zeros(427, dtype=bool)
+            phase3 = np.zeros(434, dtype=bool)
 
         mask = np.concatenate((
             phase1,
