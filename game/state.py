@@ -133,12 +133,9 @@ class GameState:
 
         self.vector[self.IDX_TURN_ORDER] = False
         self.vector[self.IDX_TURN_ORDER_OFFSET + (turn_number - 1)] = 1
-
-    def get_turn(self):
-        return np.argmax(self.vector[self.IDX_TURN_ORDER]) + 1
     
-    def update_turn(self):
-        self.set_turn(self.get_turn() + 1)
+    def next_turn(self):
+        self.set_turn(self.turn + 1)
     
     def set_who_to_move_by_name(self, who_to_move):
         self.set_who_to_move_by_value(self.WHO_TO_MOVE_TO_IDX[who_to_move])
@@ -146,13 +143,9 @@ class GameState:
     def set_who_to_move_by_value(self, who_to_move_idx):
         self.vector[self.IDX_WHO_TO_MOVE] = False
         self.vector[self.IDX_WHO_TO_MOVE_OFFSET + (who_to_move_idx % 3)] = True
-
-    def get_who_to_move(self):
-        """Returns 0 (British), 1 (Mysore Card), or 2 (British Card)"""
-        return np.argmax(self.vector[self.IDX_WHO_TO_MOVE])
     
-    def update_who_to_move(self):
-        self.set_who_to_move_by_value(self.get_who_to_move() + 1)
+    def next_to_move(self):
+        self.set_who_to_move_by_value(self.to_move + 1)
 
     def clear_combat(self):
         self.vector[self.IDX_COMBATANTS] = False
@@ -170,6 +163,37 @@ class GameState:
         self.vector[self.IDX_COMBAT_STRENGTH_OFFSET] = False
         self.vector[self.IDX_COMBAT_STRENGTH_OFFSET + self.CARD_VALUE[card_idx]] = True
 
+    @property
+    def fresh_armies(self):
+        self.vector[self.IDX_TERRITORIES_OFFSET : self.IDX_TURN_ORDER_OFFSET : 3]
+
+    @property
+    def tired_armies(self):
+        self.vector[self.IDX_TERRITORIES_OFFSET + 1 : self.IDX_TURN_ORDER_OFFSET : 3]
+
+    @property
+    def forts(self):
+        self.vector[self.IDX_TERRITORIES_OFFSET + 2 : self.IDX_TURN_ORDER_OFFSET : 3]
+
+    @property
+    def empty(self):
+        return ~(self.fresh_armies | self.tired_armies | self.forts)
+    
+    @property
+    def mysore_cards(self):
+        return self.vector[self.IDX_MYSORE_CARDS]
+
+    @property
+    def british_cards(self):
+        return self.vector[self.IDX_BRITISH_CARDS]
+    
+    @property
+    def to_move(self):
+        return np.argmax(self.vector[self.IDX_WHO_TO_MOVE])
+    
+    @property
+    def turn(self):
+        return np.argmax(self.vector[self.IDX_TURN_ORDER]) + 1
 
     def __str__(self):
         str = ""
