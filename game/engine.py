@@ -247,8 +247,6 @@ def print_legal_moves(self, mask):
         valid_local_moves = np.where(memory_chunk)[0]
 
         for idx in valid_local_moves:
-            iterator = offset + idx
-            
             if move_type == "node":
                 node_name = self.INDEX_MAP[idx]
                 print(f"[{name}]: [{node_name}]")
@@ -257,7 +255,10 @@ def print_legal_moves(self, mask):
                 dest_name = self.INDEX_MAP[self.EDGE_DESTS[idx]]
                 print(f"[{name}]: [{src_name}] -> [{dest_name}]")
             elif move_type == "card":
-                card_name = 
+                card_name = GameState.BRITISH_CARDS[idx]
+                print(f"[{name}]: {card_name}")
+            elif move_type == "blank":
+                print(f"[{name}]")
 
 
 def main():
