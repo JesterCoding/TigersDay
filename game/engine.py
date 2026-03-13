@@ -89,6 +89,7 @@ class MoveEngine:
         tired_army=state.vector[state.IDX_TERRITORIES_OFFSET+1:state.IDX_TURN_ORDER_OFFSET:3]
         fort = state.vector[state.IDX_TERRITORIES_OFFSET+2:state.IDX_TURN_ORDER_OFFSET:3]
         empty = ~(fresh_army + tired_army + fort)
+        mysore_cards = state.vector[state.IDX_MYSORE_CARDS_OFFSET:state.IDX_MYSORE_CARDS_OFFSET+6]
 
         is_british_move = state.vector[state.IDX_WHO_TO_MOVE_OFFSET]
         is_mysore_card = state.vector[state.IDX_WHO_TO_MOVE_OFFSET + 1]
@@ -109,15 +110,15 @@ class MoveEngine:
 
         cavalry_raid = [state.vector[state.IDX_MYSORE_CARDS_OFFSET + 4] * is_mysore_card]
 
-        forts_on_coast = np.dot(fort.astype(int),self.COASTAL) * is_mysore_card
-        valid_trades = ~(state.vector[state.IDX_MYSORE_CARDS_OFFSET:state.IDX_MYSORE_CARDS_OFFSET+6]) & (state.CARD_VALUE == forts_on_coast)
+        forts_on_coast = np.dot(fort.astype(int),self.COASTAL)
+        valid_trades = ~mysore_cards & (state.CARD_VALUE == forts_on_coast)
         sea_trade = state.vector[state.IDX_MYSORE_CARDS_OFFSET + 5] * valid_trades * is_mysore_card
 
         mysore_power = state.vector[state.IDX_MYSORE_CARDS_OFFSET:state.IDX_MYSORE_CARDS_OFFSET+6] * is_mysore_card * is_battle
 
-        mysore3draw = state.vector[state.IDX_MYSORE_CARDS_OFFSET] * ~(state.vector[state.IDX_MYSORE_CARDS_OFFSET+1:state.IDX_MYSORE_CARDS_OFFSET+6])
-        mysore21draw = state.vector[state.IDX_MYSORE_CARDS_OFFSET+1] * ~(state.vector[state.IDX_MYSORE_CARDS_OFFSET+3:state.IDX_MYSORE_CARDS_OFFSET+6])
-        mysore22draw = state.vector[state.IDX_MYSORE_CARDS_OFFSET+2] * ~(state.vector[state.IDX_MYSORE_CARDS_OFFSET+3:state.IDX_MYSORE_CARDS_OFFSET+6])
+        mysore3draw = state.vector[state.IDX_MYSORE_CARDS_OFFSET] * ~mysore_cards[1:6]
+        mysore21draw = state.vector[state.IDX_MYSORE_CARDS_OFFSET+1] * ~mysore_cards[3:6]
+        mysore22draw = state.vector[state.IDX_MYSORE_CARDS_OFFSET+2] * ~mysore_cards[3:6]
         mysore_draw = np.concatenate((mysore3draw,mysore21draw,mysore22draw)) * is_mysore_card
 
         mysore_pass = [is_mysore_card]
@@ -135,9 +136,7 @@ class MoveEngine:
             mysore_pass
             ))
 
-        #return mask
-
-
+        return sea_trade
 
 def main():
     a = MoveEngine()
@@ -148,10 +147,10 @@ def main():
     default.set_who_to_move_by_name("Mysore Card")
     default.use_card_mysore_by_name("French Alliance")
     default.use_card_mysore_by_name("Monsoon")
-    #print(a.get_legal_moves(default))
+    print(a.get_legal_moves(default))
 
-    for i in range(1000):
-        a.get_legal_moves(default)   
+    #for i in range(1000):
+    #    a.get_legal_moves(default)   
 
 if __name__ == "__main__":
     main()
