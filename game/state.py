@@ -28,19 +28,24 @@ class GameState:
     IDX_TURN_ORDER_OFFSET = 81     # 4 turns (One-hot)
     IDX_WHO_TO_MOVE_OFFSET = 85    # 3 options (One-hot)
     IDX_COMBAT_STRENGTH_OFFSET = 88 # 4 options (One-hot): Only ever stored for Mysore
-    IDX_COMBATANTS_OFFSET = 92    # 23x2 Attacker/Defender (One-hot)
-    IDX_COMBATANTS_DEFENDER_OFFSET = 115 #Index from which Defender values start showing up
+    IDX_ATTACKER_OFFSET = 92    # 23x2 Attacker/Defender (One-hot)
+    IDX_DEFENDER_OFFSET = 115 #Index from which Defender values start showing up
 
     IDX_BRITISH_CARDS = slice(IDX_BRITISH_CARDS_OFFSET, IDX_BRITISH_CARDS_OFFSET + 6)
     IDX_MYSORE_CARDS = slice(IDX_MYSORE_CARDS_OFFSET, IDX_MYSORE_CARDS_OFFSET + 6)
     IDX_TURN_ORDER = slice(IDX_TURN_ORDER_OFFSET, IDX_TURN_ORDER_OFFSET + 4)
     IDX_WHO_TO_MOVE = slice(IDX_WHO_TO_MOVE_OFFSET, IDX_WHO_TO_MOVE_OFFSET + 3)
     IDX_COMBAT_STRENGTH = slice(IDX_COMBAT_STRENGTH_OFFSET, IDX_COMBAT_STRENGTH_OFFSET + 4)
-    IDX_COMBATANTS = slice(IDX_COMBATANTS_OFFSET, IDX_COMBATANTS_OFFSET + 46)
+    IDX_ATTACKER = slice(IDX_ATTACKER_OFFSET, IDX_ATTACKER_OFFSET + 23)
+    IDX_DEFENDER = slice(IDX_DEFENDER_OFFSET, IDX_DEFENDER_OFFSET + 23)
 
 
     def __init__(self):
         self.vector = np.zeros(138, dtype=bool)
+        # store as integer behind the scenes, one hot for the AI, -1 is blank
+        self._attacker = -1
+        self._defender = -1
+        self._card_strength = -1
 
     def default_setup(self):
         self.reset_cards()
@@ -86,20 +91,9 @@ class GameState:
         self.vector[start_idx : start_idx + 3] = False
 
     def clear_combat(self):
-        self.vector[self.IDX_COMBATANTS] = False
-        self.vector[self.IDX_COMBAT_STRENGTH] = False
-    
-    def queue_combat_by_name(self, attacker_name, defender_name):
-        self.vector[self.IDX_COMBAT_STRENGTH_OFFSET] = True
-        self.queue_combat_by_value(self.NODE_TO_IDX[attacker_name], self.NODE_TO_IDX[defender_name])
-
-    def queue_combat_by_value(self, attacker_idx, defender_idx):
-        self.vector[self.IDX_COMBATANTS_OFFSET + attacker_idx] = True
-        self.vector[self.IDX_COMBATANTS_DEFENDER_OFFSET + defender_idx] = True
-
-    def set_combat_strength(self, card_idx):
-        self.vector[self.IDX_COMBAT_STRENGTH_OFFSET] = False
-        self.vector[self.IDX_COMBAT_STRENGTH_OFFSET + self.CARD_VALUE[card_idx]] = True
+        self.attacker = -1 
+        self.defender = -1
+        self.card_strength =- 1
 
     def turn_refresh(self):
         self.turn += 1
@@ -155,6 +149,39 @@ class GameState:
     def turn(self, turn_number):
         self.vector[self.IDX_TURN_ORDER] = False
         self.vector[self.IDX_TURN_ORDER_OFFSET + (turn_number - 1)] = 1
+
+    @property
+    def attacker(self):
+        return self._attacker
+    
+    @attacker.setter
+    def attacker(self, value: int):
+        self._attacker = value
+        self.vector[self.IDX_ATTACKER] = False
+        if value != -1:
+            self.vector[self.IDX_ATTACKER_OFFSET + value] = True
+
+    @property
+    def defender(self):
+        return self._defender
+    
+    @defender.setter
+    def defender(self, value: int):
+        self._defender = value
+        self.vector[self.IDX_DEFENDER] = False
+        if value != -1:
+            self.vector[self.IDX_DEFENDER_OFFSET + value] = True
+    
+    @property
+    def card_strength(self):
+        return self._card_strength
+    
+    @card_strength.setter
+    def card_strength(self, value: int):
+        self._card_strength = value
+        self.vector[self.IDX_COMBAT_STRENGTH] = False
+        if value != -1:
+            self.vector[self.IDX_COMBAT_STRENGTH_OFFSET + value] = True
 
     def __str__(self):
         str = ""
