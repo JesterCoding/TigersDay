@@ -7,6 +7,8 @@ class MoveEngine:
     
     def get_legal_moves(self, state: GameState):
         legal_dest = state.empty | state.forts
+        if state.is_battle:
+            legal_dest[state.defender] = False
 
         if state.to_move == 0:
             legal_moves = (state.fresh_armies[EDGE_SOURCES] & legal_dest[EDGE_DESTS])
@@ -61,11 +63,11 @@ class MoveEngine:
         if state.to_move == 2:
             highlanders = state.british_cards[1] * (state.empty & COASTAL)
 
-            royal_navy = state.british_cards[2] * np.outer((state.fresh_armies | state.tired_armies), (legal_dest & ~state.defender)[COASTAL_INDICES]).flatten()
+            royal_navy = state.british_cards[2] * np.outer((state.fresh_armies | state.tired_armies), legal_dest[COASTAL_INDICES]).flatten()
 
             divide_and_rule = state.british_cards[3] * ((state.forts & ~KEYS)[EDGE_SOURCES] & state.empty[EDGE_DESTS])
 
-            force_march = state.british_cards[4] * (state.tired_armies[EDGE_SOURCES] & (legal_dest & ~state.defender)[EDGE_DESTS])
+            force_march = state.british_cards[4] * (state.tired_armies[EDGE_SOURCES] & legal_dest[EDGE_DESTS])
 
             princely_states = state.british_cards[5] * (state.empty & KEYS)
 
@@ -131,7 +133,6 @@ class MoveEngine:
                     dest_node = INDEX_MAP[int(COASTAL_INDICES[idx % len(COASTAL_INDICES)])] 
                     print(f"{number} {name}: {source_node} -> {dest_node}")
 
-            
             offset += size
 
 
@@ -140,25 +141,9 @@ def main():
     default = GameState()
     default.default_setup()
     default.to_move = 2
-    default.mysore_cards[1:4] = False
-    start_time = time.perf_counter()
-    iterations = 1000000
-    for _ in range(iterations):
-        _ = a.get_legal_moves(default)
-    end_time = time.perf_counter()
-    total_time = end_time - start_time
-    iters_per_sec = iterations / total_time
-    
-    print("-" * 30)
-    print(f"Total Time: {total_time:.2f} seconds")
-    print(f"Speed:      {iters_per_sec:,.0f} iterations / second")
-    print("-" * 30)
-    
-def main2():
-    a = MoveEngine()
-    a.print_legal_moves([True]*636)
-
+    default.set_node_tired_army(NODE_TO_IDX["Travancore"])
+    a.print_legal_moves(a.get_legal_moves(default))
 
 
 if __name__ == "__main__":
-    main2()
+    main()

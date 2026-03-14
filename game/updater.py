@@ -5,7 +5,7 @@ from constants import *
 def main():
     default = GameState()
     default.default_setup()
-    print(get_next_state(default, 73))
+    print(get_next_state(default, 227))
 
 def get_next_state(state, move):
     # state GSR vector, move int
@@ -59,6 +59,7 @@ def get_next_state(state, move):
                     next_state.set_node_fort(dest)
             elif move_type == "bcard":
                 if name == "British Power":
+                    next_state.british_cards[idx] = False
                     # todo
                     break
                 elif name == "Draw Wall Breach":
@@ -75,6 +76,7 @@ def get_next_state(state, move):
                     next_state.mysore_cards[5] = False
                     next_state.mysore_cards[idx] = True
                 elif name == "Mysore Power":
+                    next_state.mysore_cards[idx] = False
                     next_state.card_strength = CARD_VALUE[idx]
                 elif name == "Draw Iron Rockets":
                     next_state.mysore_cards[0] = False
@@ -90,9 +92,9 @@ def get_next_state(state, move):
                     next_state.mysore_cards[4] = False
                     # todo
                     break
-                elif name == "Mysore Pass":
+                elif name == "Pass Mysore":
                     break
-                elif name == "British Pass":
+                elif name == "Pass British":
                     break
             elif move_type == "rn_matrix":
                 next_state.british_cards[2] = False
@@ -110,7 +112,9 @@ def get_next_state(state, move):
                     else:
                         next_state.set_node_tired_army(dest)
                 print(f"{name}: {src} -> {dest}")  
+
             break
+
         offset += size
 
     if state.to_move == 2:
