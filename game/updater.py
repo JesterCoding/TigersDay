@@ -1,6 +1,6 @@
 import numpy as np
 from state import GameState
-from engine import MoveEngine
+from constants import *
 
 def main():
     default = GameState()
@@ -11,7 +11,7 @@ def get_next_state(state, move):
     # state GSR vector, move int
     next_state = state.copy()
     offset = 0
-    for name, size, move_type in MoveEngine.MOVE_SPACE:
+    for name, size, move_type in MOVE_SPACE:
         if offset <= move < offset + size:
             idx = move - offset
             if move_type == "node":
@@ -28,8 +28,8 @@ def get_next_state(state, move):
                 elif name == "Princely States":
                     next_state.set_node_tired_army(idx)
             elif move_type == "edge":
-                src = MoveEngine.EDGE_SOURCES[idx]
-                dest = MoveEngine.EDGE_DESTS[idx]
+                src = EDGE_SOURCES[idx]
+                dest = EDGE_DESTS[idx]
                 is_fort_defending = state.forts[dest]
                 if name == "Move":
                     if is_fort_defending:
@@ -50,16 +50,16 @@ def get_next_state(state, move):
                     next_state.set_node_empty(src)
                     next_state.set_node_fort(dest)
             elif move_type == "bcard":
-                card_name = GameState.BRITISH_CARDS[idx]
+                card_name = BRITISH_CARDS[idx]
                 print(f"{name}: {card_name}")
             elif move_type == "mcard":
-                card_name = GameState.MYSORE_CARDS[idx]
+                card_name = MYSORE_CARDS[idx]
                 print(f"{name}: {card_name}")
             elif move_type == "blank":
                 print(f"{name}")
             elif move_type == "rn_matrix":
-                source_node = MoveEngine.INDEX_MAP[idx // len(MoveEngine.COASTAL_INDICES)]
-                dest_node = MoveEngine.INDEX_MAP[int(MoveEngine.COASTAL_INDICES[idx % len(MoveEngine.COASTAL_INDICES)])] 
+                source_node = INDEX_MAP[idx // len(COASTAL_INDICES)]
+                dest_node = INDEX_MAP[int(COASTAL_INDICES[idx % len(COASTAL_INDICES)])] 
                 print(f"{name}: {source_node} -> {dest_node}")
             break
         offset += size
@@ -70,7 +70,7 @@ def get_next_state(state, move):
     return next_state
 
 def get_state_winner(state):
-    if np.dot((state.tired_armies | state.fresh_armies).astype(int),MoveEngine.KEYS) == 5:
+    if np.dot((state.tired_armies | state.fresh_armies).astype(int),KEYS) == 5:
         return 1
     elif state.turn == 4 and not state.fresh_armies.any() and state.to_move == 0:
         return -1
@@ -79,7 +79,7 @@ def get_state_winner(state):
 
 def is_battle_won(state, defender, net_card_strength):
     #todo
-    adjacent_mask = MoveEngine.ADJACENCY_MATRIX[defender]
+    adjacent_mask = ADJACENCY_MATRIX[defender]
     return True
 
 def resolve_battles(state, attacker, defender, net_card_strength):

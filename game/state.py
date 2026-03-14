@@ -1,26 +1,7 @@
 import numpy as np
+from constants import *
 
 class GameState:
-
-    NODES = [
-    "Bombay", "Hyderabad", "Madras", "Srirangapatna", "Coimbatore",
-    "Pune", "Koppal", "Vizag", "Goa", "Darwar", "Anantapur",
-    "Bednore", "Mangalore", "Bangalore", "Vellore", "Mahé",
-    "Pondicherry", "Erode", "Trichy", "Palgautcherry", "Dindigul",
-    "Travancore", "Ceylon"
-    ]
-
-    WHO_TO_MOVE = ["British Move", "Mysore Card", "British Card"]
-
-    MYSORE_CARDS = ["Iron Rockets", "Sepoy Mutiny", "French Alliance", "Monsoon", "Cavalry Raid", "Sea Trade"]
-    BRITISH_CARDS = ["Wall Breach", "Highlanders", "Royal Navy", "Divide and Rule", "Force March", "Princely States"]
-
-    NODE_TO_IDX = {name: i for i, name in enumerate(NODES)}
-    WHO_TO_MOVE_TO_IDX = {name: i for i, name in enumerate(WHO_TO_MOVE)}
-    MYSORE_CARDS_TO_IDX = {name: i for i, name in enumerate(MYSORE_CARDS)}
-    BRITISH_CARDS_TO_IDX = {name: i for i, name in enumerate(BRITISH_CARDS)}
-
-    CARD_VALUE = np.array([3, 2, 2, 1, 1, 1])
 
     IDX_BRITISH_CARDS_OFFSET = 0   #index where this information begins
     IDX_MYSORE_CARDS_OFFSET = 6    # 6 cards for both mysore and british
@@ -54,20 +35,20 @@ class GameState:
         self.mysore_cards[:] = True
         self.british_cards[:] = True
 
-        self.set_node_fresh_army(self.NODE_TO_IDX["Bombay"])
-        self.set_node_fresh_army(self.NODE_TO_IDX["Hyderabad"])
-        self.set_node_fresh_army(self.NODE_TO_IDX["Madras"])
-        self.set_node_fresh_army(self.NODE_TO_IDX["Travancore"])
+        self.set_node_fresh_army(NODE_TO_IDX["Bombay"])
+        self.set_node_fresh_army(NODE_TO_IDX["Hyderabad"])
+        self.set_node_fresh_army(NODE_TO_IDX["Madras"])
+        self.set_node_fresh_army(NODE_TO_IDX["Travancore"])
 
-        self.set_node_fort(self.NODE_TO_IDX["Darwar"])
-        self.set_node_fort(self.NODE_TO_IDX["Bednore"])
-        self.set_node_fort(self.NODE_TO_IDX["Mangalore"])
-        self.set_node_fort(self.NODE_TO_IDX["Bangalore"])
-        self.set_node_fort(self.NODE_TO_IDX["Srirangapatna"])
-        self.set_node_fort(self.NODE_TO_IDX["Erode"])
-        self.set_node_fort(self.NODE_TO_IDX["Coimbatore"])
-        self.set_node_fort(self.NODE_TO_IDX["Mahé"])
-        self.set_node_fort(self.NODE_TO_IDX["Palgautcherry"])
+        self.set_node_fort(NODE_TO_IDX["Darwar"])
+        self.set_node_fort(NODE_TO_IDX["Bednore"])
+        self.set_node_fort(NODE_TO_IDX["Mangalore"])
+        self.set_node_fort(NODE_TO_IDX["Bangalore"])
+        self.set_node_fort(NODE_TO_IDX["Srirangapatna"])
+        self.set_node_fort(NODE_TO_IDX["Erode"])
+        self.set_node_fort(NODE_TO_IDX["Coimbatore"])
+        self.set_node_fort(NODE_TO_IDX["Mahé"])
+        self.set_node_fort(NODE_TO_IDX["Palgautcherry"])
 
         self.turn = 1
         self.to_move = 0
