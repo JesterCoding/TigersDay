@@ -25,11 +25,11 @@ class GameState:
         # store as integer behind the scenes, one hot for the AI, -1 is blank
         self._attacker = -1
         self._defender = -1
-        self._card_strength = -1
+        self._card_strength = 0
         self._to_move = 0
         self._turn = 1
         self._winner = 0
-        self._luck = []
+        self.luck = []
 
     def default_setup(self):
         self.mysore_cards[:] = True
@@ -63,7 +63,7 @@ class GameState:
         new_state._to_move = self._to_move
         new_state._turn = self._turn
         new_state._winner = self._winner
-        new_state._luck = list(self._luck)
+        new_state.luck = list(self.luck)
         return new_state
 
     def set_node_fresh_army(self, node):
@@ -83,9 +83,9 @@ class GameState:
         self.vector[start_idx : start_idx + 3] = False
 
     def clear_combat(self):
-        self.attacker = -1 
+        self.attacker = -1
         self.defender = -1
-        self.card_strength = -1
+        self.card_strength = 0
 
     @property
     def fresh_armies(self):
@@ -161,8 +161,7 @@ class GameState:
     def card_strength(self, value: int):
         self._card_strength = value
         self.vector[self.IDX_COMBAT_STRENGTH] = False
-        if value != -1:
-            self.vector[self.IDX_COMBAT_STRENGTH_OFFSET + value] = True
+        self.vector[self.IDX_COMBAT_STRENGTH + value] = True
 
     @property
     def is_battle(self):

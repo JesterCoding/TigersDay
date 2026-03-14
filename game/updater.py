@@ -49,8 +49,7 @@ def get_next_state(state, move):
                 elif name == "Force March":
                     next_state.british_cards[4] = False
                     if is_fort_defending:
-                        # todo
-                        break
+                        next_state = resolve_battles(state, src, dest, -state.card_strength)
                     else:
                         next_state.set_node_empty(src)
                         next_state.set_node_tired_army(dest)
@@ -61,8 +60,7 @@ def get_next_state(state, move):
             elif move_type == "bcard":
                 if name == "British Power":
                     next_state.british_cards[idx] = False
-                    # todo
-                    break
+                    next_state = resolve_battles(state, -1, -1, CARD_VALUE[idx]-state.card_strength)
                 elif name == "Draw Wall Breach":
                     next_state.british_cards[0] = False
                     next_state.british_cards[idx] = True
@@ -103,8 +101,7 @@ def get_next_state(state, move):
                 dest = COASTAL_INDICES[idx % len(COASTAL_INDICES)]
                 is_fort_defending = state.forts[dest]
                 if is_fort_defending:
-                    # todo
-                    break
+                    next_state = resolve_battles(state, src, dest, -state.card_strength)
                 else:
                     is_fresh = state.fresh_armies[src]
                     next_state.set_node_empty(src)
@@ -119,7 +116,7 @@ def get_next_state(state, move):
         offset += size
 
     if state.to_move == 2:
-        # resolve_battles
+        next_state = resolve_battles(state, -1, -1, -state.card_strength)
         if state.turn != 4 and not state.fresh_armies.any():
             next_state.turn_refresh()
     next_state.to_move += 1
@@ -134,17 +131,44 @@ def get_state_winner(state):
         return 0
 
 def is_battle_won(state, defender, net_card_strength):
-    #todo
     adjacent_mask = ADJACENCY_MATRIX[defender]
-    return True
+    attacker_strength = np.sum((state.fresh_armies | state.tired_armies) & adjacent_mask)
+    defender_strength = np.sum(state.forts & adjacent_mask)
+    return attacker_strength + net_card_strength > defender_strength
 
 def resolve_battles(state, attacker, defender, net_card_strength):
-    #todo
+    battle1 = False
+    battle2 = False
     #first battle from state, second battle from parameters
+    #check if attacker or defender changed with FM SM DR RN cards
+    if state.attacker != -1:
+        attacker_present = (state.fresh_armies[state.attacker] | state.tired_armies[state.attacker])
+        defender_present = state.forts[state.defender]
+        if attacker_present and defender_present:
+            battle1 = is_battle_won(state, state.defender, net_card_strength)
+        elif attacker_present and not defender_present:
+            battle1 = True
+        elif not attacker_present and defender_present:
+            battle1 = False
+        else:
+            battle1 = False
+    if attacker != -1:
+        battle2 = is_battle_won(state, defender, 0)
     #preserve fresh/tired state of attacker
-    #check if attacker or defender moved away with FM, RN, or DR
-    discards = []
-    return discards
+    if battle1:
+        state.set_node_tired_army(state.defender)
+        state.set_node_empty(state.attacker)
+    if battle2:
+        is_fresh = state.fresh_armies[attacker]
+        state.set_node_empty(attacker)
+        if is_fresh:
+            state.set_node_fresh_army(defender)
+        else:
+            state.set_node_tired_army(defender)
+    #todo add luck effects
+    state.clear_combat()
+    state.luck = []
+    return state
 
 """
 1) All the cards effects + Power play by either side
