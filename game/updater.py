@@ -2,14 +2,6 @@ import numpy as np
 from state import GameState
 from engine import MoveEngine
 
-# meant to be utilized at the end of the impulse
-
-def isMysoreWin(state):
-    return state.turn == 4 and (np.sum(state.fresh_armies) == 0)
-
-def isBritishWin(state):
-    return np.dot((state.tired_armies | state.fresh_armies).astype(int),MoveEngine.KEYS) == 5
-
 def main():
     default = GameState()
     default.default_setup()
@@ -41,7 +33,9 @@ def get_next_state(state, move):
                 is_fort_defending = state.forts[dest]
                 if name == "Move":
                     if is_fort_defending:
-                        next_state.queue_combat_by_name(src, dest)
+                        next_state.attacker = src
+                        next_state.defender = dest
+                        next_state.card_strength = 0
                     else:
                         next_state.set_node_empty(src)
                         next_state.set_node_tired_army(dest)
@@ -69,7 +63,20 @@ def get_next_state(state, move):
                 print(f"{name}: {source_node} -> {dest_node}")
             break
         offset += size
+
+        if next_state.turn != 4 and not next_state.fresh_armies.any() and state.to_move == 2:
+                # todo turn refresh
+                next_state.turn += 1
+        next_state.to_move += 1
     return next_state
+
+def get_state_winner(state):
+    if np.dot((state.tired_armies | state.fresh_armies).astype(int),MoveEngine.KEYS) == 5:
+        return 1
+    elif state.turn == 4 and not state.fresh_armies.any() and state.to_move == 0:
+        return -1
+    else:
+        return 0
 
 def is_battle_won(state, defender, net_card_strength):
     #todo

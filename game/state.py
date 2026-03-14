@@ -47,6 +47,7 @@ class GameState:
         self._card_strength = -1
         self._to_move = 0
         self._turn = 1
+        self._winner = 0
         self._luck = []
 
     def default_setup(self):
@@ -80,6 +81,7 @@ class GameState:
         new_state._card_strength = self._card_strength
         new_state._to_move = self._to_move
         new_state._turn = self._turn
+        new_state._winner = self._winner
         new_state._luck = list(self._luck)
         return new_state
 
@@ -142,7 +144,7 @@ class GameState:
     
     @to_move.setter
     def to_move(self, to_move_idx):
-        self._to_move = to_move_idx
+        self._to_move = to_move_idx % 3
         self.vector[self.IDX_WHO_TO_MOVE] = False
         self.vector[self.IDX_WHO_TO_MOVE_OFFSET + (to_move_idx % 3)] = True
 
