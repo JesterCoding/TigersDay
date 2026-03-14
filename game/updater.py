@@ -59,9 +59,11 @@ def get_next_state(state, move):
                         next_state.set_node_tired_army(dest)
                 elif name == "Divide and Rule":
                     if state.defender == src:
+                        next_state.set_node_tired_army(src)
                         next_state.clear_battle()
+                    else:
+                        next_state.set_node_empty(src)
                     next_state.british_cards[3] = False
-                    next_state.set_node_empty(src)
                     next_state.set_node_fort(dest)
             elif move_type == "bcard":
                 if name == "British Power":
