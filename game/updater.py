@@ -60,6 +60,7 @@ def get_next_state(state, move):
                 elif name == "Divide and Rule":
                     if state.defender == src:
                         next_state.set_node_tired_army(src)
+                        next_state.set_node_empty(state.attacker)
                         next_state.clear_battle()
                     else:
                         next_state.set_node_empty(src)
