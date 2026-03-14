@@ -161,7 +161,7 @@ class GameState:
     def card_strength(self, value: int):
         self._card_strength = value
         self.vector[self.IDX_COMBAT_STRENGTH] = False
-        self.vector[self.IDX_COMBAT_STRENGTH + value] = True
+        self.vector[self.IDX_COMBAT_STRENGTH_OFFSET + value] = True
 
     @property
     def is_battle(self):
