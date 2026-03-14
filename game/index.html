@@ -219,10 +219,6 @@
             <div class="panel">
                 <h2>SELECTED TERRITORY</h2>
                 <div id="info-panel" style="font-size:.86rem;color:#5a3e18;line-height:1.6"><em>Click any territory.</em></div>
-                <div id="action-buttons" style="margin-top:9px;display:none;flex-direction:column;gap:4px">
-                    <button class="action-btn" onclick="setTired()">😴 Set Army Tired</button>
-                    <button class="action-btn" onclick="setActive()">⚡ Refresh Army</button>
-                </div>
             </div>
         </div>
     </div>
@@ -611,20 +607,62 @@ function updateGameStatePanel(turn, maxTurns, whoToMove, winner) {
 
 function sendMove(from, to) { send({ type:'MOVE', from, to }); }
 function playCard(player, cardIndex) { send({ type:'CARD_PLAY', player, cardIndex }); }
-function setTired() { if (selectedTerritoryName) send({ type:'SET_TIRED', territory: selectedTerritoryName }); }
-function setActive() { if (selectedTerritoryName) send({ type:'SET_ACTIVE', territory: selectedTerritoryName }); }
 function sendNextPhase() { send({ type:'NEXT_PHASE' }); }
 function sendUndo() { send({ type:'UNDO' }); }
 function sendReset() { send({ type:'RESET' }); }
 function send(obj) { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj)); else flashStatus('⚠ &nbsp;Not connected', 1800); }
 
 function saveState() {
-  if (!lastState) { alert('No state to save yet.'); return; }
-  const blob = new Blob([JSON.stringify(lastState, null, 2)], { type:'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `tigers-day-turn${lastState.turn || 1}.json`;
-  a.click();
+    // 1. Grab the binary string from the Python engine
+    let binStr = "";
+    if (window._pyGetStateBinary) {
+        binStr = window._pyGetStateBinary();
+    } else {
+        alert("Engine not ready. Cannot save state yet.");
+        return;
+    }
+
+    // 2. Create the overlay background
+    const overlay = document.createElement('div');
+    overlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:2000; display:flex; align-items:center; justify-content:center;";
+
+    // 3. Create the dialog box
+    const dialog = document.createElement('div');
+    dialog.style.cssText = "background:var(--parchment); border:3px solid var(--border); padding:20px; border-radius:5px; text-align:center; max-width:400px; box-shadow:0 8px 40px #000d;";
+
+    // 4. Add contents
+    dialog.innerHTML = `
+        <h3 style="font-family:'Cinzel',serif; margin-bottom:10px; color:var(--ink);">SAVE GAME STATE</h3>
+        <p style="font-size:0.8rem; color:#5a3e18; margin-bottom:10px;">Copy this 138-bit string to load your exact position later.</p>
+        <textarea id="copy-target" readonly style="width:100%; height:60px; font-family:monospace; font-size:0.8rem; margin-bottom:15px; background:#faf4e4; border:1px solid #bc9a6c; padding:5px; resize:none;">${binStr}</textarea>
+    `;
+
+    // 5. Add Copy Button
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'action-btn safe';
+    copyBtn.innerText = '📋 Copy to Clipboard';
+    copyBtn.onclick = () => {
+        navigator.clipboard.writeText(binStr).then(() => {
+            copyBtn.innerText = '✅ Copied!';
+            setTimeout(() => copyBtn.innerText = '📋 Copy to Clipboard', 2000);
+        });
+    };
+
+    // 6. Add Close Button
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'action-btn danger';
+    closeBtn.innerText = 'Close';
+    closeBtn.style.marginTop = '8px';
+    closeBtn.onclick = () => document.body.removeChild(overlay);
+
+    // Assemble and show
+    dialog.appendChild(copyBtn);
+    dialog.appendChild(closeBtn);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+
+    // Close settings menu if it's open
+    document.getElementById('settings-menu').classList.add('hidden');
 }
 
 function setStatus(cls, html) { statusBar.className = cls; statusBar.innerHTML = html; }
@@ -794,6 +832,10 @@ def apply_move(move_idx):
         feedback.innerText = "Move " + str(move_idx) + " applied."
     push_state_to_ui(current_state)
 
+def get_state_binary():
+  return "".join(["1" if bool(x) else "0" for x in current_state.vector])
+
+window._pyGetStateBinary = get_state_binary
 window._pyApplyMove = apply_move
 
 @when("click", "#load-state-btn")
