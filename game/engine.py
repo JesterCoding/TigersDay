@@ -110,25 +110,26 @@ class MoveEngine:
             valid_local_moves = np.where(memory_chunk)[0]
 
             for idx in valid_local_moves:
+                number = offset + idx
                 if move_type == "node":
                     node_name = INDEX_MAP[idx]
-                    print(f"{name}: {node_name}")
+                    print(f"{number} {name}: {node_name}")
                 elif move_type == "edge":
                     src_name = INDEX_MAP[int(EDGE_SOURCES[idx])] 
                     dest_name = INDEX_MAP[int(EDGE_DESTS[idx])] 
-                    print(f"{name}: {src_name} -> {dest_name}")
+                    print(f"{number} {name}: {src_name} -> {dest_name}")
                 elif move_type == "bcard":
                     card_name = BRITISH_CARDS[idx]
-                    print(f"{name}: {card_name}")
+                    print(f"{number} {name}: {card_name}")
                 elif move_type == "mcard":
                     card_name = MYSORE_CARDS[idx]
-                    print(f"{name}: {card_name}")
+                    print(f"{number} {name}: {card_name}")
                 elif move_type == "blank":
-                    print(f"{name}")
+                    print(f"{number} {name}")
                 elif move_type == "rn_matrix":
                     source_node = INDEX_MAP[idx // len(COASTAL_INDICES)]
                     dest_node = INDEX_MAP[int(COASTAL_INDICES[idx % len(COASTAL_INDICES)])] 
-                    print(f"{name}: {source_node} -> {dest_node}")
+                    print(f"{number} {name}: {source_node} -> {dest_node}")
 
             
             offset += size
