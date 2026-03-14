@@ -5,7 +5,7 @@ from engine import MoveEngine
 def main():
     default = GameState()
     default.default_setup()
-    get_next_state(default, 0)
+    print(get_next_state(default, 73))
 
 def get_next_state(state, move):
     # state GSR vector, move int
@@ -64,9 +64,9 @@ def get_next_state(state, move):
             break
         offset += size
 
-        if next_state.turn != 4 and not next_state.fresh_armies.any() and state.to_move == 2:
-                next_state.turn_refresh()
-        next_state.to_move += 1
+    if next_state.turn != 4 and not next_state.fresh_armies.any() and state.to_move == 2:
+        next_state.turn_refresh()
+    next_state.to_move += 1
     return next_state
 
 def get_state_winner(state):
