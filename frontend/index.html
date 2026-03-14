@@ -812,11 +812,30 @@ function handleServerMessage(msg) {
         applyBoard(msg.territories);
         renderCards(msg.britishCards || [], msg.mysoreCards || []);
         updateGameStatePanel(msg.turn, msg.maxTurns||4, msg.whoToMove, msg.winner);
-        if (msg.winner) showGameOver(msg.winner);
+        if (msg.winner) handleGameOver(msg.winner); 
       }
       break;
-    case 'GAME_OVER': showGameOver(msg.winner); break;
+    case 'GAME_OVER': 
+      handleGameOver(msg.winner); 
+      break;
   }
+}
+
+// New helper function to handle the transition
+function handleGameOver(winner) {
+    const isAutoRestart = document.getElementById('auto-restart-checkbox')?.checked;
+    const message = winner === 'british' 
+        ? '🟥 The British East India Company has conquered the Deccan.' 
+        : '🟩 Mysore has endured.';
+
+    if (isAutoRestart) {
+        flashStatus('⬤ &nbsp;GAME OVER - RESTARTING...', 5000);
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+    } else {
+        alert(message);
+    }
 }
 
 function applyBoard(territories) {
@@ -866,7 +885,31 @@ function flashStatus(html, ms) {
   clearTimeout(_flashTimer);
   _flashTimer = setTimeout(() => setStatus(prevCls, prev), ms);
 }
-function showGameOver(winner) { alert(winner === 'british' ? '🟥 The British East India Company has conquered the Deccan.' : '🟩 Mysore has endured.'); }
+
+function showGameOver(winner) {
+  const col = winner === 'british' ? '#c0281a' : '#2e7a2e';
+  const winnerName = winner === 'british' ? 'THE BRITISH' : 'MYSORE';
+  
+  // 1. Update the Game State Panel visually
+  gameStatePanel.innerHTML = `
+    <div style="text-align:center; padding: 10px; border: 2px solid ${col}; background: rgba(0,0,0,0.05);">
+        <strong style="color:${col}; font-size: 1.1rem; display: block;">GAME OVER</strong>
+        <span style="color:${col}; font-weight: bold;">${winnerName} VICTORY</span>
+    </div>
+  `;
+
+  // 2. Start the non-blocking auto-restart countdown
+  let secondsLeft = 2;
+  const countdown = setInterval(() => {
+    setStatus('waiting', `⬤ &nbsp;RESTARTING IN ${secondsLeft}s...`);
+    secondsLeft--;
+    
+    if (secondsLeft < 0) {
+      clearInterval(countdown);
+      window.location.reload(); // Refresh the page to start a new session
+    }
+  }, 1000);
+}
 function capitalize(s) { return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
 function toggleSettings() { document.getElementById('settings-menu').classList.toggle('hidden'); }
 
