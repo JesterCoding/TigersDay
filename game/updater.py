@@ -5,27 +5,14 @@ from engine import MoveEngine
 # meant to be utilized at the end of the impulse
 
 def isMysoreWin(state):
-    fresh_army=state.vector[state.IDX_TERRITORIES_OFFSET:state.IDX_TURN_ORDER_OFFSET:3]
-    return state.vector[state.IDX_TURN_ORDER_OFFSET + 3] and (np.sum(fresh_army) == 0)
+    return state.turn == 4 and (np.sum(state.fresh_armies) == 0)
 
 def isBritishWin(state):
-    fresh_army=state.vector[state.IDX_TERRITORIES_OFFSET:state.IDX_TURN_ORDER_OFFSET:3]
-    tired_army=state.vector[state.IDX_TERRITORIES_OFFSET+1:state.IDX_TURN_ORDER_OFFSET:3]
-    return np.dot((tired_army+fresh_army).astype(int),MoveEngine.KEYS) == 5
+    return np.dot((state.tired_armies | state.fresh_armies).astype(int),MoveEngine.KEYS) == 5
 
 def main():
     default = GameState()
     default.default_setup()
-    default.set_territory_vector_tired_army("Travancore")
-    default.set_territory_vector_tired_army("Coimbatore")
-    default.set_territory_vector_tired_army("Srirangapatna")
-    default.set_combat_strength(0)
-    default.use_card_mysore_by_name("Iron Rockets")
-    default.set_who_to_move_by_name("British Card")
-
-    print(isMysoreWin(default))
-    print(isBritishWin(default))
-
     get_next_state(default, 0)
 
 def get_next_state(state, move):
@@ -36,39 +23,38 @@ def get_next_state(state, move):
         if offset <= move < offset + size:
             idx = move - offset
             if move_type == "node":
-                node_name = MoveEngine.INDEX_MAP[idx]
                 if name == "Tire":
-                    next_state.set_territory_vector_tired_army(node_name)
+                    next_state.set_node_tired_army(idx)
                 elif name == "Sepoy Mutiny":
-                    next_state.set_territory_vector_empty(node_name)
+                    next_state.set_node_empty(idx)
                 elif name == "French Alliance":
-                    next_state.set_territory_vector_fort(node_name)
+                    next_state.set_node_fort(idx)
                 elif name == "Monsoon":
-                    next_state.set_territory_vector_tired_army(node_name)
+                    next_state.set_node_tired_army(idx)
                 elif name == "Highlanders":
-                    next_state.set_territory_vector_fresh_army(node_name)
+                    next_state.set_node_fresh_army(idx)
                 elif name == "Princely States":
-                    next_state.set_territory_vector_tired_army(node_name)
+                    next_state.set_node_tired_army(idx)
             elif move_type == "edge":
-                src_name = MoveEngine.INDEX_MAP[int(MoveEngine.EDGE_SOURCES[idx])] 
-                dest_name = MoveEngine.INDEX_MAP[int(MoveEngine.EDGE_DESTS[idx])]
-                is_fort_defending = state.vector[state.IDX_TERRITORIES_OFFSET + (3 * dest_name) + 2]
+                src = MoveEngine.EDGE_SOURCES[idx]
+                dest = MoveEngine.EDGE_DESTS[idx]
+                is_fort_defending = state.forts[dest]
                 if name == "Move":
                     if is_fort_defending:
-                        next_state.queue_combat_by_name(src_name, dest_name)
+                        next_state.queue_combat_by_name(src, dest)
                     else:
-                        next_state.set_territory_vector_empty(src_name)
-                        next_state.set_territory_vector_tired_army(dest_name)
+                        next_state.set_node_empty(src)
+                        next_state.set_node_tired_army(dest)
                 elif name == "Force March":
                     if is_fort_defending:
                         # todo
                         break
                     else:
-                        next_state.set_territory_vector_empty(src_name)
-                        next_state.set_territory_vector_tired_army(dest_name)
+                        next_state.set_node_empty(src)
+                        next_state.set_node_tired_army(dest)
                 elif name == "Divide and Rule":
-                    next_state.set_territory_vector_empty(src_name)
-                    next_state.set_territory_vector_fort(dest_name)
+                    next_state.set_node_empty(src)
+                    next_state.set_node_fort(dest)
             elif move_type == "bcard":
                 card_name = GameState.BRITISH_CARDS[idx]
                 print(f"{name}: {card_name}")

@@ -144,15 +144,15 @@ class MoveEngine:
 
             trapped_army = (state.fresh_armies & (np.bincount(self.EDGE_SOURCES,weights=legal_moves,minlength=self.NODES)==0))
 
-            phase1 = np.concatenate((
+            phase0 = np.concatenate((
                 legal_moves,
                 trapped_army
             ))
         else:
-            phase1 = np.zeros(101, dtype=bool)
+            phase0 = np.zeros(101, dtype=bool)
 
         if state.to_move == 1:
-            sepoy_mutiny = state.mysore_cards[1] * ((state.fresh_armies + state.tired_armies) & ~self.KEYS)
+            sepoy_mutiny = state.mysore_cards[1] * ((state.fresh_armies | state.tired_armies) & ~self.KEYS)
 
             french_alliance = state.mysore_cards[2] * ((state.forts.dot(self.ADJACENCY_MATRIX) > 0) & state.empty)
 
@@ -176,7 +176,7 @@ class MoveEngine:
 
             mysore_pass = [True]
 
-            phase2 = np.concatenate((
+            phase1 = np.concatenate((
                 sepoy_mutiny,
                 french_alliance,
                 monsoon,
@@ -187,12 +187,12 @@ class MoveEngine:
                 mysore_pass
             ))
         else:
-            phase2 = np.zeros(101, dtype=bool)
+            phase1 = np.zeros(101, dtype=bool)
 
         if state.to_move == 2:
             highlanders = state.british_cards[1] * (state.empty & self.COASTAL)
 
-            royal_navy = state.british_cards[2] * np.outer((state.fresh_armies + state.tired_armies), (legal_dest & ~state.defender)[self.COASTAL_INDICES]).flatten()
+            royal_navy = state.british_cards[2] * np.outer((state.fresh_armies | state.tired_armies), (legal_dest & ~state.defender)[self.COASTAL_INDICES]).flatten()
 
             divide_and_rule = state.british_cards[3] * ((state.forts & ~self.KEYS)[self.EDGE_SOURCES] & state.empty[self.EDGE_DESTS])
 
@@ -212,7 +212,7 @@ class MoveEngine:
 
             british_pass = [True]
 
-            phase3 = np.concatenate((
+            phase2 = np.concatenate((
                 highlanders,
                 royal_navy,
                 divide_and_rule,
@@ -223,12 +223,12 @@ class MoveEngine:
                 british_pass
             ))
         else:
-            phase3 = np.zeros(434, dtype=bool)
+            phase2 = np.zeros(434, dtype=bool)
 
         mask = np.concatenate((
+            phase0,
             phase1,
-            phase2,
-            phase3
+            phase2
         ))
 
         return mask
