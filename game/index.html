@@ -26,7 +26,7 @@
         header h1 { font-family: 'Cinzel', serif; font-size: clamp(1.5rem, 4vw, 2.6rem); color: #e8d9b0; letter-spacing: .13em; text-shadow: 0 2px 16px #000b; }
         header p { font-family: 'IM Fell English', serif; color: #c9b98a; font-size: 1rem; margin-top: 4px; }
         .layout { display: flex; gap: 12px; align-items: flex-start; width: 100%; max-width: 1100px; }
-        .map-card { flex: 1 1 660px; border: 3px solid var(--border); border-radius: 3px; box-shadow: 0 0 0 5px #2a1a08, 0 8px 40px #000d; overflow: hidden; animation: fadeIn 1s ease both .15s; }
+        .map-card { flex: 1 1 660px; border: 3px solid var(--border); border-radius: 3px; box-shadow: 0 0 0 5px #2a1a08, 0 8px 40px #000d; overflow: hidden; animation: fadeIn 1s ease both .15s; display: flex; flex-direction: column; }
         svg#board { display: block; width: 100%; height: auto; }
         .left-section { flex: 0 0 232px; display: flex; flex-direction: column; gap: 7px; animation: fadeIn 1s ease both .3s; }
         .cards-col-header { font-family: 'Cinzel', serif; font-size: .72rem; letter-spacing: .1em; padding: 6px 8px; border-radius: 3px; text-align: center; margin-bottom: 2px; }
@@ -181,6 +181,16 @@
             <g id="edge-layer"></g>
             <g id="node-layer"></g>
         </svg>
+        <div style="background:var(--parchment); border-top: 2px solid var(--border); padding: 12px 16px;">
+            <h2 style="font-family:'Cinzel',serif; font-size:.78rem; letter-spacing:.1em; color:var(--ink); border-bottom:1px solid var(--border); padding-bottom:5px; margin-bottom:10px;">LEGAL MOVES <span id="move-count-badge" style="font-family:'Cinzel',serif; font-size:.65rem; color:#9a7a3a; margin-left:6px;"></span></h2>
+            <div id="move-list" style="font-family:monospace; font-size:.80rem; color:#3a2a10; line-height:1.7; max-height:180px; overflow-y:auto; padding-right:4px;"><em style="color:#9a7a3a">Initialising game engine…</em></div>
+            <div style="display:flex; gap:8px; align-items:center; margin-top:10px; border-top:1px solid var(--border); padding-top:10px; flex-wrap:wrap;">
+                <label for="move-number-input" style="font-family:'Cinzel',serif; font-size:.70rem; color:#5a3e18; letter-spacing:.05em; white-space:nowrap;">ENTER MOVE №</label>
+                <input id="move-number-input" type="number" min="0" placeholder="0" style="font-family:monospace; font-size:.88rem; width:80px; padding:4px 7px; border:1px solid #bc9a6c; border-radius:3px; background:#faf4e4; color:var(--ink);" />
+                <button id="submit-move-btn" onclick="submitMove()" style="font-family:'Cinzel',serif; font-size:.68rem; letter-spacing:.06em; background:#2a1f0e; color:#c9b98a; border:1px solid var(--border); border-radius:2px; padding:5px 14px; cursor:pointer;">▶ Apply Move</button>
+                <span id="move-feedback" style="font-family:'IM Fell English',serif; font-size:.80rem; color:#5a3e18; font-style:italic; flex:1; min-width:120px;"></span>
+            </div>
+        </div>
     </div>
 
     <div class="right-section">
@@ -214,19 +224,6 @@
                     <button class="action-btn" onclick="setActive()">⚡ Refresh Army</button>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-
-<div class="move-console">
-    <div class="panel">
-        <h2>LEGAL MOVES <span id="move-count-badge"></span></h2>
-        <div id="move-list"><em style="color:#9a7a3a">Initialising game engine…</em></div>
-        <div class="console-input-row">
-            <label for="move-number-input">ENTER MOVE №</label>
-            <input id="move-number-input" type="number" min="0" placeholder="0" />
-            <button id="submit-move-btn" onclick="submitMove()">▶ Apply Move</button>
-            <span id="move-feedback"></span>
         </div>
     </div>
 </div>
