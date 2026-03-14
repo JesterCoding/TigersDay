@@ -8,6 +8,7 @@ def main():
     print(get_next_state(default, 73))
 
 def get_next_state(state, move):
+    #todo: optimize get_next_state function with direct indexing
     # state GSR vector, move int
     next_state = state.copy()
     offset = 0
@@ -88,5 +89,10 @@ def resolve_battles(state, attacker, defender, net_card_strength):
     discards = []
     return discards
 
+"""
+1) All the cards effects + Power play by either side
+2) Random discards
+3) Resolve battles  
+"""
 if __name__ == "__main__":
     main()

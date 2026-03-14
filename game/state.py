@@ -1,5 +1,7 @@
 import numpy as np
 from constants import *
+from pyodide.ffi import to_js
+from pyscript import when, window, document
 
 class GameState:
 
@@ -183,6 +185,84 @@ class GameState:
             else:
                 save += "0"
         return save
+
+    @when("click", "#load-state-btn")
+    def loadSavedState(event=None):
+        raw_input = document.getElementById('save-input').value.strip()        
+        # Validation
+        if len(raw_input) != 138:
+            window.alert(f"Invalid state string! Expected exactly 138 bits, got {len(raw_input)}.")
+            return
+            
+        state = GameState()
+        
+        try:
+            state.vector = np.array([bool(int(b)) for b in raw_input], dtype=bool)
+        except ValueError:
+            window.alert("Invalid input! Please provide a string consisting purely of 1s and 0s.")
+            return
+        
+        try:
+            for i in range(12, 136):
+                if all(state.vector[i : i+3]):
+                    t_idx = (i - 12) // 3
+                    
+                    if t_idx in range(len(INDEX_MAP)):
+                        name = INDEX_MAP[t_idx]
+                    else:
+                        name = f"Bit {i}"
+                    
+                    raise ValueError(f"Invalid Binary: Triple consecutive 1s detected starting at {name}")
+
+        except ValueError as e:
+            window.alert(str(e))
+            return
+
+        for i, territory in enumerate(INDEX_MAP.values()):
+            base_idx = state.IDX_NODES_OFFSET + 3 * i
+            
+            is_active = state.vector[base_idx]
+            is_tired  = state.vector[base_idx + 1]
+            is_fort   = state.vector[base_idx + 2]
+        
+            node = getattr(window.NODES, territory, None)
+            
+            if node is None:
+                continue
+                
+            if is_active:
+                node.armyType = 'active'
+                node.owner = 'british'
+            elif is_tired:
+                node.armyType = 'tired'
+                node.owner = 'british'
+            elif is_fort:
+                node.armyType = 'fort'
+                node.owner = 'mysore'
+            else:
+                node.armyType = 'empty'
+                node.owner = 'empty'
+
+        british_cards = [bool(x) for x in state.vector[state.IDX_BRITISH_CARDS_OFFSET : state.IDX_BRITISH_CARDS_OFFSET + 6]]
+        mysore_cards = [bool(x) for x in state.vector[state.IDX_MYSORE_CARDS_OFFSET : state.IDX_MYSORE_CARDS_OFFSET + 6]]
+
+        window.renderCards(to_js(british_cards), to_js(mysore_cards))
+
+        who_to_move_name = WHO_TO_MOVE[state.to_move]
+
+        strength_slice = list(state.vector[state.IDX_COMBAT_STRENGTH_OFFSET : state.IDX_COMBAT_STRENGTH_OFFSET + 4])
+        combat_strength = strength_slice.index(True) if True in strength_slice else "0"
+
+        attacker_slice = list(state.vector[state.IDX_ATTACKER_OFFSET : state.IDX_ATTACKER_OFFSET + 23])
+        attacker_name = INDEX_MAP[attacker_slice.index(True)] if True in attacker_slice else "None"
+
+        defender_slice = list(state.vector[state.IDX_DEFENDER_OFFSET : state.IDX_DEFENDER_OFFSET + 23])
+        defender_name = INDEX_MAP[defender_slice.index(True)] if True in defender_slice else "None"
+
+        window.updateCombatInfo(str(state.turn), who_to_move_name, attacker_name, defender_name, str(combat_strength))
+
+        window.renderNodes()
+        print("State synchronized from PyScript to Browser DOM.")
 
 def main():
     default = GameState()

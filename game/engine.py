@@ -129,8 +129,7 @@ class MoveEngine:
                     source_node = INDEX_MAP[idx // len(COASTAL_INDICES)]
                     dest_node = INDEX_MAP[int(COASTAL_INDICES[idx % len(COASTAL_INDICES)])] 
                     print(f"{name}: {source_node} -> {dest_node}")
-
-            
+                    
             offset += size
 
 
