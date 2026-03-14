@@ -49,7 +49,7 @@ def get_next_state(state, move):
                 elif name == "Force March":
                     next_state.british_cards[4] = False
                     if is_fort_defending:
-                        next_state = resolve_battles(state, src, dest, -state.card_strength)
+                        next_state = resolve_battles(next_state, src, dest, -state.card_strength)
                     else:
                         next_state.set_node_empty(src)
                         next_state.set_node_tired_army(dest)
@@ -60,7 +60,7 @@ def get_next_state(state, move):
             elif move_type == "bcard":
                 if name == "British Power":
                     next_state.british_cards[idx] = False
-                    next_state = resolve_battles(state, -1, -1, CARD_VALUE[idx]-state.card_strength)
+                    next_state = resolve_battles(next_state, -1, -1, CARD_VALUE[idx]-state.card_strength)
                 elif name == "Draw Wall Breach":
                     next_state.british_cards[0] = False
                     next_state.british_cards[idx] = True
@@ -101,7 +101,7 @@ def get_next_state(state, move):
                 dest = COASTAL_INDICES[idx % len(COASTAL_INDICES)]
                 is_fort_defending = state.forts[dest]
                 if is_fort_defending:
-                    next_state = resolve_battles(state, src, dest, -state.card_strength)
+                    next_state = resolve_battles(next_state, src, dest, -state.card_strength)
                 else:
                     is_fresh = state.fresh_armies[src]
                     next_state.set_node_empty(src)
@@ -116,7 +116,7 @@ def get_next_state(state, move):
         offset += size
 
     if state.to_move == 2:
-        next_state = resolve_battles(state, -1, -1, -state.card_strength)
+        next_state = resolve_battles(next_state, -1, -1, -state.card_strength)
         if state.turn != 4 and not state.fresh_armies.any():
             next_state.turn_refresh()
     next_state.to_move += 1
