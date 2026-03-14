@@ -20,7 +20,7 @@ class GameState:
     MYSORE_CARDS_TO_IDX = {name: i for i, name in enumerate(MYSORE_CARDS)}
     BRITISH_CARDS_TO_IDX = {name: i for i, name in enumerate(BRITISH_CARDS)}
 
-    CARD_VALUE = [3, 2, 2, 1, 1, 1]
+    CARD_VALUE = np.array([3, 2, 2, 1, 1, 1])
 
     IDX_BRITISH_CARDS_OFFSET = 0   #index where this information begins
     IDX_MYSORE_CARDS_OFFSET = 6    # 6 cards for both mysore and british

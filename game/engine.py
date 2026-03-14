@@ -1,4 +1,5 @@
 import numpy as np
+import time
 from state import GameState
 
 class MoveEngine:
@@ -154,11 +155,11 @@ class MoveEngine:
         if state.to_move == 1:
             sepoy_mutiny = state.mysore_cards[1] * ((state.fresh_armies | state.tired_armies) & ~self.KEYS)
 
-            french_alliance = state.mysore_cards[2] * ((state.forts.dot(self.ADJACENCY_MATRIX) > 0) & state.empty)
+            french_alliance = state.mysore_cards[2] * (np.any(self.ADJACENCY_MATRIX[state.forts], axis=0) & state.empty)
 
             monsoon = state.mysore_cards[3] * state.fresh_armies
 
-            cavalry_raid = [state.mysore_cards[4]]
+            cavalry_raid = np.array([state.mysore_cards[4]])
 
             forts_on_coast = np.dot(state.forts.astype(int),self.COASTAL)
             valid_trades = ~state.mysore_cards & (state.CARD_VALUE == forts_on_coast)
@@ -174,7 +175,7 @@ class MoveEngine:
             mysore22draw[3:6] = state.mysore_cards[2] * ~state.mysore_cards[3:6]
             mysore_draw = np.concatenate((mysore3draw,mysore21draw,mysore22draw))
 
-            mysore_pass = [True]
+            mysore_pass = np.array([True])
 
             phase1 = np.concatenate((
                 sepoy_mutiny,
@@ -210,7 +211,7 @@ class MoveEngine:
             british22draw[3:6] = state.british_cards[2] * ~state.british_cards[3:6]
             british_draw = np.concatenate((british3draw,british21draw,british22draw))
 
-            british_pass = [True]
+            british_pass = np.array([True])
 
             phase2 = np.concatenate((
                 highlanders,
@@ -269,9 +270,20 @@ def main():
     a = MoveEngine()
     default = GameState()
     default.default_setup()
-    default.set_who_to_move_by_name("Mysore Card")
-
-    a.print_legal_moves(a.get_legal_moves(default))
+    default.to_move = 2
+    default.mysore_cards[1:4] = False
+    start_time = time.perf_counter()
+    iterations = 1000000
+    for _ in range(iterations):
+        _ = a.get_legal_moves(default)
+    end_time = time.perf_counter()
+    total_time = end_time - start_time
+    iters_per_sec = iterations / total_time
+    
+    print("-" * 30)
+    print(f"Total Time: {total_time:.2f} seconds")
+    print(f"Speed:      {iters_per_sec:,.0f} iterations / second")
+    print("-" * 30)
     
 
 if __name__ == "__main__":
