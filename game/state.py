@@ -45,6 +45,9 @@ class GameState:
         self._attacker = -1
         self._defender = -1
         self._card_strength = -1
+        self._to_move = 0
+        self._turn = 1
+        self._luck = []
 
     def default_setup(self):
         self.mysore_cards = True
@@ -75,6 +78,9 @@ class GameState:
         new_state._attacker = self._attacker
         new_state._defender = self._defender
         new_state._card_strength = self._card_strength
+        new_state._to_move = self._to_move
+        new_state._turn = self._turn
+        new_state._luck = list(self._luck)
         return new_state
 
     def set_node_fresh_army(self, node):
@@ -132,19 +138,21 @@ class GameState:
 
     @property
     def to_move(self):
-        return np.argmax(self.vector[self.IDX_WHO_TO_MOVE])
+        return self._to_move
     
     @to_move.setter
     def to_move(self, to_move_idx):
+        self._to_move = to_move_idx
         self.vector[self.IDX_WHO_TO_MOVE] = False
         self.vector[self.IDX_WHO_TO_MOVE_OFFSET + (to_move_idx % 3)] = True
 
     @property
     def turn(self):
-        return np.argmax(self.vector[self.IDX_TURN_ORDER]) + 1
+        return self._turn
     
     @turn.setter
     def turn(self, turn_number):
+        self._turn = turn_number
         self.vector[self.IDX_TURN_ORDER] = False
         self.vector[self.IDX_TURN_ORDER_OFFSET + (turn_number - 1)] = 1
 
@@ -180,6 +188,10 @@ class GameState:
         self.vector[self.IDX_COMBAT_STRENGTH] = False
         if value != -1:
             self.vector[self.IDX_COMBAT_STRENGTH_OFFSET + value] = True
+
+    @property
+    def is_battle(self):
+        return self.attacker != -1
 
     def __str__(self):
         str = ""
