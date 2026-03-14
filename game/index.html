@@ -692,13 +692,15 @@ function submitMove() {
 }
 </script>
 
-<py-script>
+<script type="py">
 from engine import MoveEngine
 from updater import get_next_state, get_state_winner
 from state import GameState
 from constants import *
 from pyodide.ffi import to_js
+from pyscript import when, window, document
 import js
+import numpy as np
 
 engine = MoveEngine()
 current_state = GameState()
@@ -793,9 +795,36 @@ def apply_move(move_idx):
     push_state_to_ui(current_state)
 
 window._pyApplyMove = apply_move
+
+@when("click", "#load-state-btn")
+def load_saved_state(event=None):
+    global current_state
+    raw_input = document.getElementById('save-input').value.strip()
+    if len(raw_input) != 138:
+        window.alert(f"Invalid state string! Expected exactly 138 bits, got {len(raw_input)}.")
+        return
+    new_state = GameState()
+    try:
+        new_state.vector = np.array([bool(int(b)) for b in raw_input], dtype=bool)
+    except ValueError:
+        window.alert("Invalid input! Please provide a string consisting purely of 1s and 0s.")
+        return
+    try:
+        for i in range(12, 136):
+            if all(new_state.vector[i : i+3]):
+                t_idx = (i - 12) // 3
+                name = INDEX_MAP[t_idx] if t_idx in INDEX_MAP else f"Bit {i}"
+                raise ValueError(f"Invalid Binary: Triple consecutive 1s detected starting at {name}")
+    except ValueError as e:
+        window.alert(str(e))
+        return
+    current_state = new_state
+    push_state_to_ui(current_state)
+    print("State loaded and legal moves updated.")
+
 push_state_to_ui(current_state)
 print("Game engine ready.")
-</py-script>
+</script>
 
 </body>
 </html>
