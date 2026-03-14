@@ -65,8 +65,7 @@ def get_next_state(state, move):
         offset += size
 
         if next_state.turn != 4 and not next_state.fresh_armies.any() and state.to_move == 2:
-                # todo turn refresh
-                next_state.turn += 1
+                next_state.turn_refresh()
         next_state.to_move += 1
     return next_state
 

@@ -51,8 +51,8 @@ class GameState:
         self._luck = []
 
     def default_setup(self):
-        self.mysore_cards = True
-        self.british_cards = True
+        self.mysore_cards[:] = True
+        self.british_cards[:] = True
 
         self.set_node_fresh_army(self.NODE_TO_IDX["Bombay"])
         self.set_node_fresh_army(self.NODE_TO_IDX["Hyderabad"])
@@ -125,18 +125,10 @@ class GameState:
     @property
     def mysore_cards(self):
         return self.vector[self.IDX_MYSORE_CARDS]
-    
-    @mysore_cards.setter
-    def mysore_cards(self, values):
-        self.vector[self.IDX_MYSORE_CARDS] = values
 
     @property
     def british_cards(self):
         return self.vector[self.IDX_BRITISH_CARDS]
-    
-    @british_cards.setter
-    def british_cards(self, values):
-        self.vector[self.IDX_BRITISH_CARDS] = values
 
     @property
     def to_move(self):
@@ -156,7 +148,7 @@ class GameState:
     def turn(self, turn_number):
         self._turn = turn_number
         self.vector[self.IDX_TURN_ORDER] = False
-        self.vector[self.IDX_TURN_ORDER_OFFSET + (turn_number - 1)] = 1
+        self.vector[self.IDX_TURN_ORDER_OFFSET + (turn_number - 1)] = True
 
     @property
     def attacker(self):
@@ -194,15 +186,22 @@ class GameState:
     @property
     def is_battle(self):
         return self.attacker != -1
+    
+    def turn_refresh(self):
+        self.turn += 1
+        self.fresh_armies[:] = self.tired_armies
+        self.tired_armies[:] = False
+        self.mysore_cards[:] = True
+        self.british_cards[:] = True
 
     def __str__(self):
-        str = ""
+        save = ""
         for i in range(138):
             if self.vector[i]:
-                str += "1"
+                save += "1"
             else:
-                str += "0"
-        return str
+                save += "0"
+        return save
 
 def main():
     default = GameState()
