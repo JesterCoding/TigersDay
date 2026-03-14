@@ -14,7 +14,7 @@
         packages = ["numpy"]
     
         [[fetch]]
-        files = ["./constants.py", "./engine.py", "./state.py"]
+        files = ["./constants.py", "./engine.py", "./state.py", "./updater.py"]
     </py-config>
 
     <style>
@@ -71,6 +71,27 @@
         .hidden { display: none !important; }
         @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
         @keyframes fadeDown { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:none} }
+
+        /* Move Console */
+        .move-console { width: 100%; max-width: 1100px; margin-top: 14px; animation: fadeIn 1s ease both .4s; }
+        .move-console .panel { padding: 12px 16px; }
+        .move-console h2 { font-family: 'Cinzel', serif; font-size: .78rem; letter-spacing: .1em; color: var(--ink); border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-bottom: 10px; }
+        #move-list { font-family: monospace; font-size: .80rem; color: #3a2a10; line-height: 1.7; max-height: 220px; overflow-y: auto; padding-right: 4px; }
+        #move-list::-webkit-scrollbar { width: 5px; }
+        #move-list::-webkit-scrollbar-thumb { background: #b09060; border-radius: 3px; }
+        .move-entry { display: flex; gap: 8px; padding: 1px 4px; border-radius: 2px; cursor: pointer; transition: background .1s; }
+        .move-entry:hover { background: #d4c090; }
+        .move-entry.highlighted { background: #c8b060; font-weight: 700; }
+        .move-idx  { color: #9a7a3a; min-width: 32px; text-align: right; flex-shrink: 0; }
+        .move-type { color: #7a4a1a; font-family: 'Cinzel', serif; font-size: .68rem; min-width: 130px; flex-shrink: 0; }
+        .move-desc { color: #3a2a10; }
+        .console-input-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; flex-wrap: wrap; }
+        .console-input-row label { font-family: 'Cinzel', serif; font-size: .70rem; color: #5a3e18; letter-spacing: .05em; white-space: nowrap; }
+        #move-number-input { font-family: monospace; font-size: .88rem; width: 80px; padding: 4px 7px; border: 1px solid #bc9a6c; border-radius: 3px; background: #faf4e4; color: var(--ink); }
+        #submit-move-btn { font-family: 'Cinzel', serif; font-size: .68rem; letter-spacing: .06em; background: #2a1f0e; color: #c9b98a; border: 1px solid var(--border); border-radius: 2px; padding: 5px 14px; cursor: pointer; transition: background .15s; }
+        #submit-move-btn:hover { background: #3a2f1e; }
+        #move-feedback { font-family: 'IM Fell English', serif; font-size: .80rem; color: #5a3e18; font-style: italic; flex: 1; min-width: 120px; }
+        #move-count-badge { font-family: 'Cinzel', serif; font-size: .65rem; color: #9a7a3a; margin-left: 6px; }
     </style>
 </head>
 <body>
@@ -193,6 +214,19 @@
                     <button class="action-btn" onclick="setActive()">⚡ Refresh Army</button>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="move-console">
+    <div class="panel">
+        <h2>LEGAL MOVES <span id="move-count-badge"></span></h2>
+        <div id="move-list"><em style="color:#9a7a3a">Initialising game engine…</em></div>
+        <div class="console-input-row">
+            <label for="move-number-input">ENTER MOVE №</label>
+            <input id="move-number-input" type="number" min="0" placeholder="0" />
+            <button id="submit-move-btn" onclick="submitMove()">▶ Apply Move</button>
+            <span id="move-feedback"></span>
         </div>
     </div>
 </div>
@@ -618,6 +652,153 @@ renderEdges();
 window.renderNodes();
 renderCards([true,true,true,true,true,true], [true,true,true,true,true,true]);
 connect();
+
+// ── Move Console ──────────────────────────────────────────────────────────────
+
+window.renderMoveList = function(moves) {
+    const list = document.getElementById('move-list');
+    const badge = document.getElementById('move-count-badge');
+    if (!moves || moves.length === 0) {
+        list.innerHTML = '<em style="color:#9a7a3a">No legal moves available.</em>';
+        badge.textContent = '';
+        return;
+    }
+    badge.textContent = '(' + moves.length + ')';
+    list.innerHTML = moves.map(function(m) {
+        return '<div class="move-entry" onclick="highlightMove(' + m.idx + ')" id="move-entry-' + m.idx + '">' +
+            '<span class="move-idx">' + m.idx + '</span>' +
+            '<span class="move-type">' + m.type + '</span>' +
+            '<span class="move-desc">' + m.desc + '</span>' +
+            '</div>';
+    }).join('');
+};
+
+function highlightMove(idx) {
+    document.querySelectorAll('.move-entry').forEach(function(e) { e.classList.remove('highlighted'); });
+    var el = document.getElementById('move-entry-' + idx);
+    if (el) { el.classList.add('highlighted'); el.scrollIntoView({block:'nearest'}); }
+    document.getElementById('move-number-input').value = idx;
+}
+
+function submitMove() {
+    var raw = document.getElementById('move-number-input').value.trim();
+    var feedback = document.getElementById('move-feedback');
+    if (raw === '') { feedback.textContent = 'Enter a move number first.'; return; }
+    var idx = parseInt(raw, 10);
+    if (isNaN(idx)) { feedback.textContent = 'Invalid number.'; return; }
+    feedback.textContent = '...';
+    if (window._pyApplyMove) {
+        window._pyApplyMove(idx);
+    } else {
+        feedback.textContent = 'Engine not ready yet.';
+    }
+}
 </script>
+
+<py-script>
+from engine import MoveEngine
+from updater import get_next_state, get_state_winner
+from state import GameState
+from constants import *
+from pyodide.ffi import to_js
+import js
+
+engine = MoveEngine()
+current_state = GameState()
+current_state.default_setup()
+
+def js_obj(d):
+    obj = js.Object.new()
+    for k, v in d.items():
+        setattr(obj, k, v)
+    return obj
+
+def build_move_list(state):
+    mask = engine.get_legal_moves(state)
+    moves = []
+    offset = 0
+    for name, size, move_type in MOVE_SPACE:
+        chunk = mask[offset: offset + size]
+        for local_idx in range(size):
+            if chunk[local_idx]:
+                global_idx = offset + local_idx
+                if move_type == "node":
+                    desc = INDEX_MAP[local_idx]
+                elif move_type == "edge":
+                    src  = INDEX_MAP[int(EDGE_SOURCES[local_idx])]
+                    dest = INDEX_MAP[int(EDGE_DESTS[local_idx])]
+                    desc = src + " -> " + dest
+                elif move_type == "bcard":
+                    desc = BRITISH_CARDS[local_idx]
+                elif move_type == "mcard":
+                    desc = MYSORE_CARDS[local_idx]
+                elif move_type == "blank":
+                    desc = "-"
+                elif move_type == "rn_matrix":
+                    src  = INDEX_MAP[local_idx // len(COASTAL_INDICES)]
+                    dest = INDEX_MAP[int(COASTAL_INDICES[local_idx % len(COASTAL_INDICES)])]
+                    desc = src + " -> " + dest
+                else:
+                    desc = str(local_idx)
+                moves.append(js_obj({"idx": global_idx, "type": name, "desc": desc}))
+        offset += size
+    return moves
+
+def push_state_to_ui(state):
+    for i, name in enumerate(INDEX_MAP.values()):
+        node = getattr(window.NODES, name, None)
+        if node is None:
+            continue
+        if state.fresh_armies[i]:
+            node.armyType = 'active'
+            node.owner    = 'british'
+        elif state.tired_armies[i]:
+            node.armyType = 'tired'
+            node.owner    = 'british'
+        elif state.forts[i]:
+            node.armyType = 'fort'
+            node.owner    = 'mysore'
+        else:
+            node.armyType = 'empty'
+            node.owner    = 'empty'
+
+    window.renderNodes()
+
+    british_js = to_js([bool(x) for x in state.british_cards])
+    mysore_js  = to_js([bool(x) for x in state.mysore_cards])
+    window.renderCards(british_js, mysore_js)
+
+    who_name = WHO_TO_MOVE[state.to_move]
+    attacker_name = INDEX_MAP[state.attacker] if state.attacker != -1 else "None"
+    defender_name = INDEX_MAP[state.defender] if state.defender != -1 else "None"
+    strength_str  = str(state.card_strength) if state.card_strength != -1 else "0"
+    window.updateCombatInfo(str(state.turn), who_name, attacker_name, defender_name, strength_str)
+
+    moves = build_move_list(state)
+    window.renderMoveList(to_js(moves))
+
+def apply_move(move_idx):
+    global current_state
+    from js import document
+    feedback = document.getElementById('move-feedback')
+    mask = engine.get_legal_moves(current_state)
+    if move_idx < 0 or move_idx >= len(mask) or not mask[move_idx]:
+        feedback.innerText = "Move " + str(move_idx) + " is not legal."
+        return
+    current_state = get_next_state(current_state, move_idx)
+    winner = get_state_winner(current_state)
+    if winner == 1:
+        feedback.innerText = "British win!"
+    elif winner == -1:
+        feedback.innerText = "Mysore holds!"
+    else:
+        feedback.innerText = "Move " + str(move_idx) + " applied."
+    push_state_to_ui(current_state)
+
+window._pyApplyMove = apply_move
+push_state_to_ui(current_state)
+print("Game engine ready.")
+</py-script>
+
 </body>
 </html>
