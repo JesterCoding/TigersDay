@@ -19,6 +19,8 @@ def get_next_state(state, move):
                 if name == "Tire":
                     next_state.set_node_tired_army(idx)
                 elif name == "Sepoy Mutiny":
+                    if state.attacker == idx:
+                        next_state.clear_battle()
                     next_state.mysore_cards[1] = False
                     next_state.set_node_empty(idx)
                 elif name == "French Alliance":
@@ -47,6 +49,8 @@ def get_next_state(state, move):
                         next_state.set_node_empty(src)
                         next_state.set_node_tired_army(dest)
                 elif name == "Force March":
+                    if state.attacker == src:
+                        next_state.clear_battle()
                     next_state.british_cards[4] = False
                     if is_fort_defending:
                         next_state = resolve_battles(next_state, src, dest, -state.card_strength)
@@ -54,6 +58,8 @@ def get_next_state(state, move):
                         next_state.set_node_empty(src)
                         next_state.set_node_tired_army(dest)
                 elif name == "Divide and Rule":
+                    if state.defender == src:
+                        next_state.clear_battle()
                     next_state.british_cards[3] = False
                     next_state.set_node_empty(src)
                     next_state.set_node_fort(dest)
@@ -99,6 +105,8 @@ def get_next_state(state, move):
                 next_state.british_cards[2] = False
                 src = idx // len(COASTAL_INDICES)
                 dest = COASTAL_INDICES[idx % len(COASTAL_INDICES)]
+                if state.attacker == src:
+                    next_state.clear_battle()
                 is_fort_defending = state.forts[dest]
                 if is_fort_defending:
                     next_state = resolve_battles(next_state, src, dest, -state.card_strength)
@@ -140,18 +148,8 @@ def resolve_battles(state, attacker, defender, net_card_strength):
     battle1 = False
     battle2 = False
     #first battle from state, second battle from parameters
-    #check if attacker or defender changed with FM SM DR RN cards
     if state.attacker != -1:
-        attacker_present = (state.fresh_armies[state.attacker] | state.tired_armies[state.attacker])
-        defender_present = state.forts[state.defender]
-        if attacker_present and defender_present:
-            battle1 = is_battle_won(state, state.defender, net_card_strength)
-        elif attacker_present and not defender_present:
-            battle1 = True
-        elif not attacker_present and defender_present:
-            battle1 = False
-        else:
-            battle1 = False
+        battle1 = is_battle_won(state, state.defender, net_card_strength)
     if attacker != -1:
         battle2 = is_battle_won(state, defender, 0)
     #preserve fresh/tired state of attacker
@@ -166,7 +164,7 @@ def resolve_battles(state, attacker, defender, net_card_strength):
         else:
             state.set_node_tired_army(defender)
     #todo add luck effects
-    state.clear_combat()
+    state.clear_battle()
     state.luck = []
     return state
 

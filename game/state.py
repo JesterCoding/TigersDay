@@ -82,7 +82,7 @@ class GameState:
         start_idx = self.IDX_NODES_OFFSET + 3 * node
         self.vector[start_idx : start_idx + 3] = False
 
-    def clear_combat(self):
+    def clear_battle(self):
         self.attacker = -1
         self.defender = -1
         self.card_strength = 0
