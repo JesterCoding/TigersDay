@@ -52,6 +52,9 @@ class Trainer:
         """
         state = GameState()
         state.default_setup()
+        state.set_territory_vector_empty("Mahé")
+        state.set_territory_vector_empty("Coimbatore")
+        state.set_territory_vector_empty("Bednore")
 
         examples = []
         move_count = 0
@@ -135,13 +138,14 @@ class Trainer:
 
     def run_iteration(self, iteration_num):
         """One iteration of AlphaZero: self-play + training."""
+
         # Self-play phase
         print(f"Iteration {iteration_num}: Self-play...")
         for game_num in range(self.config['num_games_per_iteration']):
             examples = self.self_play_game()
             self.replay_buffer.extend(examples)
             print(f"  Game {game_num + 1}/{self.config['num_games_per_iteration']}: "
-                  f"{len(examples)} moves")
+                f"{len(examples)} moves")
 
         # Training phase
         print(f"Iteration {iteration_num}: Training...")
