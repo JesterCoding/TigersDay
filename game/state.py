@@ -29,7 +29,8 @@ class GameState:
         self._to_move = 0
         self._turn = 1
         self._winner = 0
-        self.luck = []
+        self.bluck = 0
+        self.mluck = 0
 
     def default_setup(self):
         self.mysore_cards[:] = True
@@ -63,7 +64,8 @@ class GameState:
         new_state._to_move = self._to_move
         new_state._turn = self._turn
         new_state._winner = self._winner
-        new_state.luck = list(self.luck)
+        new_state.bluck = self.bluck
+        new_state.mluck = self.mluck
         return new_state
 
     def set_node_fresh_army(self, node):

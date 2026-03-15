@@ -5,7 +5,10 @@ from constants import *
 def main():
     default = GameState()
     default.default_setup()
-    print(get_next_state(default, 227))
+    default.british_cards[1:4] = False
+    l = get_luck_outcomes(get_next_state(default, 170))
+    for state in l:
+        print(state)
 
 def get_next_state(state, move):
     #todo: optimize get_next_state function with direct indexing
@@ -98,8 +101,7 @@ def get_next_state(state, move):
             elif move_type == "blank":
                 if name == "Cavalry Raid":
                     next_state.mysore_cards[4] = False
-                    # todo
-                    break
+                    next_state.bluck += 1
                 elif name == "Pass Mysore":
                     break
                 elif name == "Pass British":
@@ -153,8 +155,16 @@ def resolve_battles(state, attacker, defender, net_card_strength):
     #first battle from state, second battle from parameters
     if state.attacker != -1:
         battle1 = is_battle_won(state, state.defender, net_card_strength)
+        if battle1:
+            state.mluck += 1
+        else:
+            state.bluck += 1
     if attacker != -1:
         battle2 = is_battle_won(state, defender, 0)
+        if battle2:
+            state.mluck += 1
+        else:
+            state.bluck += 1
     #preserve fresh/tired state of attacker
     if battle1:
         state.set_node_tired_army(state.defender)
@@ -166,10 +176,38 @@ def resolve_battles(state, attacker, defender, net_card_strength):
             state.set_node_fresh_army(defender)
         else:
             state.set_node_tired_army(defender)
-    #todo add luck effects
     state.clear_battle()
-    state.luck = []
     return state
+
+def get_luck_outcomes(state):
+    outcomes = []
+    if state.bluck:
+        for i in range(CARDS):
+            if state.british_cards[i]:
+                luck_state = state.copy()
+                luck_state.british_cards[i] = False
+                luck_state.bluck -= 1
+                outcomes.append(luck_state)
+        if not outcomes:
+            luck_state = state.copy()
+            luck_state.bluck -= 1
+            return [luck_state]
+        return outcomes
+    
+    if state.mluck:
+        for i in range(CARDS):
+            if state.mysore_cards[i]:
+                luck_state = state.copy()
+                luck_state.mysore_cards[i] = False
+                luck_state.mluck -= 1
+                outcomes.append(luck_state)
+        if not outcomes:
+            luck_state = state.copy()
+            luck_state.mluck -= 1
+            return [luck_state]
+        return outcomes
+    # this should never happen
+    return [state]
 
 """
 1) All the cards effects + Power play by either side

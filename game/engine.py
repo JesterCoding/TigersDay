@@ -140,7 +140,7 @@ def main():
     a = MoveEngine()
     default = GameState()
     default.default_setup()
-    default.to_move = 2
+    default.to_move = 1
     default.set_node_tired_army(NODE_TO_IDX["Travancore"])
     a.print_legal_moves(a.get_legal_moves(default))
 
