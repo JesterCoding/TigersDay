@@ -19,7 +19,7 @@ import torch
 # ── make game/ importable ─────────────────────────────────────────────────────
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "game"))
 
-from ai.model    import build_model
+from ai.neural    import build_model
 from ai.trainer  import Trainer
 from ai.curriculum import NUM_STAGES
 

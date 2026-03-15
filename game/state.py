@@ -21,7 +21,7 @@ class GameState:
     IDX_DEFENDER = slice(IDX_DEFENDER_OFFSET, IDX_DEFENDER_OFFSET + 23)
 
     def __init__(self):
-        self.vector = np.zeros(138, dtype=bool)
+        self.vector = np.zeros(GAME_VECTOR_LENGTH, dtype=bool)
         # store as integer behind the scenes, one hot for the AI, -1 is blank
         self._attacker = -1
         self._defender = -1
@@ -178,7 +178,7 @@ class GameState:
 
     def __str__(self):
         save = ""
-        for i in range(138):
+        for i in range(GAME_VECTOR_LENGTH):
             if self.vector[i]:
                 save += "1"
             else:

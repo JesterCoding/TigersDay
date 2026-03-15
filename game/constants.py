@@ -143,3 +143,5 @@ BRITISH_CARDS_TO_IDX = {name: i for i, name in enumerate(BRITISH_CARDS)}
 
 CARD_VALUE = np.array([3, 2, 2, 1, 1, 1])
 
+GAME_VECTOR_LENGTH = 138
+MOVE_VECTOR_LENGTH = 636
