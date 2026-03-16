@@ -73,11 +73,9 @@ class MCTS:
 
             while node.is_luck:
                 if not node.is_expanded:
-                    node.expand_luck()
+                    node.expand_luck()  
                 node = random.choice(list(node.children.values()))
-                if node.state == None: 
-                    if node.is_luck:
-                        break
+                
             value, raw_logits = self.model.predict(node.state)
             legal_mask = Engine.get_legal_moves(node.state)
             masked_logits = np.where(legal_mask == 1, raw_logits, -np.inf)
