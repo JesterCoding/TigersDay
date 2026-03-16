@@ -401,24 +401,6 @@ function saveState() {
     copyBtn.className = 'action-btn safe';
     copyBtn.innerText = '📋 Copy to Clipboard';
     copyBtn.onclick = () => {
-<<<<<<< HEAD
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(binStr).then(() => {
-            copyBtn.innerText = '✅ Copied!';
-            setTimeout(() => copyBtn.innerText = '📋 Copy to Clipboard', 2000);
-        });
-      } else {
-        var textarea = document.createElement("textarea");
-        textarea.value = binStr;
-        textarea.setAttribute("readonly", "");
-        textarea.style.position = "absolute";
-        textarea.style.left = "-9999px";
-        document.body.appendChild(textarea);
-        textarea.select();
-        textarea.setSelectionRange(0, 99999);
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-=======
       var textarea = document.createElement("textarea");
       textarea.value = binStr;
       textarea.setAttribute("readonly", "");
@@ -429,7 +411,6 @@ function saveState() {
       textarea.setSelectionRange(0, 99999);
       document.execCommand("copy");
       document.body.removeChild(textarea);
->>>>>>> ab0ce604cc75e02e2a8fb64b1b93522045f7c16b
 
       copyBtn.innerText = '✅ Copied!';
       setTimeout(() => copyBtn.innerText = '📋 Copy to Clipboard', 2000);
