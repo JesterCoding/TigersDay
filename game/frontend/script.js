@@ -403,7 +403,6 @@ function saveState() {
     copyBtn.innerText = '📋 Copy to Clipboard';
     copyBtn.onclick = () => {
       if (navigator.clipboard && window.isSecureContext) {
-        // Modern API (HTTPS / localhost)
         navigator.clipboard.writeText(binStr).then(() => {
             copyBtn.innerText = '✅ Copied!';
             setTimeout(() => copyBtn.innerText = '📋 Copy to Clipboard', 2000);
