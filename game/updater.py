@@ -206,7 +206,7 @@ def get_luck_outcomes(state):
             luck_state.mluck -= 1
             return [luck_state]
         return outcomes
-    # this should never happen
+    # no luck outcomes
     return [state]
 
 """

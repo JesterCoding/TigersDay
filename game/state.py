@@ -169,12 +169,18 @@ class GameState:
     def is_battle(self):
         return self.attacker != -1
     
+    @property
+    def is_luck(self):
+        return self.bluck or self.mluck
+    
     def turn_refresh(self):
         self.turn += 1
         self.fresh_armies[:] = self.tired_armies
         self.tired_armies[:] = False
         self.mysore_cards[:] = True
         self.british_cards[:] = True
+        self.bluck = 0
+        self.mluck = 0
 
     def __str__(self):
         save = ""
