@@ -1,10 +1,12 @@
 import numpy as np
 import game.updater as Updater
+import game.engine as Engine
 
 class Node:
-    def __init__(self, state, parent=None, move=None, prior=0.0):
+    def __init__(self, state, parent = None, move = None, prior = 0.0):
         self.state = state
         self.parent = parent
+        # move to get here
         self.move = move
         self.children = {}
         
@@ -28,14 +30,12 @@ class Node:
         return self.state.is_luck
     
     # mask and normalize before this
-    # call when is_luck False
     def expand_decision(self, action_priors):
         for move, prior in enumerate(action_priors):
             if prior > 0.0 and move not in self.children:
                 self.children[move] = Node(None, self, move, prior)
                 # lazy evaluation, leave game state unexplored
 
-    # call when is_luck True
     def expand_luck(self):
         luck_outcomes = Updater.get_luck_outcomes(self.state)
         prior = 1.0 / len(luck_outcomes)
@@ -43,3 +43,47 @@ class Node:
         for i, outcome in enumerate(luck_outcomes):
             if i not in self.children:
                 self.children[i] = Node(outcome, self, i, prior)
+
+class MCTS:
+    def __init__(self, model, simulations = 100, puct = 1.5):
+        self.model = model
+        self.simulations = simulations
+        self.puct = puct
+
+    def search(self, root_state):
+        root = Node(state=root_state)
+
+        for _ in range(self.simulations):
+            node = root
+
+            while node.is_expanded:
+                node = self.select_child
+
+            # lazy evaluation, actually do it
+            if node.state == None:
+                node.state = Updater.get_next_state(node.parent.state, node.move)
+            
+            reward = Updater.get_state_winner(node.state)
+            if reward != 0:
+                self.backpropagate(node, reward)
+                # skip expansion if this is a win
+                continue
+
+            if node.is_luck:
+                node.expand_luck()
+                # no value yet since luck unresolved
+                self.backpropagate(node, 0.0)
+            else:
+                value, raw_logits = self.model.predict(node.state)
+                legal_mask = Engine.get_legal_moves(node.state)
+                masked_logits = np.where(legal_mask == 1, raw_logits, -np.inf)
+                max_logit = np.max(masked_logits)
+                exp_logits = np.exp(masked_logits - max_logit)
+                policy = exp_logits / np.sum(exp_logits)
+                node.expand_decision(policy)
+                self.backpropagate(node, value)
+                
+    def select_child(self, node):
+
+    def eval_luck(self, state):
+        outcomes = 
