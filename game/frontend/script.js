@@ -88,7 +88,7 @@ const MYSORE_CARD_DATA = [
   { name: 'French Alliance (2)',  icon: '💠',  desc: 'Deploy a Fort adjacent to another' },
   { name: 'Monsoon (1)',          icon: '🌧️',  desc: 'Flip a Fresh Army to Tired' },
   { name: 'Cavalry Raid (1)',     icon: '🏇',  desc: 'British discard' },
-  { name: 'Sea Trade (1)',        icon: '🪙',  desc: 'Draw cards equal to Forts on Coast' },
+  { name: 'Sea Trade (1)',        icon: '🪙',  desc: 'Draw a card with # = Forts on Coast' },
 ];
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
