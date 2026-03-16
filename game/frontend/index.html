@@ -14,7 +14,8 @@
         packages = ["numpy"]
     
         [[fetch]]
-        files = ["./constants.py", "./engine.py", "./state.py", "./updater.py"]
+        from = "../"
+        files = ["constants.py", "engine.py", "state.py", "updater.py"]
     </py-config>
 
     <style>
@@ -96,7 +97,7 @@
 </head>
 <body>
 
-<script type="py" src="./state.py" config="py-config"> </script>
+<script type="py" src="../state.py" config="py-config"> </script>
 
 <div id="settings-container">
     <button id="settings-icon" onclick="toggleSettings()">⚙</button>

@@ -37,3 +37,17 @@ class AlphaTiger(nn.Module):
         value, policy_logits = self.forward(x)
         policy = F.softmax(policy_logits, dim=-1)
         return value.item(), policy.squeeze(0).numpy()
+    
+def save_checkpoint(model, optimizer, iteration, path):
+    torch.save({
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'iteration': iteration,
+    }, path)
+
+def load_checkpoint(model, optimizer, path):
+    checkpoint = torch.load(path, weights_only=False)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    if optimizer is not None:
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    return checkpoint.get('iteration', 0)
