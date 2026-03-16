@@ -434,16 +434,6 @@ window.renderNodes = function renderNodes() {
         slash.setAttribute('stroke-width','3');
         slash.setAttribute('stroke-linecap','round');
         g.appendChild(slash);
-        const zt = document.createElementNS(SVG_NS,'text');
-        zt.setAttribute('x','10'); zt.setAttribute('y','-10');
-        zt.setAttribute('font-family','Cinzel,serif');
-        zt.setAttribute('font-size','9');
-        zt.setAttribute('font-weight','700');
-        zt.setAttribute('fill','rgba(255,255,255,0.9)');
-        zt.setAttribute('stroke','rgba(0,0,0,0.5)');
-        zt.setAttribute('stroke-width','1');
-        zt.textContent = 'Z';
-        g.appendChild(zt);
       }
     }
 
@@ -824,7 +814,7 @@ def apply_move(move_idx):
         feedback.innerText = "Move " + str(move_idx) + " is not legal."
         return
     current_state = get_next_state(current_state, move_idx)
-    # todo: push this back from frontend solve to backend retrieval for 1 source of truth
+    # todo: push this back from frontend solve to backend retrieval for 1 source of true
     current_state = random.choice(get_luck_outcomes(current_state)) 
     current_state = random.choice(get_luck_outcomes(current_state))
     winner = get_state_winner(current_state)
