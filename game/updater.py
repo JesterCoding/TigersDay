@@ -5,8 +5,7 @@ from constants import *
 def main():
     default = GameState()
     default.default_setup()
-    default.british_cards[1:4] = False
-    l = get_luck_outcomes(get_next_state(default, 170))
+    l = get_luck_outcomes(default)
     for state in l:
         print(state)
 

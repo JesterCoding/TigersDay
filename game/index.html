@@ -732,13 +732,14 @@ function submitMove() {
 
 <script type="py">
 from engine import MoveEngine
-from updater import get_next_state, get_state_winner
+from updater import get_next_state, get_state_winner, get_luck_outcomes
 from state import GameState
 from constants import *
 from pyodide.ffi import to_js
 from pyscript import when, window, document
 import js
 import numpy as np
+import random
 
 engine = MoveEngine()
 current_state = GameState()
@@ -823,6 +824,9 @@ def apply_move(move_idx):
         feedback.innerText = "Move " + str(move_idx) + " is not legal."
         return
     current_state = get_next_state(current_state, move_idx)
+    # todo: push this back from frontend solve to backend retrieval for 1 source of truth
+    current_state = random.choice(get_luck_outcomes(current_state)) 
+    current_state = random.choice(get_luck_outcomes(current_state))
     winner = get_state_winner(current_state)
     if winner == 1:
         feedback.innerText = "British win!"
