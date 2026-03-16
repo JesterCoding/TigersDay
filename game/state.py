@@ -6,7 +6,7 @@ class GameState:
     IDX_BRITISH_CARDS_OFFSET = 0   #index where this information begins
     IDX_MYSORE_CARDS_OFFSET = 6    # 6 cards for both mysore and british
     IDX_NODES_OFFSET = 12    # 23 nodes * 3D vectors = 69
-    IDX_TURN_ORDER_OFFSET = 81     # 4 turns (One-hot)
+    IDX_TURN_OFFSET = 81     # 4 turns (One-hot)
     IDX_WHO_TO_MOVE_OFFSET = 85    # 3 options (One-hot)
     IDX_COMBAT_STRENGTH_OFFSET = 88 # 4 options (One-hot): Only ever stored for Mysore
     IDX_ATTACKER_OFFSET = 92    # 23x2 Attacker/Defender (One-hot)
@@ -14,7 +14,7 @@ class GameState:
 
     IDX_BRITISH_CARDS = slice(IDX_BRITISH_CARDS_OFFSET, IDX_BRITISH_CARDS_OFFSET + 6)
     IDX_MYSORE_CARDS = slice(IDX_MYSORE_CARDS_OFFSET, IDX_MYSORE_CARDS_OFFSET + 6)
-    IDX_TURN_ORDER = slice(IDX_TURN_ORDER_OFFSET, IDX_TURN_ORDER_OFFSET + 4)
+    IDX_TURN = slice(IDX_TURN_OFFSET, IDX_TURN_OFFSET + 4)
     IDX_WHO_TO_MOVE = slice(IDX_WHO_TO_MOVE_OFFSET, IDX_WHO_TO_MOVE_OFFSET + 3)
     IDX_COMBAT_STRENGTH = slice(IDX_COMBAT_STRENGTH_OFFSET, IDX_COMBAT_STRENGTH_OFFSET + 4)
     IDX_ATTACKER = slice(IDX_ATTACKER_OFFSET, IDX_ATTACKER_OFFSET + 23)
@@ -89,15 +89,15 @@ class GameState:
 
     @property
     def fresh_armies(self):
-        return self.vector[self.IDX_NODES_OFFSET : self.IDX_TURN_ORDER_OFFSET : 3]
+        return self.vector[self.IDX_NODES_OFFSET : self.IDX_TURN_OFFSET : 3]
 
     @property
     def tired_armies(self):
-        return self.vector[self.IDX_NODES_OFFSET + 1 : self.IDX_TURN_ORDER_OFFSET : 3]
+        return self.vector[self.IDX_NODES_OFFSET + 1 : self.IDX_TURN_OFFSET : 3]
 
     @property
     def forts(self):
-        return self.vector[self.IDX_NODES_OFFSET + 2 : self.IDX_TURN_ORDER_OFFSET : 3]
+        return self.vector[self.IDX_NODES_OFFSET + 2 : self.IDX_TURN_OFFSET : 3]
 
     @property
     def empty(self):
@@ -128,8 +128,8 @@ class GameState:
     @turn.setter
     def turn(self, turn_number):
         self._turn = turn_number
-        self.vector[self.IDX_TURN_ORDER] = False
-        self.vector[self.IDX_TURN_ORDER_OFFSET + (turn_number - 1)] = True
+        self.vector[self.IDX_TURN] = False
+        self.vector[self.IDX_TURN_OFFSET + (turn_number - 1)] = True
 
     @property
     def attacker(self):
@@ -179,6 +179,15 @@ class GameState:
         self.british_cards[:] = True
         self.bluck = 0
         self.mluck = 0
+
+    # reading vector only
+    def read_vector(self, vector):
+        self.vector = vector
+        self._attacker = np.argmax(int(np.argmax(self.IDX_ATTACKER)))
+        self._defender = np.argmax(int(np.argmax(self.IDX_DEFENDER)))
+        self._card_strength = np.argmax(int(np.argmax(self.IDX_COMBAT_STRENGTH)))
+        self._to_move = np.argmax(int(np.argmax(self.IDX_WHO_TO_MOVE)))
+        self._turn = np.argmax(int(np.argmax(self.IDX_TURN))) + 1
 
     def __str__(self):
         save = ""
