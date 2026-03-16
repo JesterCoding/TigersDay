@@ -1,121 +1,342 @@
+import os
+import random
+from collections import deque
+from dataclasses import dataclass, field
+from typing import Callable, List, Optional, Tuple
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset
 
-from neural import AlphaTiger, save_checkpoint
-from mcts import MCTS
-from game.state import GameState
 import game.updater as Updater
-from game.constants import MOVE_VECTOR_LENGTH
+from game.constants import GAME_VECTOR_LENGTH, MOVE_VECTOR_LENGTH
+from ai.mcts import MCTS
+from ai.neural import AlphaTiger, load_checkpoint, save_checkpoint
+from game.state import GameState
 
-class Trainer:
-    def __init__(self, model, learning_rate=0.001, mcts_simulations=100, epochs=10, batch_size=64):
-        self.model = model
-        self.mcts_simulations = mcts_simulations
-        self.epochs = epochs
-        self.batch_size = batch_size
-        
-        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
-        self.value_loss_fn = nn.MSELoss()
-        self.policy_loss_fn = nn.CrossEntropyLoss()
 
-    def execute_episode(self, start_state):
-        """Runs a single game of self-play starting from a specific state."""
-        # Store (state_vector, action_probs, turn) — reward filled in at the end
-        train_examples = []
-        state = start_state  
-        mcts = MCTS(self.model, simulations=self.mcts_simulations)
+# ─── Data structures ──────────────────────────────────────────────────────────
 
-        while True:
-            # 1. Resolve luck states — no decision to make, skip storing examples
-            while state.is_luck:
-                luck_outcomes = Updater.get_luck_outcomes(state)
-                state = np.random.choice(luck_outcomes)
+Sample = Tuple[np.ndarray, np.ndarray, float]  # (state_vector, policy, value)
 
-            # 2. Check if the game is over
-            # get_state_winner returns +1 (British win), -1 (Mysore win), 0 (ongoing)
-            reward = Updater.get_state_winner(state)
-            if reward != 0:
-                # Assign reward from each step's player perspective:
-                # if the player who moved at that step matches the winner, they get +reward
-                # otherwise they get -reward
-                return [
-                    (vec, policy, reward if turn == reward else -reward)
-                    for vec, policy, turn in train_examples
-                ]
 
-            # 3. Run MCTS to get the improved policy
-            root = mcts.search(state)
+@dataclass
+class CurriculumStage:
+    """
+    One stage of curriculum learning.
 
-            # 4. Extract target policy from visit counts
-            action_probs = np.zeros(MOVE_VECTOR_LENGTH)
-            for move, child in root.children.items():
-                action_probs[move] = child.visit_count
-            action_probs /= np.sum(action_probs)
+    `state_factory` is a zero-argument callable that returns a fresh GameState.
+    This is the hook for curriculum learning — early stages can return simplified
+    or mid-game states so the model learns easier patterns first.
 
-            # 5. Store (vector, policy, turn) — turn is +1 for British, -1 for Mysore
-            #    to match the reward convention from get_state_winner
-            train_examples.append((state.vector, action_probs, state.turn))
+    Example factory for a late-game scenario:
+        def endgame_state():
+            s = GameState()
+            s.default_setup()
+            s.turn = 3
+            # … further customisation …
+            return s
+    """
+    name: str
+    state_factory: Callable[[], GameState]
+    iterations: int                         # self-play + train cycles for this stage
+    simulations: int = 100                  # MCTS simulations per move
+    temperature: float = 1.0               # softmax temperature for move selection
+    temperature_cutoff: int = 15           # after this many moves, temperature → 0
 
-            # 6. Sample and play a move
-            action = np.random.choice(len(action_probs), p=action_probs)
-            state = Updater.get_next_state(state, action)
 
-    def train(self, examples):
-        """Trains the neural network on the accumulated self-play examples."""
-        states, target_policies, target_values = list(zip(*examples))
-        
-        states = torch.tensor(np.array(states), dtype=torch.float32)
-        target_policies = torch.tensor(np.array(target_policies), dtype=torch.float32)
-        target_values = torch.tensor(np.array(target_values), dtype=torch.float32).unsqueeze(1)
+@dataclass
+class TrainerConfig:
+    # ── Replay buffer ──────────────────────────────────────────────────────────
+    buffer_size: int = 50_000
+    batch_size: int = 256
+    # Don't start gradient updates until the buffer holds this many samples.
+    # Prevents the network from over-fitting tiny early batches.
+    min_buffer_size: int = 1_000
 
-        dataset = TensorDataset(states, target_policies, target_values)
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
+    # ── Optimizer ─────────────────────────────────────────────────────────────
+    lr: float = 1e-3
+    weight_decay: float = 1e-4
 
-        self.model.train()
+    # ── Training ──────────────────────────────────────────────────────────────
+    # How many gradient steps to take after each self-play game.
+    train_steps_per_iter: int = 5
 
-        for epoch in range(self.epochs):
-            total_loss = 0.0
-            for batch_states, batch_policies, batch_values in dataloader:
-                self.optimizer.zero_grad()
+    # ── MCTS ──────────────────────────────────────────────────────────────────
+    puct: float = 1.5
 
-                pred_values, pred_policy_logits = self.model(batch_states)
+    # ── Checkpointing ─────────────────────────────────────────────────────────
+    checkpoint_dir: str = "checkpoints"
+    save_every: int = 10                   # save a checkpoint every N global iters
 
-                value_loss = self.value_loss_fn(pred_values, batch_values)
-                policy_loss = self.policy_loss_fn(pred_policy_logits, batch_policies)
-                loss = value_loss + policy_loss
 
-                loss.backward()
-                self.optimizer.step()
+# ─── Replay buffer ────────────────────────────────────────────────────────────
 
-                total_loss += loss.item()
-            
-            print(f"Epoch {epoch+1}/{self.epochs} - Loss: {total_loss/len(dataloader):.4f}")
+class ReplayBuffer:
+    def __init__(self, maxlen: int):
+        self.buffer: deque[Sample] = deque(maxlen=maxlen)
 
-    def run(self, num_iterations=50, episodes_per_iter=100, checkpoint_path="/ai/checkpoints/temp_model.pth", curriculum_generator=None):
-        """Main training loop with optional curriculum learning."""
-        for i in range(1, num_iterations + 1):
-            print(f"\n--- Starting Iteration {i}/{num_iterations} ---")
-            
-            iteration_examples = []
-            
-            print(f"Running {episodes_per_iter} self-play episodes...")
-            for e in range(episodes_per_iter):
-                if curriculum_generator:
-                    start_state = curriculum_generator(iteration=i, max_iterations=num_iterations)
-                else:
-                    start_state = GameState()
-                    start_state.default_setup()
-                
-                iteration_examples.extend(self.execute_episode(start_state))
-                
-                if (e + 1) % 10 == 0:
-                    print(f"Completed {e + 1} episodes...")
+    def add(self, samples: List[Sample]) -> None:
+        self.buffer.extend(samples)
 
-            print("Training model...")
-            self.train(iteration_examples)
+    def sample(self, n: int) -> List[Sample]:
+        return random.sample(self.buffer, min(n, len(self.buffer)))
 
-            save_checkpoint(self.model, self.optimizer, i, checkpoint_path)
-            print(f"Checkpoint saved to {checkpoint_path}")
+    def __len__(self) -> int:
+        return len(self.buffer)
+
+
+# ─── Self-play ────────────────────────────────────────────────────────────────
+
+def _get_policy_target(root, temperature: float) -> np.ndarray:
+    """
+    Convert the MCTS visit-count distribution at `root` into a probability vector
+    over the full move space.
+
+    temperature = 1.0  → proportional to visit counts  (exploration)
+    temperature = 0.0  → one-hot at the most-visited child  (exploitation)
+    """
+    counts = np.zeros(MOVE_VECTOR_LENGTH, dtype=np.float32)
+    for move, child in root.children.items():
+        counts[move] = child.visit_count
+
+    if temperature == 0.0 or counts.sum() == 0:
+        best = int(np.argmax(counts))
+        policy = np.zeros(MOVE_VECTOR_LENGTH, dtype=np.float32)
+        policy[best] = 1.0
+        return policy
+
+    counts **= 1.0 / temperature
+    return counts / counts.sum()
+
+
+def _resolve_luck(state: GameState) -> GameState:
+    """Randomly resolve any pending luck outcomes (bluck/mluck)."""
+    while state.is_luck:
+        outcomes = Updater.get_luck_outcomes(state)
+        state = random.choice(outcomes)
+    return state
+
+
+def self_play_game(
+    mcts: MCTS,
+    state_factory: Callable[[], GameState],
+    temperature: float,
+    temperature_cutoff: int,
+) -> List[Sample]:
+    """
+    Play one game via MCTS self-play from `state_factory()`.
+
+    Returns a list of training samples:  (state_vector, policy_target, outcome)
+    where outcome is +1 (Mysore wins) or −1 (British wins) from the perspective
+    used throughout the codebase.
+
+    Only decision states (non-luck) are recorded — luck resolutions have no
+    learnable policy, so they are skipped.
+    """
+    state = state_factory()
+    state = _resolve_luck(state)          # resolve any luck in the opening state
+    history: List[Tuple[np.ndarray, np.ndarray]] = []
+    move_num = 0
+
+    while True:
+        winner = Updater.get_state_winner(state)
+        if winner != 0:
+            break
+
+        temp = temperature if move_num < temperature_cutoff else 0.0
+
+        root = mcts.search(state)
+        policy = _get_policy_target(root, temp)
+
+        # Record this decision point
+        history.append((state.vector.copy(), policy))
+
+        # Sample a move and advance the state
+        move = int(np.random.choice(MOVE_VECTOR_LENGTH, p=policy))
+        state = Updater.get_next_state(state, move)
+        state = _resolve_luck(state)
+
+        move_num += 1
+
+    winner = Updater.get_state_winner(state)
+    return [(sv, pt, np.float32(winner)) for sv, pt in history]
+
+
+# ─── Training step ────────────────────────────────────────────────────────────
+
+def _train_step(
+    model: AlphaTiger,
+    optimizer: optim.Optimizer,
+    batch: List[Sample],
+) -> Tuple[float, float, float]:
+    """One gradient update. Returns (total, value, policy) losses."""
+    states, policies, values = zip(*batch)
+
+    state_t  = torch.tensor(np.array(states),   dtype=torch.float32)
+    policy_t = torch.tensor(np.array(policies), dtype=torch.float32)
+    value_t  = torch.tensor(np.array(values),   dtype=torch.float32).unsqueeze(1)
+
+    pred_value, pred_logits = model(state_t)
+
+    value_loss  = nn.MSELoss()(pred_value, value_t)
+    # CrossEntropyLoss expects raw logits and a soft target — use KL-style loss
+    log_probs   = torch.log_softmax(pred_logits, dim=-1)
+    policy_loss = -(policy_t * log_probs).sum(dim=-1).mean()
+
+    loss = value_loss + policy_loss
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    return loss.item(), value_loss.item(), policy_loss.item()
+
+
+# ─── Main training loop ───────────────────────────────────────────────────────
+
+def train(
+    curriculum: List[CurriculumStage],
+    config: TrainerConfig = TrainerConfig(),
+    resume_path: Optional[str] = None,
+) -> AlphaTiger:
+    """
+    Run the full curriculum.
+
+    Args:
+        curriculum:   Ordered list of CurriculumStage objects.
+        config:       Hyper-parameters and I/O settings.
+        resume_path:  Optional path to a checkpoint to resume from.
+
+    Returns:
+        The trained AlphaTiger model.
+    """
+    os.makedirs(config.checkpoint_dir, exist_ok=True)
+
+    model     = AlphaTiger()
+    optimizer = optim.Adam(
+        model.parameters(), lr=config.lr, weight_decay=config.weight_decay
+    )
+    buffer    = ReplayBuffer(config.buffer_size)
+
+    global_iter = 0
+    if resume_path and os.path.exists(resume_path):
+        global_iter = load_checkpoint(model, optimizer, resume_path)
+        print(f"Resumed from iteration {global_iter}  ({resume_path})")
+
+    for stage in curriculum:
+        print(f"\n{'='*60}")
+        print(f"  Stage: {stage.name}")
+        print(f"  Iterations: {stage.iterations}  |  Simulations: {stage.simulations}")
+        print(f"  Temperature: {stage.temperature}  (greedy after move {stage.temperature_cutoff})")
+        print(f"{'='*60}")
+
+        mcts = MCTS(model, simulations=stage.simulations, puct=config.puct)
+
+        for i in range(stage.iterations):
+            # ── Self-play ────────────────────────────────────────────────────
+            samples = self_play_game(
+                mcts,
+                stage.state_factory,
+                stage.temperature,
+                stage.temperature_cutoff,
+            )
+            buffer.add(samples)
+            global_iter += 1
+
+            # ── Training ─────────────────────────────────────────────────────
+            total_loss = val_loss = pol_loss = 0.0
+            steps = 0
+
+            if len(buffer) >= config.min_buffer_size:
+                for _ in range(config.train_steps_per_iter):
+                    batch = buffer.sample(config.batch_size)
+                    tl, vl, pl = _train_step(model, optimizer, batch)
+                    total_loss += tl
+                    val_loss   += vl
+                    pol_loss   += pl
+                    steps      += 1
+
+            # ── Logging ──────────────────────────────────────────────────────
+            prefix = f"[{stage.name}] iter {i+1:>4}/{stage.iterations} | buf {len(buffer):>6}"
+            if steps:
+                print(
+                    f"{prefix} | loss {total_loss/steps:.4f} "
+                    f"(val {val_loss/steps:.4f}  pol {pol_loss/steps:.4f})"
+                    f" | game len {len(samples)}"
+                )
+            else:
+                print(f"{prefix} | warming up ({len(buffer)}/{config.min_buffer_size})")
+
+            # ── Checkpoint ───────────────────────────────────────────────────
+            if global_iter % config.save_every == 0:
+                path = os.path.join(config.checkpoint_dir, f"ckpt_{global_iter:06d}.pt")
+                save_checkpoint(model, optimizer, global_iter, path)
+                print(f"  ↳ saved {path}")
+
+    final_path = os.path.join(config.checkpoint_dir, "final.pt")
+    save_checkpoint(model, optimizer, global_iter, final_path)
+    print(f"\nTraining complete — final model saved to {final_path}")
+    return model
+
+
+# ─── Example curriculum ───────────────────────────────────────────────────────
+#
+# Each stage is a plain Python function that returns a GameState.
+# You can layer in complexity however you like — different turns, card setups,
+# board positions, etc.
+
+def stage_full_game() -> GameState:
+    """Standard starting position."""
+    s = GameState()
+    s.default_setup()
+    return s
+
+
+def stage_late_game() -> GameState:
+    """
+    Example mid-curriculum stage: start near the end of turn 3 so the model
+    first learns to recognise winning/losing positions before worrying about
+    early strategy.
+    """
+    s = GameState()
+    s.default_setup()
+    s.turn = 3
+    # Optionally thin out the board here to create varied end-game scenarios.
+    return s
+
+
+if __name__ == "__main__":
+    curriculum = [
+        # Stage 1 — teach the model about late-game tactics first.
+        CurriculumStage(
+            name="Late Game",
+            state_factory=stage_late_game,
+            iterations=200,
+            simulations=50,
+            temperature=1.0,
+            temperature_cutoff=10,
+        ),
+        # Stage 2 — graduate to full games with a stronger search budget.
+        CurriculumStage(
+            name="Full Game",
+            state_factory=stage_full_game,
+            iterations=500,
+            simulations=100,
+            temperature=1.0,
+            temperature_cutoff=15,
+        ),
+    ]
+
+    train(
+        curriculum,
+        config=TrainerConfig(
+            buffer_size=50_000,
+            batch_size=256,
+            min_buffer_size=1_000,
+            train_steps_per_iter=5,
+            save_every=25,
+            checkpoint_dir="checkpoints",
+        ),
+    )

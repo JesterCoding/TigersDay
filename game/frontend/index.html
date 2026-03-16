@@ -154,7 +154,7 @@
 <div id="tooltip"></div>
 
 <script type="py">
-from engine import MoveEngine
+from engine import *
 from updater import get_next_state, get_state_winner, get_luck_outcomes
 from state import GameState
 from constants import *
@@ -164,7 +164,6 @@ import js
 import numpy as np
 import random
 
-engine = MoveEngine()
 current_state = GameState()
 current_state.default_setup()
 
@@ -175,7 +174,7 @@ def js_obj(d):
     return obj
 
 def build_move_list(state):
-    mask = engine.get_legal_moves(state)
+    mask = get_legal_moves(state)
     moves = []
     offset = 0
     for name, size, move_type in MOVE_SPACE:
@@ -242,7 +241,7 @@ def apply_move(move_idx):
     global current_state
     from js import document
     feedback = document.getElementById('move-feedback')
-    mask = engine.get_legal_moves(current_state)
+    mask = get_legal_moves(current_state)
     if move_idx < 0 or move_idx >= len(mask) or not mask[move_idx]:
         feedback.innerText = "Move " + str(move_idx) + " is not legal."
         return
