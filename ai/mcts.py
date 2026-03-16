@@ -106,16 +106,3 @@ class MCTS:
                 best_child = child
         assert best_child != None
         return best_child
-    
-    def get_action(self, root_state, temperature=1.0):
-        root = self.search(root_state)
-        visits = {move: child.visit_count for move, child in root.children.items()}
-        
-        if temperature == 0:
-            return max(visits, key=visits.get)
-        
-        moves = list(visits.keys())
-        counts = np.array([visits[m] for m in moves], dtype=float)
-        counts = counts ** (1.0 / temperature)
-        probs = counts / counts.sum()
-        return np.random.choice(moves, p=probs)
