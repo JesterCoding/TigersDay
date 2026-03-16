@@ -21,9 +21,9 @@ def get_next_state(state, move):
                 if name == "Tire":
                     next_state.set_node_tired_army(idx)
                 elif name == "Sepoy Mutiny":
+                    next_state.mysore_cards[1] = False
                     if state.attacker == idx:
                         next_state.clear_battle()
-                    next_state.mysore_cards[1] = False
                     next_state.set_node_empty(idx)
                 elif name == "French Alliance":
                     next_state.mysore_cards[2] = False
@@ -50,24 +50,24 @@ def get_next_state(state, move):
                     else:
                         next_state.set_node_empty(src)
                         next_state.set_node_tired_army(dest)
-                elif name == "Force March":
-                    if state.attacker == src:
-                        next_state.clear_battle()
-                    next_state.british_cards[4] = False
-                    if is_fort_defending:
-                        next_state = resolve_battles(next_state, src, dest, -state.card_strength)
-                    else:
-                        next_state.set_node_empty(src)
-                        next_state.set_node_tired_army(dest)
                 elif name == "Divide and Rule":
+                    next_state.british_cards[3] = False
                     if state.defender == src:
                         next_state.set_node_tired_army(src)
                         next_state.set_node_empty(state.attacker)
                         next_state.clear_battle()
                     else:
                         next_state.set_node_empty(src)
-                    next_state.british_cards[3] = False
                     next_state.set_node_fort(dest)
+                elif name == "Force March":
+                    next_state.british_cards[4] = False
+                    if state.attacker == src:
+                        next_state.clear_battle()
+                    if is_fort_defending:
+                        next_state = resolve_battles(next_state, src, dest, -state.card_strength)
+                    else:
+                        next_state.set_node_empty(src)
+                        next_state.set_node_tired_army(dest)
             elif move_type == "bcard":
                 if name == "British Power":
                     next_state.british_cards[idx] = False
@@ -82,10 +82,7 @@ def get_next_state(state, move):
                     next_state.british_cards[2] = False
                     next_state.british_cards[idx] = True
             elif move_type == "mcard":
-                if name == "Sea Trade":
-                    next_state.mysore_cards[5] = False
-                    next_state.mysore_cards[idx] = True
-                elif name == "Mysore Power":
+                if name == "Mysore Power":
                     next_state.mysore_cards[idx] = False
                     next_state.card_strength = CARD_VALUE[idx]
                 elif name == "Draw Iron Rockets":
@@ -105,22 +102,32 @@ def get_next_state(state, move):
                     break
                 elif name == "Pass British":
                     break
-            elif move_type == "rn_matrix":
-                next_state.british_cards[2] = False
-                src = idx // len(COASTAL_INDICES)
-                dest = COASTAL_INDICES[idx % len(COASTAL_INDICES)]
-                if state.attacker == src:
-                    next_state.clear_battle()
-                is_fort_defending = state.forts[dest]
-                if is_fort_defending:
-                    next_state = resolve_battles(next_state, src, dest, -state.card_strength)
-                else:
-                    is_fresh = state.fresh_armies[src]
-                    next_state.set_node_empty(src)
-                    if is_fresh:
-                        next_state.set_node_fresh_army(dest)
+            elif move_type == "coastal":
+                node = idx // len(COASTAL_INDICES)
+                coast = COASTAL_INDICES[idx % len(COASTAL_INDICES)]
+                if name == "Sea Trade":
+                    next_state.mysore_cards[5] = False
+                    if state.defender == coast:
+                        next_state.set_node_tired_army(coast)
+                        next_state.set_node_empty(state.attacker)
+                        next_state.clear_battle()
                     else:
-                        next_state.set_node_tired_army(dest)
+                        next_state.set_node_empty(coast)
+                    next_state.set_node_fort(node)
+                if name == "Royal Navy":
+                    next_state.british_cards[2] = False
+                    if state.attacker == node:
+                        next_state.clear_battle()
+                    is_fort_defending = state.forts[coast]
+                    if is_fort_defending:
+                        next_state = resolve_battles(next_state, node, coast, -state.card_strength)
+                    else:
+                        is_fresh = state.fresh_armies[node]
+                        next_state.set_node_empty(node)
+                        if is_fresh:
+                            next_state.set_node_fresh_army(coast)
+                        else:
+                            next_state.set_node_tired_army(coast)
             break
 
         offset += size

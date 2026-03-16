@@ -18,7 +18,7 @@ def get_legal_moves(state: GameState):
             trapped_army
         ))
     else:
-        phase0 = np.zeros(101, dtype=bool)
+        phase0 = np.zeros(103, dtype=bool)
 
     if state.to_move == 1:
         sepoy_mutiny = state.mysore_cards[1] * ((state.fresh_armies | state.tired_armies) & ~KEYS)
@@ -54,7 +54,7 @@ def get_legal_moves(state: GameState):
             mysore_pass
         ))
     else:
-        phase1 = np.zeros(101, dtype=bool)
+        phase1 = np.zeros(302, dtype=bool)
 
     if state.to_move == 2:
         highlanders = state.british_cards[1] * (state.empty & COASTAL)
@@ -90,7 +90,7 @@ def get_legal_moves(state: GameState):
             british_pass
         ))
     else:
-        phase2 = np.zeros(434, dtype=bool)
+        phase2 = np.zeros(438, dtype=bool)
 
     mask = np.concatenate((
         phase0,
@@ -125,12 +125,12 @@ def print_legal_moves(mask):
             elif move_type == "blank":
                 print(f"{number} {name}")
             elif move_type == "coastal":
-                any = INDEX_MAP[idx // len(COASTAL_INDICES)]
+                node = INDEX_MAP[idx // len(COASTAL_INDICES)]
                 coast = INDEX_MAP[int(COASTAL_INDICES[idx % len(COASTAL_INDICES)])]
                 if name == "Royal Navy":
-                    print(f"{number} {name}: {any} -> {coast}")
+                    print(f"{number} {name}: {node} -> {coast}")
                 elif name == "Sea Trade":
-                    print(f"{number} {name}: {coast} -> {any}")
+                    print(f"{number} {name}: {coast} -> {node}")
 
         offset += size
 
@@ -138,7 +138,8 @@ def print_legal_moves(mask):
 def main():
     default = GameState()
     default.default_setup()
-    default.to_move = 1
+    default.to_move = 2
+    default.set_node_fort(NODE_TO_IDX["Ceylon"])
     default.set_node_tired_army(NODE_TO_IDX["Travancore"])
     print_legal_moves(get_legal_moves(default))
 

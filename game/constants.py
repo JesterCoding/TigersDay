@@ -123,4 +123,4 @@ MYSORE_CARDS_TO_IDX = {name: i for i, name in enumerate(MYSORE_CARDS)}
 BRITISH_CARDS_TO_IDX = {name: i for i, name in enumerate(BRITISH_CARDS)}
 
 GAME_VECTOR_LENGTH = 138
-MOVE_VECTOR_LENGTH = 636
+MOVE_VECTOR_LENGTH = 843
