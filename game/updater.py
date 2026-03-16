@@ -71,7 +71,7 @@ def get_next_state(state, move):
             elif move_type == "bcard":
                 if name == "British Power":
                     next_state.british_cards[idx] = False
-                    next_state = resolve_battles(next_state, -1, -1, CARD_VALUE[idx]-state.card_strength)
+                    next_state = resolve_battles(next_state, NO_UNIT, NO_UNIT, CARD_VALUE[idx]-state.card_strength)
                 elif name == "Draw Wall Breach":
                     next_state.british_cards[0] = False
                     next_state.british_cards[idx] = True
@@ -126,7 +126,7 @@ def get_next_state(state, move):
         offset += size
 
     if state.to_move == 2:
-        next_state = resolve_battles(next_state, -1, -1, -state.card_strength)
+        next_state = resolve_battles(next_state, NO_UNIT, NO_UNIT, -state.card_strength)
         if state.turn != 4 and not next_state.fresh_armies.any():
             next_state.turn_refresh()
     next_state.to_move += 1
@@ -150,13 +150,13 @@ def resolve_battles(state, attacker, defender, net_card_strength):
     battle1 = False
     battle2 = False
     #first battle from state, second battle from parameters
-    if state.attacker != -1:
+    if state.attacker != NO_UNIT:
         battle1 = is_battle_won(state, state.defender, net_card_strength)
         if battle1:
             state.mluck += 1
         else:
             state.bluck += 1
-    if attacker != -1:
+    if attacker != NO_UNIT:
         battle2 = is_battle_won(state, defender, 0)
         if battle2:
             state.mluck += 1

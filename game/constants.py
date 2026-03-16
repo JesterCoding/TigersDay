@@ -36,6 +36,8 @@ NODES = 23
 
 CARDS = 6
 
+NO_UNIT = -1
+
 INDEX_MAP = {
 0: "Bombay",
 1: "Hyderabad",

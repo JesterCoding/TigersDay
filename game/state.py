@@ -23,8 +23,8 @@ class GameState:
     def __init__(self):
         self.vector = np.zeros(GAME_VECTOR_LENGTH, dtype=bool)
         # store as integer behind the scenes, one hot for the AI, -1 is blank
-        self._attacker = -1
-        self._defender = -1
+        self._attacker = NO_UNIT
+        self._defender = NO_UNIT
         self._card_strength = 0
         self._to_move = 0
         self._turn = 1
@@ -83,8 +83,8 @@ class GameState:
         self.vector[start_idx : start_idx + 3] = False
 
     def clear_battle(self):
-        self.attacker = -1
-        self.defender = -1
+        self.attacker = NO_UNIT
+        self.defender = NO_UNIT
         self.card_strength = 0
 
     @property
@@ -139,7 +139,7 @@ class GameState:
     def attacker(self, value: int):
         self._attacker = value
         self.vector[self.IDX_ATTACKER] = False
-        if value != -1:
+        if value != NO_UNIT:
             self.vector[self.IDX_ATTACKER_OFFSET + value] = True
 
     @property
@@ -150,7 +150,7 @@ class GameState:
     def defender(self, value: int):
         self._defender = value
         self.vector[self.IDX_DEFENDER] = False
-        if value != -1:
+        if value != NO_UNIT:
             self.vector[self.IDX_DEFENDER_OFFSET + value] = True
     
     @property
@@ -165,7 +165,7 @@ class GameState:
 
     @property
     def is_battle(self):
-        return self.attacker != -1
+        return self.attacker != NO_UNIT
     
     @property
     def is_luck(self):
@@ -183,8 +183,8 @@ class GameState:
     # reading vector only
     def read_vector(self, vector):
         self.vector = vector
-        self._attacker = int(np.argmax(self.vector[self.IDX_ATTACKER])) if self.vector[self.IDX_ATTACKER].any() else -1
-        self._defender = int(np.argmax(self.vector[self.IDX_DEFENDER])) if self.vector[self.IDX_DEFENDER].any() else -1
+        self._attacker = int(np.argmax(self.vector[self.IDX_ATTACKER])) if self.vector[self.IDX_ATTACKER].any() else NO_UNIT
+        self._defender = int(np.argmax(self.vector[self.IDX_DEFENDER])) if self.vector[self.IDX_DEFENDER].any() else NO_UNIT
         self._card_strength = int(np.argmax(self.vector[self.IDX_COMBAT_STRENGTH]))
         self._to_move = int(np.argmax(self.vector[self.IDX_WHO_TO_MOVE]))
         self._turn = int(np.argmax(self.vector[self.IDX_TURN])) + 1
