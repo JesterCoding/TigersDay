@@ -121,8 +121,6 @@ def get_next_state(state, move):
                         next_state.set_node_fresh_army(dest)
                     else:
                         next_state.set_node_tired_army(dest)
-                print(f"{name}: {src} -> {dest}")  
-
             break
 
         offset += size

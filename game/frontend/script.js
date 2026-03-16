@@ -421,7 +421,28 @@ function saveState() {
     closeBtn.className = 'action-btn danger';
     closeBtn.innerText = 'Close';
     closeBtn.style.marginTop = '8px';
-    closeBtn.onclick = () => document.body.removeChild(overlay);
+      copyBtn.onclick = () => {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(binStr).then(() => {
+            copyBtn.innerText = '✅ Copied!';
+            setTimeout(() => copyBtn.innerText = '📋 Copy to Clipboard', 2000);
+        });
+      } else {
+        var textarea = document.createElement("textarea");
+        textarea.value = binStr;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "absolute";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        textarea.setSelectionRange(0, 99999);
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+
+      copyBtn.innerText = '✅ Copied!';
+      setTimeout(() => copyBtn.innerText = '📋 Copy to Clipboard', 2000);
+      }
+    };
 
     // Assemble and show
     dialog.appendChild(copyBtn);
