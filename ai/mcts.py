@@ -62,6 +62,7 @@ class MCTS:
 
             # lazy evaluation, actually do it
             if node.state == None:
+                assert node.parent != None
                 node.state = Updater.get_next_state(node.parent.state, node.move)
             
             reward = Updater.get_state_winner(node.state)
@@ -76,7 +77,7 @@ class MCTS:
                 node = random.choice(list(node.children.values()))
                 if node.state == None: 
                     if node.is_luck:
-            
+                        break
             value, raw_logits = self.model.predict(node.state)
             legal_mask = Engine.get_legal_moves(node.state)
             masked_logits = np.where(legal_mask == 1, raw_logits, -np.inf)
@@ -85,6 +86,11 @@ class MCTS:
             policy = exp_logits / np.sum(exp_logits)
             node.expand_decision(policy)
             self.backpropagate(node, value)
-                
+
+    #to do: finish function
+    def backpropagate(self, node, value):
+        return None
+
+    #to do: select your child plz
     def select_child(self, node):
         return node
