@@ -29,9 +29,7 @@ def get_legal_moves(state: GameState):
 
         cavalry_raid = np.array([state.mysore_cards[4]])
 
-        forts_on_coast = np.dot(state.forts.astype(int),COASTAL)
-        valid_trades = ~state.mysore_cards & (CARD_VALUE == forts_on_coast)
-        sea_trade = state.mysore_cards[5] * valid_trades
+        sea_trade = state.mysore_cards[5] * np.outer(state.empty, state.forts[COASTAL_INDICES]).flatten()
 
         mysore_power = state.mysore_cards * state.is_battle
 
@@ -106,7 +104,7 @@ def get_legal_moves(state: GameState):
 def print_legal_moves(mask):
     offset = 0
     for name, size, move_type in MOVE_SPACE:
-        memory_chunk = mask[offset: offset+size]
+        memory_chunk = mask[offset : offset+size]
         valid_local_moves = np.where(memory_chunk)[0]
 
         for idx in valid_local_moves:
@@ -126,10 +124,13 @@ def print_legal_moves(mask):
                 print(f"{number} {name}: {card_name}")
             elif move_type == "blank":
                 print(f"{number} {name}")
-            elif move_type == "rn_matrix":
-                source_node = INDEX_MAP[idx // len(COASTAL_INDICES)]
-                dest_node = INDEX_MAP[int(COASTAL_INDICES[idx % len(COASTAL_INDICES)])] 
-                print(f"{number} {name}: {source_node} -> {dest_node}")
+            elif move_type == "coastal":
+                any = INDEX_MAP[idx // len(COASTAL_INDICES)]
+                coast = INDEX_MAP[int(COASTAL_INDICES[idx % len(COASTAL_INDICES)])]
+                if name == "Royal Navy":
+                    print(f"{number} {name}: {any} -> {coast}")
+                elif name == "Sea Trade":
+                    print(f"{number} {name}: {coast} -> {any}")
 
         offset += size
 
