@@ -19,7 +19,7 @@ import torch
 # ── make game/ importable ─────────────────────────────────────────────────────
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "game"))
 
-from ai.neural    import build_model
+from ai.neural    import AlphaTiger
 from ai.trainer  import Trainer
 from ai.curriculum import NUM_STAGES
 
@@ -90,7 +90,7 @@ def main():
     logger.info("Curriculum start stage: %d / %d", args.stage, NUM_STAGES - 1)
 
     # ── model ─────────────────────────────────────────────────────────────────
-    model = build_model(device=device)
+    model = AlphaTiger()
     logger.info("Model parameters: {:,}".format(
         sum(p.numel() for p in model.parameters())
     ))
