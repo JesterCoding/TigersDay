@@ -102,7 +102,8 @@ class MCTS:
     def select_child(self, node):
         best_score, best_child = -np.inf, None
         for child in node.children.values():
-            exploitation = child.eval
+            exploitation = -child.eval if child.state.to_move == 1 else child.eval
+            # flip evaluation for mysore turn
             exploration = self.puct * child.prior * (np.sqrt(node.visit_count) / (1 + child.visit_count))
             score = exploitation + exploration
             if score > best_score:
