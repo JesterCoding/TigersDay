@@ -69,19 +69,22 @@ class MCTS:
                 # skip expansion if this is a win
                 continue
 
-            if node.is_luck:
-                node.expand_luck()
-                # no value yet since luck unresolved
-                self.backpropagate(node, 0.0)
-            else:
-                value, raw_logits = self.model.predict(node.state)
-                legal_mask = Engine.get_legal_moves(node.state)
-                masked_logits = np.where(legal_mask == 1, raw_logits, -np.inf)
-                max_logit = np.max(masked_logits)
-                exp_logits = np.exp(masked_logits - max_logit)
-                policy = exp_logits / np.sum(exp_logits)
-                node.expand_decision(policy)
-                self.backpropagate(node, value)
+            while node.is_luck:
+                if not node.is_expanded:
+                    node.expand_luck()
+                node = np.random.choice(node.children)
+                if node.state == None: 
+                    if node.is_luck:
+                        
+            
+            value, raw_logits = self.model.predict(node.state)
+            legal_mask = Engine.get_legal_moves(node.state)
+            masked_logits = np.where(legal_mask == 1, raw_logits, -np.inf)
+            max_logit = np.max(masked_logits)
+            exp_logits = np.exp(masked_logits - max_logit)
+            policy = exp_logits / np.sum(exp_logits)
+            node.expand_decision(policy)
+            self.backpropagate(node, value)
                 
     def select_child(self, node):
 
