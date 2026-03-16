@@ -183,11 +183,11 @@ class GameState:
     # reading vector only
     def read_vector(self, vector):
         self.vector = vector
-        self._attacker = int(np.argmax(self.IDX_ATTACKER))
-        self._defender = int(np.argmax(self.IDX_DEFENDER))
-        self._card_strength = int(np.argmax(self.IDX_COMBAT_STRENGTH))
-        self._to_move = int(np.argmax(self.IDX_WHO_TO_MOVE))
-        self._turn = int(np.argmax(self.IDX_TURN)) + 1
+        self._attacker = int(np.argmax(self.vector[self.IDX_ATTACKER]))
+        self._defender = int(np.argmax(self.vector[self.IDX_DEFENDER]))
+        self._card_strength = int(np.argmax(self.vector[self.IDX_COMBAT_STRENGTH]))
+        self._to_move = int(np.argmax(self.vector[self.IDX_WHO_TO_MOVE]))
+        self._turn = int(np.argmax(self.vector[self.IDX_TURN])) + 1
 
     def __str__(self):
         save = ""
