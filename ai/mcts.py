@@ -75,7 +75,7 @@ class MCTS:
                 if not node.is_expanded:
                     node.expand_luck()  
                 node = random.choice(list(node.children.values()))
-                
+
             value, raw_logits = self.model.predict(node.state)
             legal_mask = Engine.get_legal_moves(node.state)
             masked_logits = np.where(legal_mask == 1, raw_logits, -np.inf)
@@ -85,10 +85,20 @@ class MCTS:
             node.expand_decision(policy)
             self.backpropagate(node, value)
 
-    #to do: finish function
     def backpropagate(self, node, value):
-        return None
+        while node is not None:
+            node.visit_count += 1
+            node.value_sum += value
+            node = node.parent
 
-    #to do: select your child plz
     def select_child(self, node):
-        return node
+        best_score, best_child = -np.inf, None
+        for child in node.children.values():
+            exploitation = child.eval
+            exploration = self.puct * child.prior * (np.sqrt(node.visit_count) / (1 + child.visit_count))
+            score = exploitation + exploration
+            if score > best_score:
+                best_score = score
+                best_child = child
+        assert best_child != None
+        return best_child
