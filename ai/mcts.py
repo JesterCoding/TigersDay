@@ -26,6 +26,7 @@ class Node:
         return len(self.children) > 0
     
     # lazy evaluation, generate state before querying
+ 
     @property
     def is_luck(self):
         return self.state.is_luck
@@ -71,9 +72,10 @@ class MCTS:
                 # skip expansion if this is a win
                 continue
 
+            #luck is slippery
             while node.is_luck:
                 if not node.is_expanded:
-                    node.expand_luck()  
+                    node.expand_luck()   
                 node = random.choice(list(node.children.values()))
 
             value, raw_logits = self.model.predict(node.state)
@@ -84,6 +86,8 @@ class MCTS:
             policy = exp_logits / np.sum(exp_logits)
             node.expand_decision(policy)
             self.backpropagate(node, value)
+        
+        return root
 
     def backpropagate(self, node, value):
         while node is not None:
@@ -102,3 +106,16 @@ class MCTS:
                 best_child = child
         assert best_child != None
         return best_child
+    
+    def get_action(self, root_state, temperature=1.0):
+        root = self.search(root_state)
+        visits = {move: child.visit_count for move, child in root.children.items()}
+        
+        if temperature == 0:
+            return max(visits, key=visits.get)
+        
+        moves = list(visits.keys())
+        counts = np.array([visits[m] for m in moves], dtype=float)
+        counts = counts ** (1.0 / temperature)
+        probs = counts / counts.sum()
+        return np.random.choice(moves, p=probs)
