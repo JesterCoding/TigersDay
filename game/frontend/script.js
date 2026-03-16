@@ -441,6 +441,7 @@ function saveState() {
 
       copyBtn.innerText = '✅ Copied!';
       setTimeout(() => copyBtn.innerText = '📋 Copy to Clipboard', 2000);
+      }
     };
 
     // Assemble and show
