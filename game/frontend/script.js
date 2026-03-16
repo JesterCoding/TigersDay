@@ -87,7 +87,7 @@ const MYSORE_CARD_DATA = [
   { name: 'Sepoy Mutiny (2)',     icon: '⚔️',  desc: 'Remove an Army not in a Key' },
   { name: 'French Alliance (2)',  icon: '💠',  desc: 'Deploy a Fort adjacent to another' },
   { name: 'Monsoon (1)',          icon: '🌧️',  desc: 'Flip a Fresh Army to Tired' },
-  { name: 'Cavalry Raid (1)',     icon: '🏇',  desc: 'Force British to discard a card' },
+  { name: 'Cavalry Raid (1)',     icon: '🏇',  desc: 'British discard' },
   { name: 'Sea Trade (1)',        icon: '🪙',  desc: 'Draw cards equal to Forts on Coast' },
 ];
 
