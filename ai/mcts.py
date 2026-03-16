@@ -59,24 +59,28 @@ class MCTS:
             node = root
 
             while node.is_expanded:
-                node = self.select_child(node)
+                # luck is slippery
+                if node.is_luck:
+                    node = random.choice(list(node.children.values()))
+                else:
+                    node = self.select_child(node)
 
             # lazy evaluation, actually do it
-            if node.state == None:
-                assert node.parent != None
+            if node.state is None:
+                assert node.parent is not None
                 node.state = Updater.get_next_state(node.parent.state, node.move)
+
+            # handle more luck ply
+            while node.is_luck:
+                if not node.is_expanded:
+                    node.expand_luck()  
+                node = random.choice(list(node.children.values()))
             
             reward = Updater.get_state_winner(node.state)
             if reward != 0:
                 self.backpropagate(node, reward)
                 # skip expansion if this is a win
                 continue
-
-            #luck is slippery
-            while node.is_luck:
-                if not node.is_expanded:
-                    node.expand_luck()   
-                node = random.choice(list(node.children.values()))
 
             value, raw_logits = self.model.predict(node.state)
             legal_mask = Engine.get_legal_moves(node.state)
@@ -104,5 +108,5 @@ class MCTS:
             if score > best_score:
                 best_score = score
                 best_child = child
-        assert best_child != None
+        assert best_child is not None
         return best_child
