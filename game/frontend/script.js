@@ -74,7 +74,7 @@ for (const [a, b] of EDGES) {
 for (const k of Object.keys(adjacency)) adjacency[k] = [...new Set(adjacency[k])];
 
 const BRITISH_CARD_DATA = [
-  { name: 'Wall Breach (3)',      icon: '💥',  desc: 'High-power breach' },
+  { name: 'Wall Breach (3)',      icon: '💥',  desc: 'Powerful' },
   { name: 'Highlanders (2)',      icon: '🟥',  desc: 'Deploy a Fresh Army on Coast' },
   { name: 'Royal Navy (2)',       icon: '⚓',  desc: 'Move an Army to any Coast' },
   { name: 'Divide and Rule (1)',  icon: '🤝',  desc: 'Move a Fort not in a Key' },
@@ -83,12 +83,12 @@ const BRITISH_CARD_DATA = [
 ];
 
 const MYSORE_CARD_DATA = [
-  { name: 'Iron Rockets (3)',     icon: '🚀',  desc: 'High-power rocket strike' },
+  { name: 'Iron Rockets (3)',     icon: '🚀',  desc: 'Powerful' },
   { name: 'Sepoy Mutiny (2)',     icon: '⚔️',  desc: 'Remove an Army not in a Key' },
   { name: 'French Alliance (2)',  icon: '💠',  desc: 'Deploy a Fort adjacent to another' },
   { name: 'Monsoon (1)',          icon: '🌧️',  desc: 'Flip a Fresh Army to Tired' },
   { name: 'Cavalry Raid (1)',     icon: '🏇',  desc: 'British discard' },
-  { name: 'Sea Trade (1)',        icon: '🪙',  desc: 'Draw a card with # = Forts on Coast' },
+  { name: 'Sea Trade (1)',        icon: '🪙',  desc: 'Move a Fort from Coast to any' },
 ];
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
