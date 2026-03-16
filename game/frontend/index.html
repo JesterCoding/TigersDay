@@ -286,7 +286,9 @@ def load_saved_state(event=None):
     except ValueError as e:
         window.alert(str(e))
         return
-    current_state = new_state
+
+    current_state = new_state.copy()
+    current_state.read_vector(current_state.vector)
     push_state_to_ui(current_state)
     print("State loaded and legal moves updated.")
 

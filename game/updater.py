@@ -129,7 +129,7 @@ def get_next_state(state, move):
 
     if state.to_move == 2:
         next_state = resolve_battles(next_state, -1, -1, -state.card_strength)
-        if state.turn != 4 and not state.fresh_armies.any():
+        if state.turn != 4 and not next_state.fresh_armies.any():
             next_state.turn_refresh()
     next_state.to_move += 1
     return next_state

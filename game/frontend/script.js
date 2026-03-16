@@ -74,21 +74,21 @@ for (const [a, b] of EDGES) {
 for (const k of Object.keys(adjacency)) adjacency[k] = [...new Set(adjacency[k])];
 
 const BRITISH_CARD_DATA = [
-  { name: 'Wall Breach (3)',      icon: '💥',  desc: 'High-power breach action' },
-  { name: 'Highlanders (2)',      icon: '🟥',  desc: 'Deploy a Fresh Red Cube on Coast' },
-  { name: 'Royal Navy (2)',       icon: '⚓',  desc: 'Move an Anchor to any Coast' },
-  { name: 'Divide and Rule (1)',  icon: '🤝',  desc: 'Move a Green Diamond not in a Key' },
-  { name: 'Force March (1)',      icon: '🥾',  desc: 'Move a Tired Red Cube' },
-  { name: 'Princely States (1)',  icon: '🏰',  desc: 'Deploy a Tired Red Cube in a Key' },
+  { name: 'Wall Breach (3)',      icon: '💥',  desc: 'High-power breach' },
+  { name: 'Highlanders (2)',      icon: '🟥',  desc: 'Deploy a Fresh Army on Coast' },
+  { name: 'Royal Navy (2)',       icon: '⚓',  desc: 'Move an Army to any Coast' },
+  { name: 'Divide and Rule (1)',  icon: '🤝',  desc: 'Move a Fort not in a Key' },
+  { name: 'Force March (1)',      icon: '🥾',  desc: 'Move a Tired Army' },
+  { name: 'Princely States (1)',  icon: '🏰',  desc: 'Deploy a Tired Army in a Key' },
 ];
 
 const MYSORE_CARD_DATA = [
   { name: 'Iron Rockets (3)',     icon: '🚀',  desc: 'High-power rocket strike' },
-  { name: 'Sepoy Mutiny (2)',     icon: '⚔️',  desc: 'Remove a Red Cube not in a Key' },
-  { name: 'French Alliance (2)',  icon: '💠',  desc: 'Deploy a Green Diamond adjacent to another' },
-  { name: 'Monsoon (1)',          icon: '🌧️',  desc: 'Flip a Fresh Red Cube to Tired' },
-  { name: 'Cavalry Raid (1)',     icon: '🏇',  desc: 'Force British to discard a card' },
-  { name: 'Sea Trade (1)',        icon: '🪙',  desc: 'Draw cards equal to Green Diamonds on Coast' },
+  { name: 'Sepoy Mutiny (2)',     icon: '⚔️',  desc: 'Remove an Army not in a Key' },
+  { name: 'French Alliance (2)',  icon: '💠',  desc: 'Deploy a Fort adjacent to another' },
+  { name: 'Monsoon (1)',          icon: '🌧️',  desc: 'Flip a Fresh Army to Tired' },
+  { name: 'Cavalry Raid (1)',     icon: '🏇',  desc: 'British discard' },
+  { name: 'Sea Trade (1)',        icon: '🪙',  desc: 'Draw cards equal to Forts on Coast' },
 ];
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -127,7 +127,6 @@ window.updateCombatInfo = function(turnNum, whoMove, attacker, defender, strengt
     document.getElementById('ui-combat-strength').innerText = strength;
 };
 
-// NOTE: Now accessible to PyScript directly via window.renderNodes()
 window.renderNodes = function renderNodes() {
   const layer = document.getElementById('node-layer');
   layer.innerHTML = '';
@@ -402,6 +401,7 @@ function saveState() {
     copyBtn.className = 'action-btn safe';
     copyBtn.innerText = '📋 Copy to Clipboard';
     copyBtn.onclick = () => {
+<<<<<<< HEAD
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(binStr).then(() => {
             copyBtn.innerText = '✅ Copied!';
@@ -418,10 +418,21 @@ function saveState() {
         textarea.setSelectionRange(0, 99999);
         document.execCommand("copy");
         document.body.removeChild(textarea);
+=======
+      var textarea = document.createElement("textarea");
+      textarea.value = binStr;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "absolute";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      textarea.setSelectionRange(0, 99999);
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+>>>>>>> ab0ce604cc75e02e2a8fb64b1b93522045f7c16b
 
-        copyBtn.innerText = '✅ Copied!';
-        setTimeout(() => copyBtn.innerText = '📋 Copy to Clipboard', 2000);
-      }
+      copyBtn.innerText = '✅ Copied!';
+      setTimeout(() => copyBtn.innerText = '📋 Copy to Clipboard', 2000);
     };
 
     // 6. Add Close Button
