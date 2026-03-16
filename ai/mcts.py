@@ -1,4 +1,5 @@
 import numpy as np
+import random
 import game.updater as Updater
 import game.engine as Engine
 
@@ -57,7 +58,7 @@ class MCTS:
             node = root
 
             while node.is_expanded:
-                node = self.select_child
+                node = self.select_child(node)
 
             # lazy evaluation, actually do it
             if node.state == None:
@@ -72,10 +73,9 @@ class MCTS:
             while node.is_luck:
                 if not node.is_expanded:
                     node.expand_luck()
-                node = np.random.choice(node.children)
+                node = random.choice(list(node.children.values()))
                 if node.state == None: 
                     if node.is_luck:
-                        
             
             value, raw_logits = self.model.predict(node.state)
             legal_mask = Engine.get_legal_moves(node.state)
@@ -87,6 +87,4 @@ class MCTS:
             self.backpropagate(node, value)
                 
     def select_child(self, node):
-
-    def eval_luck(self, state):
-        outcomes = 
+        return node
