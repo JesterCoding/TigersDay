@@ -60,6 +60,7 @@ const EDGES = [
   ['Pondicherry', 'Trichy'],
   ['Erode', 'Trichy'],
   ['Trichy', 'Dindigul'],
+  ['Trichy', 'Ceylon'],
   ['Palgautcherry', 'Travancore'],
   ['Dindigul', 'Travancore'],
   ['Dindigul', 'Ceylon'],
