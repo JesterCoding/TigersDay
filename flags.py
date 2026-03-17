@@ -20,7 +20,7 @@ import torch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "game"))
 
 from ai.neural    import AlphaTiger
-from ai.trainer  import Trainer
+from ai.train  import Trainer
 from ai.curriculum import NUM_STAGES
 
 

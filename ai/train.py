@@ -20,7 +20,6 @@ from game.state import GameState
 
 Sample = Tuple[np.ndarray, np.ndarray, float]  # (state_vector, policy, value)
 
-
 @dataclass
 class CurriculumStage:
     """
@@ -106,10 +105,15 @@ def _get_policy_target(root, temperature: float) -> np.ndarray:
 
 def _resolve_luck(state: GameState) -> GameState:
     """Randomly resolve any pending luck outcomes (bluck/mluck)."""
+    luck_trajectory = []
     while state.is_luck:
         outcomes = Updater.get_luck_outcomes(state)
-        state = random.choice(outcomes)
-    return state
+
+        idx = random.randrange(len(outcomes))
+
+        state = outcomes[idx]
+        luck_trajectory.append(idx)
+    return state, luck_trajectory
 
 
 def self_play_game(
@@ -129,7 +133,8 @@ def self_play_game(
     learnable policy, so they are skipped.
     """
     state = state_factory()
-    state = _resolve_luck(state)          # resolve any luck in the opening state
+    state, _ = _resolve_luck(state)
+
     history: List[Tuple[np.ndarray, np.ndarray]] = []
     move_num = 0
 
@@ -149,7 +154,8 @@ def self_play_game(
         # Sample a move and advance the state
         move = int(np.random.choice(MOVE_VECTOR_LENGTH, p=policy))
         state = Updater.get_next_state(state, move)
-        state = _resolve_luck(state)
+        state, luck_history = _resolve_luck(state)
+        mcts.update_root(move, luck_history)
 
         move_num += 1
 

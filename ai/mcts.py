@@ -51,12 +51,14 @@ class MCTS:
         self.model = model
         self.simulations = simulations
         self.puct = puct
+        self.root = None
 
     def search(self, root_state):
-        root = Node(state=root_state)
+        if self.root is None:
+            self.root = Node(state = root_state)
 
         for _ in range(self.simulations):
-            node = root
+            node = self.root
 
             while node.is_expanded:
                 # luck is slippery
@@ -91,7 +93,7 @@ class MCTS:
             node.expand_decision(policy)
             self.backpropagate(node, value)
         
-        return root
+        return self.root
 
     def backpropagate(self, node, value):
         while node is not None:
@@ -112,6 +114,20 @@ class MCTS:
         assert best_child is not None
         return best_child
     
-    def update_root(self):
-        return None
-    
+    # retain subtree if mcts already has it
+    def update_root(self, action, luck_trajectory):
+        if self.root is None or action not in self.root.children:
+            self.root = None
+            return
+        
+        current_node = self.root.children[action]
+
+        for idx in luck_trajectory:
+            if idx in current_node.children:
+                current_node = current_node.children[idx]
+            else:
+                self.root = None
+                return
+            
+        self.root = current_node
+        self.root.parent = None
