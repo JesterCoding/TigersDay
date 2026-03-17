@@ -104,7 +104,7 @@ def _get_policy_target(root, temperature: float) -> np.ndarray:
     return counts / counts.sum()
 
 
-def _resolve_luck(state: GameState) -> GameState:
+def _resolve_luck(state: GameState) -> tuple[GameState, list[int]]:
     """Randomly resolve any pending luck outcomes (bluck/mluck)."""
     luck_trajectory = []
     while state.is_luck:
@@ -264,11 +264,14 @@ def train(
             # ── Logging ──────────────────────────────────────────────────────
             prefix = f"[{stage.name}] iter {i+1:>4}/{stage.iterations} | buf {len(buffer):>6}"
             if steps:
-                print(
-                    f"{prefix} | loss {total_loss/steps:.4f} "
-                    f"(val {val_loss/steps:.4f}  pol {pol_loss/steps:.4f})"
-                    f" | game len {len(samples)}"
-                )
+                if len(samples) == 0:
+                    print("DEBUG: Game ended with zero samples! Check your GameState initialization.")
+                else:
+                    print(
+                        f"{prefix} | loss {total_loss/steps:.4f} "
+                        f"(val {val_loss/steps:.4f}  pol {pol_loss/steps:.4f})"
+                        f" | game len {len(samples)} | winner {"british" if samples[0][2] == 1 else "mysore"}"
+                    )
             else:
                 print(f"{prefix} | warming up ({len(buffer)}/{config.min_buffer_size})")
 
@@ -322,12 +325,14 @@ def stage_mid_game() -> GameState:
 def stage_late_game() -> GameState:
     """Perturb a British winning state randomly for 2 impulses."""
     state = GameState()
+    state.set_node_fort(random.randrange(23))
+    state.set_node_fort(random.randrange(23))
     state.set_node_fresh_army(NODE_TO_IDX["Bombay"])
     state.set_node_fresh_army(NODE_TO_IDX["Madras"])
     state.set_node_fresh_army(NODE_TO_IDX["Hyderabad"])
     state.set_node_fresh_army(NODE_TO_IDX["Srirangapatna"])
     state.set_node_fresh_army(NODE_TO_IDX["Coimbatore"])
-    state.set_node_fort(NODE_TO_IDX["Erode"])
+    state.set_node_fresh_army(random.randrange(23))
     state.turn = 4
 
     scramble_depth = 6

@@ -3,9 +3,9 @@
 Tigers Day AI — Training Entry Point
 
 Usage:
-  python train.py                           # default settings
-  python train.py --iterations 200 --simulations 500 --lr 0.001 --resume
-  python train.py --stage 3 --device cuda   # start from curriculum stage 3
+  python flags.py                           # default settings
+  python flags.py --iterations 200 --simulations 500 --lr 0.001 --resume
+  python flags.py --stage 3 --device cuda   # start from curriculum stage 3
 
 All available flags are documented below.
 """
