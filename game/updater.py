@@ -1,6 +1,6 @@
 import numpy as np
-from state import GameState
-from constants import *
+from game.state import GameState
+from game.constants import *
 
 def main():
     default = GameState()

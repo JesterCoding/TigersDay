@@ -1,7 +1,7 @@
 import numpy as np
 import time
-from constants import *
-from state import GameState
+from game.constants import *
+from game.state import GameState
     
 def get_legal_moves(state: GameState):
     legal_dest = state.empty | state.forts
