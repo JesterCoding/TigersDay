@@ -17,9 +17,9 @@ var NODES = {
   'Mahé':        { x:145, y:586,  owner:'mysore',  armyType:'fort',    key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
   Pondicherry:   { x:610, y:446,  owner:'empty',   armyType:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
   Erode:         { x:405, y:515,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
-  Trichy:        { x:516, y:580,  owner:'empty',   armyType:'empty',   key:false, coast:false },
+  Trichy:        { x:506, y:580,  owner:'empty',   armyType:'empty',   key:false, coast:false },
   Palgautcherry: { x:248, y:680,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
-  Dindigul:      { x:445, y:670,  owner:'empty',   armyType:'empty',   key:false, coast:false },
+  Dindigul:      { x:415, y:670,  owner:'empty',   armyType:'empty',   key:false, coast:false },
   Travancore:    { x:260, y:830,  owner:'british', armyType:'active',  key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
   Ceylon:        { x:534, y:735,  owner:'empty',   armyType:'empty',   key:false, coast:true  },
 };
