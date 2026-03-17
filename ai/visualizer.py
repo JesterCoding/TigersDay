@@ -3,8 +3,10 @@ import random
 import torch
 import numpy as np
 
+import argparse
 import game.updater as Updater
 from game.state import GameState
+from game.constants import *
 from ai.mcts import MCTS
 from ai.neural import AlphaTiger, load_checkpoint
 from ai.train import stage_late_game
@@ -18,6 +20,7 @@ def _resolve_luck_verbose(state: GameState):
         state = outcomes[idx]
         luck_trajectory.append(idx)
         print(f"🎲 Luck resolved! Outcome index: {idx}")
+        print(state)
     return state, luck_trajectory
 
 def watch_ai_vs_ai(checkpoint_path: str, simulations: int = 500):
@@ -38,7 +41,20 @@ def watch_ai_vs_ai(checkpoint_path: str, simulations: int = 500):
 
     # 2. Setup the Game and MCTS
     state = GameState()
-    state = stage_late_game()
+    state.set_node_fort(NODE_TO_IDX["Srirangapatna"])
+    state.set_node_fort(NODE_TO_IDX["Bangalore"])
+    state.set_node_fort(NODE_TO_IDX["Mangalore"])
+    state.set_node_fort(NODE_TO_IDX["Bednore"])
+
+    state.set_node_fresh_army(NODE_TO_IDX["Anantapur"])
+    state.set_node_fresh_army(NODE_TO_IDX["Hyderabad"])
+    state.set_node_fresh_army(NODE_TO_IDX["Bombay"])
+    state.set_node_fresh_army(NODE_TO_IDX["Darwar"])
+    state.set_node_fresh_army(NODE_TO_IDX["Erode"])
+    state.set_node_fresh_army(NODE_TO_IDX["Coimbatore"])
+    state.set_node_fresh_army(NODE_TO_IDX["Palgautcherry"])
+
+    state.turn = 3
     
     # Resolve any starting luck (e.g., initial card draws)
     state, _ = _resolve_luck_verbose(state)
@@ -97,8 +113,25 @@ def watch_ai_vs_ai(checkpoint_path: str, simulations: int = 500):
         print("Winner: Mysore (Tipu Sultan)!")
 
 if __name__ == "__main__":
-    # Point this to your best/latest checkpoint
-    ckpt_file = "ai/training_results/ckpt_004950.pt" 
+    parser = argparse.ArgumentParser(description="Watch AlphaTiger AI play against itself.")
     
-    # Run a game with 500 simulations per move
-    watch_ai_vs_ai(ckpt_file, simulations=500)
+    # Flag for the checkpoint path
+    parser.add_argument(
+        "--ckpt", 
+        type=str, 
+        default="ai/training_results/ckpt_004950.pt", 
+        help="Path to the model checkpoint file (e.g., checkpoints/goated_ai.pt)"
+    )
+    
+    # Flag for the number of simulations
+    parser.add_argument(
+        "--sims", 
+        type=int, 
+        default=500, 
+        help="Number of MCTS simulations per move (default: 500)"
+    )
+    
+    args = parser.parse_args()
+    
+    # Run the game using the CLI arguments
+    watch_ai_vs_ai(checkpoint_path=args.ckpt, simulations=args.sims)

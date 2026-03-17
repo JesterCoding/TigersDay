@@ -4,6 +4,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Callable, List, Optional, Tuple
 
+import argparse
 import numpy as np
 import torch
 import torch.nn as nn
@@ -358,6 +359,11 @@ def perturb_state(state, depth):
     return state
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="AlphaTiger Trainer")
+    parser.add_argument("--resume", type=str, help="Path to checkpoint .pt file")
+    args = parser.parse_args()
+
     curriculum = [
         # Stage 1 — teach the model about late-game tactics first.
         CurriculumStage(
@@ -408,4 +414,5 @@ if __name__ == "__main__":
             save_every=25,
             checkpoint_dir="checkpoints",
         ),
+        resume_path=args.resume
     )
