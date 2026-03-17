@@ -363,7 +363,7 @@ if __name__ == "__main__":
         CurriculumStage(
             name="End Game",
             state_factory=stage_end_game,
-            iterations=1000,
+            iterations=2000,
             simulations=100,
             temperature=1.0,
             temperature_cutoff=999,
@@ -372,7 +372,7 @@ if __name__ == "__main__":
         CurriculumStage(
             name="Late Game",
             state_factory=stage_late_game,
-            iterations=1000,
+            iterations=2000,
             simulations=100,
             temperature=1.0,
             temperature_cutoff=999,
@@ -381,7 +381,7 @@ if __name__ == "__main__":
         CurriculumStage(
             name="Mid Game",
             state_factory=stage_mid_game,
-            iterations=1000,
+            iterations=2000,
             simulations=500,
             temperature=1.0,
             temperature_cutoff=999,
@@ -390,7 +390,7 @@ if __name__ == "__main__":
         CurriculumStage(
             name="Full Game",
             state_factory=stage_full_game,
-            iterations=1000,
+            iterations=2000,
             simulations=500,
             temperature=1.0,
             temperature_cutoff=999,
