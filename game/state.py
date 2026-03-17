@@ -30,11 +30,10 @@ class GameState:
         self._turn = 1
         self.bluck = 0
         self.mluck = 0
-
-    def default_setup(self):
         self.mysore_cards[:] = True
         self.british_cards[:] = True
 
+    def default_setup(self):
         self.set_node_fresh_army(NODE_TO_IDX["Bombay"])
         self.set_node_fresh_army(NODE_TO_IDX["Hyderabad"])
         self.set_node_fresh_army(NODE_TO_IDX["Madras"])

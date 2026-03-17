@@ -10,7 +10,8 @@ import torch.nn as nn
 import torch.optim as optim
 
 import game.updater as Updater
-from game.constants import GAME_VECTOR_LENGTH, MOVE_VECTOR_LENGTH
+import game.engine as Engine
+from game.constants import *
 from ai.mcts import MCTS
 from ai.neural import AlphaTiger, load_checkpoint, save_checkpoint
 from game.state import GameState
@@ -297,16 +298,26 @@ def stage_full_game() -> GameState:
 
 
 def stage_late_game() -> GameState:
-    """
-    Example mid-curriculum stage: start near the end of turn 3 so the model
-    first learns to recognise winning/losing positions before worrying about
-    early strategy.
-    """
-    s = GameState()
-    s.default_setup()
-    s.turn = 3
-    # Optionally thin out the board here to create varied end-game scenarios.
-    return s
+    """Perturb a British winning state randomly for 2 impulses."""
+    state = GameState()
+    state.set_node_fresh_army(NODE_TO_IDX["Bombay"])
+    state.set_node_fresh_army(NODE_TO_IDX["Madras"])
+    state.set_node_fresh_army(NODE_TO_IDX["Hyderabad"])
+    state.set_node_fresh_army(NODE_TO_IDX["Srirangapatna"])
+    state.set_node_fresh_army(NODE_TO_IDX["Coimbatore"])
+    state.set_node_fort(NODE_TO_IDX["Erode"])
+    state.turn = 4
+
+    scramble_depth = 6
+
+    for _ in range(scramble_depth):
+        legal_mask = Engine.get_legal_moves(state)
+        state = Updater.get_next_state(state, random.choice(np.nonzero(legal_mask)[0]))
+        while state.is_luck:
+            outcomes = Updater.get_luck_outcomes(state)
+            state = random.choice(outcomes)
+
+    return state
 
 
 if __name__ == "__main__":
