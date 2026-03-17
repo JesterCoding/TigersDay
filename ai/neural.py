@@ -33,10 +33,10 @@ class AlphaTiger(nn.Module):
     
     @torch.no_grad()
     def predict(self, state):
-        x = torch.tensor(state.vector, dtype=torch.float32).unsqueeze(0)
+        device = next(self.parameters()).device
+        x = torch.tensor(state.vector, dtype=torch.float32, device=device).unsqueeze(0)
         value, policy_logits = self.forward(x)
-        policy = F.softmax(policy_logits, dim=-1)
-        return value.item(), policy.squeeze(0).numpy()
+        return value.item(), policy_logits.squeeze(0).cpu().numpy()
     
 def save_checkpoint(model, optimizer, iteration, path):
     torch.save({

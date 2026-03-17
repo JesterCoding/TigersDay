@@ -30,20 +30,13 @@ class CurriculumStage:
     This is the hook for curriculum learning — early stages can return simplified
     or mid-game states so the model learns easier patterns first.
 
-    Example factory for a late-game scenario:
-        def endgame_state():
-            s = GameState()
-            s.default_setup()
-            s.turn = 3
-            # … further customisation …
-            return s
     """
     name: str
     state_factory: Callable[[], GameState]
     iterations: int                         # self-play + train cycles for this stage
     simulations: int = 100                  # MCTS simulations per move
     temperature: float = 1.0               # softmax temperature for move selection
-    temperature_cutoff: int = 15           # after this many moves, temperature → 0
+    temperature_cutoff: int = 999           # after this many moves, temperature → 0
 
 
 @dataclass
@@ -316,7 +309,7 @@ if __name__ == "__main__":
             iterations=200,
             simulations=50,
             temperature=1.0,
-            temperature_cutoff=10,
+            temperature_cutoff=999,
         ),
         # Stage 2 — graduate to full games with a stronger search budget.
         CurriculumStage(
@@ -325,7 +318,7 @@ if __name__ == "__main__":
             iterations=500,
             simulations=100,
             temperature=1.0,
-            temperature_cutoff=15,
+            temperature_cutoff=999,
         ),
     ]
 
