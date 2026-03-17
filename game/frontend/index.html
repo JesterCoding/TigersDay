@@ -194,10 +194,13 @@ def build_move_list(state):
                     desc = MYSORE_CARDS[local_idx]
                 elif move_type == "blank":
                     desc = "-"
-                elif move_type == "rn_matrix":
-                    src  = INDEX_MAP[local_idx // len(COASTAL_INDICES)]
-                    dest = INDEX_MAP[int(COASTAL_INDICES[local_idx % len(COASTAL_INDICES)])]
-                    desc = src + " -> " + dest
+                elif move_type == "coastal":
+                    node = INDEX_MAP[local_idx // len(COASTAL_INDICES)]
+                    coast = INDEX_MAP[int(COASTAL_INDICES[local_idx % len(COASTAL_INDICES)])]
+                    if name == "Royal Navy":
+                        desc = node + " -> " + coast
+                    elif name == "Sea Trade":
+                        desc = coast + " -> " + node
                 else:
                     desc = str(local_idx)
                 moves.append(js_obj({"idx": global_idx, "type": name, "desc": desc}))
