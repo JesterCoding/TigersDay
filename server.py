@@ -196,7 +196,7 @@ def main():
         print("No checkpoint loaded — using untrained model (random play)")
 
     # Start HTTP server in background thread
-    frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend")
+    frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "game", "frontend")
     http_thread = threading.Thread(
         target=start_http_server, args=(args.port, frontend_dir), daemon=True)
     http_thread.start()
@@ -218,4 +218,4 @@ app = FastAPI()
 app.mount("/game", StaticFiles(directory="game"), name="game")
 
 # 2. Mount the frontend folder SECOND to serve your index.html
-app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+app.mount("/", StaticFiles(directory="game/frontend", html=True), name="frontend")

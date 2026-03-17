@@ -15,7 +15,8 @@
     
         [[fetch]]
         from = "../"
-        files = ["constants.py", "engine.py", "state.py", "updater.py"]
+        to_folder = "game"
+        files = ["constants.py", "engine.py", "state.py", "updater.py", "__init__.py"]
     </py-config>
 
    
@@ -154,10 +155,10 @@
 <div id="tooltip"></div>
 
 <script type="py">
-from engine import *
-from updater import get_next_state, get_state_winner, get_luck_outcomes
-from state import GameState
-from constants import *
+from game.engine import *
+from game.updater import get_next_state, get_state_winner, get_luck_outcomes
+from game.state import GameState
+from game.constants import *
 from pyodide.ffi import to_js
 from pyscript import when, window, document
 import js
