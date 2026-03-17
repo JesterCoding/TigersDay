@@ -24,9 +24,7 @@ class Node:
     @property
     def is_expanded(self):
         return len(self.children) > 0
-    
-    # lazy evaluation, generate state before querying
- 
+     
     @property
     def is_luck(self):
         return self.state.is_luck
@@ -55,7 +53,7 @@ class MCTS:
 
     def search(self, root_state):
         if self.root is None:
-            self.root = Node(state = root_state)
+            self.root = Node(root_state.copy())
 
         for _ in range(self.simulations):
             node = self.root
