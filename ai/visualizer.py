@@ -7,7 +7,7 @@ import game.updater as Updater
 from game.state import GameState
 from ai.mcts import MCTS
 from ai.neural import AlphaTiger, load_checkpoint
-from ai.train import stage_late_game
+from ai.train import *
 
 def _resolve_luck_verbose(state: GameState):
     """Resolves luck and prints what happened."""
@@ -38,7 +38,7 @@ def watch_ai_vs_ai(checkpoint_path: str, simulations: int = 500):
 
     # 2. Setup the Game and MCTS
     state = GameState()
-    state = stage_late_game()
+    state = stage_mid_game()
     
     # Resolve any starting luck (e.g., initial card draws)
     state, _ = _resolve_luck_verbose(state)
@@ -48,12 +48,12 @@ def watch_ai_vs_ai(checkpoint_path: str, simulations: int = 500):
     move_num = 1
     
     print("=== STARTING MATCH: AI vs AI ===")
-    print(state)
     
     # 3. The Game Loop
     while Updater.get_state_winner(state) == 0:
         print("-" * 40)
         print(f"MOVE {move_num} | Turn: {state.turn} | To Move: {'Mysore' if state.to_move == 1 else 'British'}")
+        print(state)
         
         # If you have a __str__ or print_board method, call it here!
         # print(state)
