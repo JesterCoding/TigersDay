@@ -296,6 +296,28 @@ def stage_full_game() -> GameState:
     s.default_setup()
     return s
 
+def stage_mid_game() -> GameState:
+    """A difficult but winnable position."""
+    state = GameState()
+    state.set_node_fort(NODE_TO_IDX["Srirangapatna"])
+    state.set_node_fort(NODE_TO_IDX["Coimbatore"])
+    state.set_node_fresh_army(random.randrange(23))
+    state.set_node_fresh_army(random.randrange(23))
+    state.set_node_fresh_army(random.randrange(23))
+    state.set_node_fresh_army(random.randrange(23))
+    state.set_node_fresh_army(random.randrange(23))
+    state.turn = 3
+
+    scramble_depth = 6
+
+    for _ in range(scramble_depth):
+        legal_mask = Engine.get_legal_moves(state)
+        state = Updater.get_next_state(state, np.random.choice(np.nonzero(legal_mask)[0]))
+        while state.is_luck:
+            outcomes = Updater.get_luck_outcomes(state)
+            state = random.choice(outcomes)
+    
+    return state
 
 def stage_late_game() -> GameState:
     """Perturb a British winning state randomly for 2 impulses."""
@@ -312,7 +334,7 @@ def stage_late_game() -> GameState:
 
     for _ in range(scramble_depth):
         legal_mask = Engine.get_legal_moves(state)
-        state = Updater.get_next_state(state, random.choice(np.nonzero(legal_mask)[0]))
+        state = Updater.get_next_state(state, np.random.choice(np.nonzero(legal_mask)[0]))
         while state.is_luck:
             outcomes = Updater.get_luck_outcomes(state)
             state = random.choice(outcomes)
@@ -326,17 +348,26 @@ if __name__ == "__main__":
         CurriculumStage(
             name="Late Game",
             state_factory=stage_late_game,
-            iterations=200,
-            simulations=50,
+            iterations=1000,
+            simulations=100,
             temperature=1.0,
             temperature_cutoff=999,
         ),
-        # Stage 2 — graduate to full games with a stronger search budget.
+        # Stage 2 — see if the model can handle the midgame
+        CurriculumStage(
+            name="Mid Game",
+            state_factory=stage_mid_game,
+            iterations=1000,
+            simulations=100,
+            temperature=1.0,
+            temperature_cutoff=999,
+        ),
+        # Stage 3 — graduate to full games with a stronger search budget.
         CurriculumStage(
             name="Full Game",
             state_factory=stage_full_game,
-            iterations=500,
-            simulations=100,
+            iterations=1000,
+            simulations=500,
             temperature=1.0,
             temperature_cutoff=999,
         ),
