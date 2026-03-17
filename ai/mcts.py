@@ -112,3 +112,6 @@ class MCTS:
         assert best_child is not None
         return best_child
     
+    def update_root(self):
+        return None
+    

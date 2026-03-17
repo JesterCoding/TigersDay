@@ -163,13 +163,14 @@ def _train_step(
     model: AlphaTiger,
     optimizer: optim.Optimizer,
     batch: List[Sample],
+    device: torch.device
 ) -> Tuple[float, float, float]:
     """One gradient update. Returns (total, value, policy) losses."""
     states, policies, values = zip(*batch)
 
-    state_t  = torch.tensor(np.array(states),   dtype=torch.float32)
-    policy_t = torch.tensor(np.array(policies), dtype=torch.float32)
-    value_t  = torch.tensor(np.array(values),   dtype=torch.float32).unsqueeze(1)
+    state_t  = torch.tensor(np.array(states),   dtype=torch.float32, device=device)
+    policy_t = torch.tensor(np.array(policies), dtype=torch.float32, device=device)
+    value_t  = torch.tensor(np.array(values),   dtype=torch.float32, device=device).unsqueeze(1)
 
     pred_value, pred_logits = model(state_t)
 
@@ -207,7 +208,8 @@ def train(
     """
     os.makedirs(config.checkpoint_dir, exist_ok=True)
 
-    model     = AlphaTiger()
+    device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
+    model     = AlphaTiger().to(device)
     optimizer = optim.Adam(
         model.parameters(), lr=config.lr, weight_decay=config.weight_decay
     )
@@ -225,10 +227,10 @@ def train(
         print(f"  Temperature: {stage.temperature}  (greedy after move {stage.temperature_cutoff})")
         print(f"{'='*60}")
 
-        mcts = MCTS(model, simulations=stage.simulations, puct=config.puct)
-
         for i in range(stage.iterations):
+            mcts = MCTS(model, simulations=stage.simulations, puct=config.puct)
             # ── Self-play ────────────────────────────────────────────────────
+            model.eval()
             samples = self_play_game(
                 mcts,
                 stage.state_factory,
@@ -242,10 +244,11 @@ def train(
             total_loss = val_loss = pol_loss = 0.0
             steps = 0
 
+            model.train()
             if len(buffer) >= config.min_buffer_size:
                 for _ in range(config.train_steps_per_iter):
                     batch = buffer.sample(config.batch_size)
-                    tl, vl, pl = _train_step(model, optimizer, batch)
+                    tl, vl, pl = _train_step(model, optimizer, batch, device)
                     total_loss += tl
                     val_loss   += vl
                     pol_loss   += pl
