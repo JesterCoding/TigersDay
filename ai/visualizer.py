@@ -92,7 +92,8 @@ def watch_ai_vs_ai(checkpoint_path: str, simulations: int = 500):
         # Evaluate how confident the AI is (Value is between -1 and 1)
         win_chance = root.eval
         print(f"eval: {win_chance:+.3f}")
-        print(f"AI chose move ID: {best_move} (Visits: {most_visits}/{simulations})")
+        Engine.print_legal_moves(np.arange(MOVE_VECTOR_LENGTH) == best_move)
+        print(f"(Visits: {most_visits}/{simulations})")
         
         # Apply the move
         state = Updater.get_next_state(state, best_move)
