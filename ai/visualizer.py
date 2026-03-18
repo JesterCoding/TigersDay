@@ -41,9 +41,7 @@ def watch_ai_vs_ai(checkpoint_path: str, simulations: int = 500):
 
     # 2. Setup the Game and MCTS
     state = GameState()
-    state = stage_mid_game()
     
-    """
     state.set_node_fort(NODE_TO_IDX["Srirangapatna"])
     state.set_node_fort(NODE_TO_IDX["Bangalore"])
     state.set_node_fort(NODE_TO_IDX["Mangalore"])
@@ -56,13 +54,13 @@ def watch_ai_vs_ai(checkpoint_path: str, simulations: int = 500):
     state.set_node_fresh_army(NODE_TO_IDX["Erode"])
     state.set_node_fresh_army(NODE_TO_IDX["Coimbatore"])
     state.set_node_fresh_army(NODE_TO_IDX["Palgautcherry"])
-    """
+    state.turn = 4
 
     
     # Resolve any starting luck (e.g., initial card draws)
     state, _ = _resolve_luck_verbose(state)
     
-    mcts = MCTS(model, simulations=simulations, puct=1.0) # lower PUCT for actual play
+    mcts = MCTS(model, simulations=simulations)
 
     move_num = 1
     
@@ -87,10 +85,12 @@ def watch_ai_vs_ai(checkpoint_path: str, simulations: int = 500):
         for move, child_node in root.children.items():
             if child_node.visit_count > most_visits:
                 most_visits = child_node.visit_count
+                best_child = child_node
                 best_move = move
-                
+        print(f"prior: {best_child.prior}")
+
         # Evaluate how confident the AI is (Value is between -1 and 1)
-        win_chance = root.eval 
+        win_chance = root.eval
         print(f"eval: {win_chance:+.3f}")
         print(f"AI chose move ID: {best_move} (Visits: {most_visits}/{simulations})")
         
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ckpt", 
         type=str, 
-        default="ai/training_results/ckpt_004950.pt", 
+        default="ai/training_results/goated_ai2.pt", 
         help="Path to the model checkpoint file (e.g., checkpoints/goated_ai.pt)"
     )
     
