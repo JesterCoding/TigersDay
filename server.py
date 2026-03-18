@@ -8,9 +8,9 @@ import functools
 import numpy as np
 
 from game.state import GameState
-from game.engine import MoveEngine
-from game.updater import GameUpdater
-from ai.model import TigerNet, load_checkpoint
+from game.engine import *
+from game.updater import *
+from ai.neural import AlphaTiger, load_checkpoint
 from ai.mcts import MCTS
 
 from fastapi import FastAPI

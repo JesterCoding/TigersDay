@@ -123,7 +123,7 @@ def self_play_game(
     state_factory: Callable[[], GameState],
     temperature: float,
     temperature_cutoff: int,
-) -> List[Sample]:
+) -> List[Tuple[np.ndarray, np.ndarray, np.float32]]:
     """
     Play one game via MCTS self-play from `state_factory()`.
 
