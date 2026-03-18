@@ -10,6 +10,7 @@ import numpy as np
 from game.state import GameState
 from game.engine import *
 from game.updater import *
+from game.constants import *
 from ai.neural import AlphaTiger, load_checkpoint
 from ai.mcts import MCTS
 
@@ -25,9 +26,9 @@ except ImportError:
 
 def state_to_message(state, checker):
     """Convert GameState to the JSON dict the frontend expects."""
-    territories = []
-    for i, name in enumerate(GameState.TERRITORIES):
-        offset = GameState.IDX_TERRITORIES_OFFSET + 3 * i
+    INDEX_MAP = []
+    for i, name in enumerate(INDEX_MAP):
+        offset = GameState.IDX_NODES_OFFSET + 3 * i
         fresh = bool(state.vector[offset])
         tired = bool(state.vector[offset + 1])
         fort = bool(state.vector[offset + 2])
@@ -41,26 +42,26 @@ def state_to_message(state, checker):
         else:
             owner, army_type = "empty", "empty"
 
-        territories.append({"name": name, "owner": owner, "armyType": army_type})
+        INDEX_MAP.append({"name": name, "owner": owner, "armyType": army_type})
 
     british_cards = [bool(state.vector[GameState.IDX_BRITISH_CARDS_OFFSET + i]) for i in range(6)]
     mysore_cards = [bool(state.vector[GameState.IDX_MYSORE_CARDS_OFFSET + i]) for i in range(6)]
 
     result = checker.check(state)
     winner = None
-    if result == WinChecker.RESULT_BRITISH_WIN:
+    if result == RESULT_BRITISH_WIN:
         winner = "british"
-    elif result == WinChecker.RESULT_MYSORE_WIN:
+    elif result == RESULT_MYSORE_WIN:
         winner = "mysore"
 
     return {
         "type": "STATE",
-        "territories": territories,
+        "INDEX_MAP": INDEX_MAP,
         "britishCards": british_cards,
         "mysoreCards": mysore_cards,
         "turn": int(state.get_turn()),
         "maxTurns": 4,
-        "whoToMove": GameState.WHO_TO_MOVE[state.get_who_to_move()],
+        "whoToMove": state.WHO_TO_MOVE[state.get_who_to_move()],
         "winner": winner,
     }
 
@@ -68,24 +69,24 @@ def state_to_message(state, checker):
 def describe_move(move_idx):
     """Convert a move index to a human-readable string."""
     offset = 0
-    for name, size, move_type in MoveEngine.MOVE_SPACE:
+    for name, size, move_type in MOVE_SPACE:
         if offset <= move_idx < offset + size:
             local = move_idx - offset
             if move_type == "node":
-                return f"{name}: {GameState.TERRITORIES[local]}"
+                return f"{name}: {INDEX_MAP[local]}"
             elif move_type == "edge":
-                src = MoveEngine.EDGE_SOURCES[local]
-                dst = MoveEngine.EDGE_DESTS[local]
-                return f"{name}: {GameState.TERRITORIES[src]} -> {GameState.TERRITORIES[dst]}"
+                src = EDGE_SOURCES[local]
+                dst = EDGE_DESTS[local]
+                return f"{name}: {INDEX_MAP[src]} -> {INDEX_MAP[dst]}"
             elif move_type == "rn_matrix":
-                num_coastal = len(MoveEngine.COASTAL_INDICES)
+                num_coastal = len(COASTAL_INDICES)
                 src = local // num_coastal
-                dst = int(MoveEngine.COASTAL_INDICES[local % num_coastal])
-                return f"{name}: {GameState.TERRITORIES[src]} -> {GameState.TERRITORIES[dst]}"
+                dst = int(COASTAL_INDICES[local % num_coastal])
+                return f"{name}: {INDEX_MAP[src]} -> {INDEX_MAP[dst]}"
             elif move_type == "bcard":
-                return f"{name}: {GameState.BRITISH_CARDS[local]}"
+                return f"{name}: {BRITISH_CARDS[local]}"
             elif move_type == "mcard":
-                return f"{name}: {GameState.MYSORE_CARDS[local]}"
+                return f"{name}: {MYSORE_CARDS[local]}"
             else:
                 return name
         offset += size
@@ -100,17 +101,14 @@ def start_http_server(port, directory):
 
 
 async def game_handler(websocket, model, num_simulations, delay):
-    """Handle a single WebSocket connection: run AI self-play and stream states."""
-    engine = MoveEngine()
-    updater = GameUpdater()
-    checker = WinChecker()
-    mcts = MCTS(model, num_simulations=num_simulations)
+    """Handle a single WebSocket connection: run AI self-play and stream states.""" 
+    mcts = MCTS(model)
 
     state = GameState()
     state.default_setup()
 
     # Send initial state
-    await websocket.send(json.dumps(state_to_message(state, checker)))
+    await websocket.send(json.dumps(state_to_message(state)))
     await asyncio.sleep(delay)
 
     game_result = 0
