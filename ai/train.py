@@ -226,7 +226,7 @@ def train(
     global_iter = 0
     if resume_path and os.path.exists(resume_path):
         global_iter = load_checkpoint(model, optimizer, resume_path)
-        print(f"Resumed from iteration {global_iter}  ({resume_path})")
+        print(f"Resumed ({model}) from iteration {global_iter}  ({resume_path}) on ({device})")
 
     for stage in curriculum:
         print(f"\n{'='*60}")
