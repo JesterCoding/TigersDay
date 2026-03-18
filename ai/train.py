@@ -296,12 +296,20 @@ def train(
 
 def stage_full_game() -> GameState:
     """Standard starting position."""
-    s = GameState()
-    s.default_setup()
-    return s
+    state = GameState()
+    state.default_setup()
+    return state
+
+def stage_early_game() -> GameState:
+    """A reasonable position after the opening of the game."""
+    state = GameState()
+    state.default_setup()
+    state.set_node_empty(random.randrange(23))
+    state = perturb_state(state, 9)
+    return state
 
 def stage_mid_game() -> GameState:
-    """A reasonable position after the opening of the game."""
+    """A reasonable position midway through the game."""
     state = GameState()
     state.set_node_fresh_army(NODE_TO_IDX["Bombay"])
     state.set_node_fresh_army(NODE_TO_IDX["Madras"])
@@ -319,7 +327,7 @@ def stage_mid_game() -> GameState:
     return state
 
 def stage_late_game() -> GameState:
-    """A reasonable position late in the game"""
+    """A reasonable position late in the game."""
     state = GameState()
     state.set_node_fort(NODE_TO_IDX["Srirangapatna"])
     state.set_node_fort(NODE_TO_IDX["Coimbatore"])
@@ -335,7 +343,7 @@ def stage_late_game() -> GameState:
     return state
 
 def stage_end_game() -> GameState:
-    """Perturb a British winning state randomly for 2 impulses."""
+    """A reasonable position before the ending of the game."""
     state = GameState()
     state.set_node_fort(random.randrange(23))
     state.set_node_fort(random.randrange(23))
@@ -391,6 +399,15 @@ if __name__ == "__main__":
         CurriculumStage(
             name="Mid Game",
             state_factory=stage_mid_game,
+            iterations=2000,
+            simulations=500,
+            temperature=1.0,
+            temperature_cutoff=999,
+        ),
+        # Stage 4 — graduate to early games with a stronger search budget.
+        CurriculumStage(
+            name="Early Game",
+            state_factory=stage_early_game,
             iterations=2000,
             simulations=500,
             temperature=1.0,
