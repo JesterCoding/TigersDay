@@ -249,7 +249,7 @@ def train(
                     print(
                         f"{prefix} | loss {total_loss/steps:.4f} "
                         f"(val {val_loss/steps:.4f}  pol {pol_loss/steps:.4f})"
-                        f" | batch samples {len(batch_samples)}"
+                        f" | batch samples {len(batch_samples)} | winner {'british' if samples[0][2] == 1 else 'mysore'}"
                     )
             else:
                 print(f"{prefix} | warming up ({len(buffer)}/{config.min_buffer_size})")
