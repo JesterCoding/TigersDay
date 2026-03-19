@@ -518,3 +518,63 @@ function submitMove() {
         feedback.textContent = 'Engine not ready yet.';
     }
 }
+
+// --- TURN-BASED WEBSOCKET INTEGRATION ---
+const ab = new WebSocket("ws://localhost:8765");
+const feedbackEl = document.getElementById('move-feedback');
+const submitBtn = document.getElementById('submit-move-btn'); // Assuming you have a submit button ID
+
+ab.onopen = () => {
+    console.log("Connected to AI Server!");
+    if (feedbackEl) feedbackEl.textContent = "🟢 Connected to AI Server.";
+};
+
+ab.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    
+    if (data.type === "state") {
+        // Inject the binary state and trigger PyScript load
+        document.getElementById('save-input').value = data.binary;
+        document.getElementById('load-state-btn').click();
+        
+        // Handle Game Over
+        if (data.winner !== 0) {
+            feedbackEl.textContent = data.winner === 1 ? "🏆 British Win!" : "🏆 Mysore Wins!";
+            if (submitBtn) submitBtn.disabled = true;
+            return;
+        }
+        
+        // Turn-based routing
+        if (data.is_luck) {
+            feedbackEl.textContent = "🎲 Resolving random events...";
+            if (submitBtn) submitBtn.disabled = true;
+            // Ask server for the next state after 1.5 seconds
+            setTimeout(() => ab.send(JSON.stringify({type: "request_auto"})), 1500);
+            
+        } else if (!data.is_human_turn) {
+            feedbackEl.textContent = "🤖 AI is thinking...";
+            if (submitBtn) submitBtn.disabled = true;
+            // Ask server to calculate AI move after 1.5 seconds
+            setTimeout(() => ab.send(JSON.stringify({type: "request_auto"})), 1500);
+            
+        } else {
+            feedbackEl.textContent = "Your turn. Select a move.";
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    }
+};
+
+window.submitMove = function() {
+    var raw = document.getElementById('move-number-input').value.trim();
+    if (raw === '') { feedbackEl.textContent = 'Enter a move number first.'; return; }
+    
+    var idx = parseInt(raw, 10);
+    if (isNaN(idx)) { feedbackEl.textContent = 'Invalid number.'; return; }
+
+    // Send move to server
+    ab.send(JSON.stringify({ type: "move", move_idx: idx }));
+    feedbackEl.textContent = "⏳ Sending move...";
+    if (submitBtn) submitBtn.disabled = true;
+    
+    document.getElementById('move-number-input').value = '';
+};

@@ -42,6 +42,9 @@ def watch_ai_vs_ai(checkpoint_path: str, simulations: int = 500):
     # 2. Setup the Game and MCTS
     state = GameState()
     state.default_setup()
+    state.set_node_empty(NODE_TO_IDX["Mahé"])
+    state.set_node_empty(NODE_TO_IDX["Bednore"])
+    state.set_node_fresh_army(NODE_TO_IDX["Pune"])
 
     
     # Resolve any starting luck (e.g., initial card draws)

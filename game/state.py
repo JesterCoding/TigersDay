@@ -179,9 +179,9 @@ class GameState:
         self.bluck = 0
         self.mluck = 0
 
-    # reading vector only
-    def read_vector(self, vector):
-        self.vector = vector
+    def read_str(self, str):
+        assert len(str) == 138
+        self.vector = np.array([1 if i == "1" else 0 for i in str])
         self._attacker = int(np.argmax(self.vector[self.IDX_ATTACKER])) if self.vector[self.IDX_ATTACKER].any() else NO_UNIT
         self._defender = int(np.argmax(self.vector[self.IDX_DEFENDER])) if self.vector[self.IDX_DEFENDER].any() else NO_UNIT
         self._card_strength = int(np.argmax(self.vector[self.IDX_COMBAT_STRENGTH]))
