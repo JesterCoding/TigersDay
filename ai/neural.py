@@ -46,7 +46,7 @@ def save_checkpoint(model, optimizer, iteration, path):
     }, path)
 
 def load_checkpoint(model, optimizer, path):
-    checkpoint = torch.load(path, weights_only=False)
+    checkpoint = torch.load(path, map_location=torch.device('cpu'), weights_only=False)
     model.load_state_dict(checkpoint['model_state_dict'])
     if optimizer is not None:
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])

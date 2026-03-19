@@ -27,7 +27,7 @@ def watch_ai_vs_ai(checkpoint_path: str, simulations: int = 500):
     """Loads a checkpoint and makes the AI play both sides."""
     
     # 1. Load the Model
-    device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = AlphaTiger().to(device)
     
     if not os.path.exists(checkpoint_path):
@@ -41,20 +41,7 @@ def watch_ai_vs_ai(checkpoint_path: str, simulations: int = 500):
 
     # 2. Setup the Game and MCTS
     state = GameState()
-    
-    state.set_node_fort(NODE_TO_IDX["Srirangapatna"])
-    state.set_node_fort(NODE_TO_IDX["Bangalore"])
-    state.set_node_fort(NODE_TO_IDX["Mangalore"])
-    state.set_node_fort(NODE_TO_IDX["Bednore"])
-
-    state.set_node_fresh_army(NODE_TO_IDX["Anantapur"])
-    state.set_node_fresh_army(NODE_TO_IDX["Hyderabad"])
-    state.set_node_fresh_army(NODE_TO_IDX["Bombay"])
-    state.set_node_fresh_army(NODE_TO_IDX["Darwar"])
-    state.set_node_fresh_army(NODE_TO_IDX["Erode"])
-    state.set_node_fresh_army(NODE_TO_IDX["Coimbatore"])
-    state.set_node_fresh_army(NODE_TO_IDX["Palgautcherry"])
-    state.turn = 4
+    state.default_setup()
 
     
     # Resolve any starting luck (e.g., initial card draws)
