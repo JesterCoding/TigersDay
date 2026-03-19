@@ -117,7 +117,6 @@ def train(
     print(f"\nTraining complete — final model saved to {final_path}")
     return model
 
-
 if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
     args, curriculum, config = setup_training_run("AlphaTiger Multiprocessing Trainer")
