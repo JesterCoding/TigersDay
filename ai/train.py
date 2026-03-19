@@ -167,7 +167,7 @@ def self_play_game(
 
 # ─── Training step ────────────────────────────────────────────────────────────
 
-def _train_step(
+def train_step(
     model: AlphaTiger,
     optimizer: optim.Optimizer,
     batch: List[Sample],
@@ -366,81 +366,44 @@ def perturb_state(state, depth):
             state = random.choice(outcomes)
     return state
 
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description="AlphaTiger Trainer")
+def setup_training_run(description: str):
+    """Parses CLI args, builds the curriculum, and configures the trainer."""
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--resume", type=str, help="Path to checkpoint .pt file")
     parser.add_argument("--sims", type=int, default=None, help="Override MCTS simulations for all stages")
     parser.add_argument("--iters", type=int, default=None, help="Override games per stage for all stages")
     parser.add_argument("--batch_size", type=int, default=256, help="Training batch size (default: 256)")
-    parser.add_argument("--save_every", type=int, default=25, help="Save a checkpoint every N iterations (default: 25)")
+    parser.add_argument("--save_every", type=int, default=10, help="Save a checkpoint every N iterations")
     args = parser.parse_args()
 
+    # Define the shared curriculum once
     curriculum = [
-        # Stage 1 — teach the model about late-game tactics first.
-        CurriculumStage(
-            name="End Game",
-            state_factory=stage_end_game,
-            iterations=2000,
-            simulations=100,
-            temperature=1.0,
-            temperature_cutoff=999,
-        ),
-        # Stage 2 — see if the model can handle the midgame
-        CurriculumStage(
-            name="Late Game",
-            state_factory=stage_late_game,
-            iterations=2000,
-            simulations=100,
-            temperature=1.0,
-            temperature_cutoff=999,
-        ),
-        # Stage 3 — graduate to mid games with a stronger search budget.
-        CurriculumStage(
-            name="Mid Game",
-            state_factory=stage_mid_game,
-            iterations=2000,
-            simulations=500,
-            temperature=1.0,
-            temperature_cutoff=999,
-        ),
-        # Stage 4 — graduate to early games with a stronger search budget.
-        CurriculumStage(
-            name="Early Game",
-            state_factory=stage_early_game,
-            iterations=2000,
-            simulations=500,
-            temperature=1.0,
-            temperature_cutoff=999,
-        ),
-        # Stage 4 — graduate to full games with a stronger search budget.
-        CurriculumStage(
-            name="Full Game",
-            state_factory=stage_full_game,
-            iterations=2000,
-            simulations=500,
-            temperature=1.0,
-            temperature_cutoff=999,
-        ),
+        CurriculumStage(name="End Game",   state_factory=stage_end_game,   iterations=2000, simulations=100),
+        CurriculumStage(name="Late Game",  state_factory=stage_late_game,  iterations=2000, simulations=100),
+        CurriculumStage(name="Mid Game",   state_factory=stage_mid_game,   iterations=2000, simulations=500),
+        CurriculumStage(name="Early Game", state_factory=stage_early_game, iterations=2000, simulations=500),
+        CurriculumStage(name="Full Game",  state_factory=stage_full_game,  iterations=2000, simulations=500),
     ]
 
+    # Apply overrides
     if args.sims is not None:
         for stage in curriculum:
             stage.simulations = args.sims
-            
     if args.iters is not None:
         for stage in curriculum:
             stage.iterations = args.iters
 
-    train(
-        curriculum,
-        config=TrainerConfig(
-            buffer_size=50_000,
-            batch_size=args.batch_size,
-            min_buffer_size=1_000,
-            train_steps_per_iter=5,
-            save_every=args.save_every,
-            checkpoint_dir="checkpoints",
-        ),
-        resume_path=args.resume
+    config = TrainerConfig(
+        buffer_size=50_000,
+        batch_size=args.batch_size,
+        min_buffer_size=1_000,
+        train_steps_per_iter=5,
+        save_every=args.save_every,
+        checkpoint_dir="checkpoints",
     )
+
+    return args, curriculum, config
+
+if __name__ == "__main__":
+    args, curriculum, config = setup_training_run("AlphaTiger Single Thread Trainer")
+    train(curriculum, config=config, resume_path=args.resume)
