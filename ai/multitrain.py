@@ -127,36 +127,6 @@ def self_play_game(
     winner = Updater.get_state_winner(state)
     return [(sv, pt, np.float32(winner)) for sv, pt in history]
 
-
-# ─── Training step ────────────────────────────────────────────────────────────
-
-def _train_step(
-    model: AlphaTiger,
-    optimizer: optim.Optimizer,
-    batch: List[Sample],
-    device: torch.device
-) -> Tuple[float, float, float]:
-    states, policies, values = zip(*batch)
-
-    state_t  = torch.tensor(np.array(states),   dtype=torch.float32, device=device)
-    policy_t = torch.tensor(np.array(policies), dtype=torch.float32, device=device)
-    value_t  = torch.tensor(np.array(values),   dtype=torch.float32, device=device).unsqueeze(1)
-
-    pred_value, pred_logits = model(state_t)
-
-    value_loss  = nn.MSELoss()(pred_value, value_t)
-    log_probs   = torch.log_softmax(pred_logits, dim=-1)
-    policy_loss = -(policy_t * log_probs).sum(dim=-1).mean()
-
-    loss = value_loss + policy_loss
-
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-
-    return loss.item(), value_loss.item(), policy_loss.item()
-
-
 # ─── Main training loop ───────────────────────────────────────────────────────
 
 def train(
