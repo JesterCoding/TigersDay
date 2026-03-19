@@ -19,6 +19,7 @@ from game.constants import *
 from ai.mcts import MCTS
 from ai.neural import AlphaTiger, load_checkpoint, save_checkpoint
 from game.state import GameState
+from ai.train import *
 
 
 # ─── Data structures ──────────────────────────────────────────────────────────
@@ -265,134 +266,7 @@ def train(
     print(f"\nTraining complete — final model saved to {final_path}")
     return model
 
-
-# ─── Example curriculum ───────────────────────────────────────────────────────
-
-def stage_full_game() -> GameState:
-    s = GameState()
-    s.default_setup()
-    return s
-
-def stage_mid_game() -> GameState:
-    state = GameState()
-    state.set_node_fresh_army(NODE_TO_IDX["Bombay"])
-    state.set_node_fresh_army(NODE_TO_IDX["Madras"])
-    state.set_node_fresh_army(NODE_TO_IDX["Hyderabad"])
-    state.set_node_fresh_army(NODE_TO_IDX["Travancore"])
-    state.set_node_fresh_army(random.randrange(23))
-    state.set_node_fort(NODE_TO_IDX["Srirangapatna"])
-    state.set_node_fort(NODE_TO_IDX["Coimbatore"])
-    state.set_node_fort(NODE_TO_IDX["Erode"])
-    state.set_node_fort(NODE_TO_IDX["Mahé"])
-    state.set_node_fort(random.randrange(23))
-    state.set_node_fort(random.randrange(23))
-    state.turn = 2
-    state = perturb_state(state, 9)
-    return state
-
-def stage_late_game() -> GameState:
-    state = GameState()
-    state.set_node_fort(NODE_TO_IDX["Srirangapatna"])
-    state.set_node_fort(NODE_TO_IDX["Coimbatore"])
-    state.set_node_fort(random.randrange(23))
-    state.set_node_fort(random.randrange(23))
-    state.set_node_fresh_army(random.randrange(23))
-    state.set_node_fresh_army(random.randrange(23))
-    state.set_node_fresh_army(random.randrange(23))
-    state.set_node_fresh_army(random.randrange(23))
-    state.set_node_fresh_army(random.randrange(23))
-    state.turn = 3
-    state = perturb_state(state, 6)
-    return state
-
-def stage_end_game() -> GameState:
-    state = GameState()
-    state.set_node_fort(random.randrange(23))
-    state.set_node_fort(random.randrange(23))
-    state.set_node_fresh_army(NODE_TO_IDX["Bombay"])
-    state.set_node_fresh_army(NODE_TO_IDX["Madras"])
-    state.set_node_fresh_army(NODE_TO_IDX["Hyderabad"])
-    state.set_node_fresh_army(NODE_TO_IDX["Srirangapatna"])
-    state.set_node_fresh_army(NODE_TO_IDX["Coimbatore"])
-    state.set_node_fresh_army(random.randrange(23))
-    state.turn = 4
-    state = perturb_state(state, 6)
-    return state
-
-def perturb_state(state, depth):
-    for _ in range(depth):
-        legal_mask = Engine.get_legal_moves(state)
-        state = Updater.get_next_state(state, np.random.choice(np.nonzero(legal_mask)[0]))
-        while state.is_luck:
-            outcomes = Updater.get_luck_outcomes(state)
-            state = random.choice(outcomes)
-    return state
-
-
 if __name__ == "__main__":
     # REQUIRED for PyTorch multiprocessing on Linux clusters
     mp.set_start_method("spawn", force=True)
-
-    parser = argparse.ArgumentParser(description="AlphaTiger Trainer")
-    parser.add_argument("--resume", type=str, help="Path to checkpoint .pt file")
-    parser.add_argument("--sims", type=int, default=None, help="Override MCTS simulations for all stages")
-    parser.add_argument("--iters", type=int, default=None, help="Override games per stage for all stages")
-    parser.add_argument("--batch_size", type=int, default=256, help="Training batch size (default: 256)")
-    parser.add_argument("--save_every", type=int, default=25, help="Save a checkpoint every N iterations")
-    args = parser.parse_args()
-
-    curriculum = [
-        CurriculumStage(
-            name="End Game",
-            state_factory=stage_end_game,
-            iterations=2000,
-            simulations=100,
-            temperature=1.0,
-            temperature_cutoff=999,
-        ),
-        CurriculumStage(
-            name="Late Game",
-            state_factory=stage_late_game,
-            iterations=2000,
-            simulations=100,
-            temperature=1.0,
-            temperature_cutoff=999,
-        ),
-        CurriculumStage(
-            name="Mid Game",
-            state_factory=stage_mid_game,
-            iterations=2000,
-            simulations=500,
-            temperature=1.0,
-            temperature_cutoff=999,
-        ),
-        CurriculumStage(
-            name="Full Game",
-            state_factory=stage_full_game,
-            iterations=2000,
-            simulations=500,
-            temperature=1.0,
-            temperature_cutoff=999,
-        ),
-    ]
-
-    if args.sims is not None:
-        for stage in curriculum:
-            stage.simulations = args.sims
-            
-    if args.iters is not None:
-        for stage in curriculum:
-            stage.iterations = args.iters
-
-    train(
-        curriculum,
-        config=TrainerConfig(
-            buffer_size=50_000,
-            batch_size=args.batch_size,
-            min_buffer_size=1_000,
-            train_steps_per_iter=5,
-            save_every=args.save_every,
-            checkpoint_dir="checkpoints",
-        ),
-        resume_path=args.resume
-    )
+    curriculum_train()

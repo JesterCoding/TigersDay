@@ -366,8 +366,7 @@ def perturb_state(state, depth):
             state = random.choice(outcomes)
     return state
 
-if __name__ == "__main__":
-
+def curriculum_train():
     parser = argparse.ArgumentParser(description="AlphaTiger Trainer")
     parser.add_argument("--resume", type=str, help="Path to checkpoint .pt file")
     parser.add_argument("--sims", type=int, default=None, help="Override MCTS simulations for all stages")
@@ -444,3 +443,6 @@ if __name__ == "__main__":
         ),
         resume_path=args.resume
     )
+
+if __name__ == "__main__":
+    curriculum_train()
