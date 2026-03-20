@@ -157,7 +157,7 @@
 <script type="py">
 from game.engine import *
 from game.updater import get_next_state, get_state_winner, get_luck_outcomes
-from game.state import GameState
+from game.state import *
 from game.constants import *
 from pyodide.ffi import to_js
 from pyscript import when, window, document
@@ -275,24 +275,8 @@ def load_saved_state(event=None):
     if len(raw_input) != 138:
         window.alert(f"Invalid state string! Expected exactly 138 bits, got {len(raw_input)}.")
         return
-    new_state = GameState()
-    try:
-        new_state.vector = np.array([bool(int(b)) for b in raw_input], dtype=bool)
-    except ValueError:
-        window.alert("Invalid input! Please provide a string consisting purely of 1s and 0s.")
-        return
-    try:
-        for i in range(12, 136):
-            if all(new_state.vector[i : i+3]):
-                t_idx = (i - 12) // 3
-                name = INDEX_MAP[t_idx] if t_idx in INDEX_MAP else f"Bit {i}"
-                raise ValueError(f"Invalid Binary: Triple consecutive 1s detected starting at {name}")
-    except ValueError as e:
-        window.alert(str(e))
-        return
 
-    current_state = new_state.copy()
-    current_state.read_vector(current_state.vector)
+    current_state = current_state.read_str(raw_input)
     push_state_to_ui(current_state)
     print("State loaded and legal moves updated.")
 

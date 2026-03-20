@@ -178,16 +178,7 @@ class GameState:
         self.british_cards[:] = True
         self.bluck = 0
         self.mluck = 0
-
-    def read_str(self, str):
-        assert len(str) == 138
-        self.vector = np.array([1 if i == "1" else 0 for i in str])
-        self._attacker = int(np.argmax(self.vector[self.IDX_ATTACKER])) if self.vector[self.IDX_ATTACKER].any() else NO_UNIT
-        self._defender = int(np.argmax(self.vector[self.IDX_DEFENDER])) if self.vector[self.IDX_DEFENDER].any() else NO_UNIT
-        self._card_strength = int(np.argmax(self.vector[self.IDX_COMBAT_STRENGTH]))
-        self._to_move = int(np.argmax(self.vector[self.IDX_WHO_TO_MOVE]))
-        self._turn = int(np.argmax(self.vector[self.IDX_TURN])) + 1
-
+    
     def __str__(self):
         save = ""
         for i in range(GAME_VECTOR_LENGTH):
@@ -196,6 +187,32 @@ class GameState:
             else:
                 save += "0"
         return save
+
+    
+    # fix: there is a bug with how the frontend is handling this function call
+    def read_str(self, str):
+        """ This function is utilized by the frontend and requires certain checks """
+        assert len(str) == GAME_VECTOR_LENGTH
+        new_state = self.copy() # creates a copy of itself just in case there is an error
+        try:
+            new_state.vector = np.array([bool(int(b)) for b in str], dtype=bool)
+        except ValueError:
+            raise ValueError("Invalid input! Please provide a string consisting purely of 1s and 0s.")
+        try:
+            for i in range(12, 136):
+                if all(new_state.vector[i : i+3]):
+                    t_idx = (i - 12) // 3
+                    name = INDEX_MAP[t_idx] if t_idx in INDEX_MAP else f"Bit {i}"
+        except ValueError as e:
+            raise ValueError(f"Invalid Binary: Triple consecutive 1s detected starting at {name}")
+
+        new_state._attacker = int(np.argmax(new_state.vector[new_state.IDX_ATTACKER])) if new_state.vector[new_state.IDX_ATTACKER].any() else NO_UNIT
+        new_state._defender = int(np.argmax(new_state.vector[new_state.IDX_DEFENDER])) if new_state.vector[new_state.IDX_DEFENDER].any() else NO_UNIT
+        new_state._card_strength = int(np.argmax(new_state.vector[new_state.IDX_COMBAT_STRENGTH]))
+        new_state._to_move = int(np.argmax(new_state.vector[new_state.IDX_WHO_TO_MOVE]))
+        new_state._turn = int(np.argmax(new_state.vector[new_state.IDX_TURN])) + 1
+
+        return new_state
 
 def main():
     default = GameState()
