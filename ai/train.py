@@ -256,7 +256,7 @@ def train(
             if len(buffer) >= config.min_buffer_size:
                 for _ in range(config.train_steps_per_iter):
                     batch = buffer.sample(config.batch_size)
-                    tl, vl, pl = _train_step(model, optimizer, batch, device)
+                    tl, vl, pl = train_step(model, optimizer, batch, device)
                     total_loss += tl
                     val_loss   += vl
                     pol_loss   += pl
@@ -373,7 +373,7 @@ def setup_training_run(description: str):
     parser.add_argument("--sims", type=int, default=None, help="Override MCTS simulations for all stages")
     parser.add_argument("--iters", type=int, default=None, help="Override games per stage for all stages")
     parser.add_argument("--batch_size", type=int, default=256, help="Training batch size (default: 256)")
-    parser.add_argument("--save_every", type=int, default=10, help="Save a checkpoint every N iterations")
+    parser.add_argument("--save_every", type=int, default=25, help="Save a checkpoint every N iterations")
     args = parser.parse_args()
 
     # Define the shared curriculum once
