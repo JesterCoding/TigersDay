@@ -217,6 +217,9 @@ class GameState:
 
 def main():
     default = GameState()
+    default.default_setup()
+    default.set_node_fresh_army(NODE_TO_IDX["Palgautcherry"])
+    default.set_node_fort(NODE_TO_IDX["Dindigul"])
     print(default)
 
 if __name__ == "__main__":

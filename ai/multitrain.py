@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 from typing import List, Optional
 
@@ -117,8 +118,36 @@ def train(
     print(f"\nTraining complete — final model saved to {final_path}")
     return model
 
+class CustomStateFactory:
+    """A top-level, pickleable factory wrapper to inject the starting game state string."""
+    def __init__(self, orig_factory, state_str):
+        self.orig_factory = orig_factory
+        self.state_str = state_str
+        
+    def __call__(self):
+        state = self.orig_factory()
+        state = state.read_str(self.state_str)
+        return state
+
 if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
+    
+    # Pre-parse the new custom argument so setup_training_run doesn't crash on an unknown arg
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--state_file", type=str, default=None, help="Path to file containing the game string representation")
+    custom_args, remaining_argv = parser.parse_known_args()
+    
+    # Rewrite sys.argv to hide the extra argument from the inner setup function
+    sys.argv = [sys.argv[0]] + remaining_argv
+    
     args, curriculum, config = setup_training_run("AlphaTiger Multiprocessing Trainer")
+    
+    # If the file is provided, override the curriculum's state factories
+    if custom_args.state_file and os.path.exists(custom_args.state_file):
+        with open(custom_args.state_file, 'r') as f:
+            state_str = f.read().strip()
+            
+        for stage in curriculum:
+            stage.state_factory = CustomStateFactory(stage.state_factory, state_str)
+
     train(curriculum, config=config, resume_path=args.resume)
-   

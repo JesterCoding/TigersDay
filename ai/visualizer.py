@@ -43,9 +43,8 @@ def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", h
     # 2. Setup the Game and MCTS
     state = GameState()
     state.default_setup()
-    state.set_node_empty(NODE_TO_IDX["Mahé"])
-    state.set_node_empty(NODE_TO_IDX["Bednore"])
-    state.set_node_fresh_army(NODE_TO_IDX["Pune"])
+    state.set_node_fresh_army(NODE_TO_IDX["Palgautcherry"])
+    state.set_node_fort(NODE_TO_IDX["Dindigul"])
 
     
     # Resolve any starting luck (e.g., initial card draws)
@@ -140,7 +139,7 @@ def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", h
     winner = Updater.get_state_winner(state)
     print("=" * 40)
     print("MATCH OVER")
-    if winner == 1: # Assuming 1 is Mysore
+    if winner == -1: # Assuming -1 is Mysore
         print("Winner: Mysore (Tipu Sultan)!")
     else: 
         print("Winner: British!")
