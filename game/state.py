@@ -188,7 +188,6 @@ class GameState:
                 save += "0"
         return save
 
-    # fix: there is a bug with how the frontend is handling this function call
     def read_str(self, bit_str):
         """ This function is utilized by the frontend and requires certain checks """
 
