@@ -188,14 +188,15 @@ class GameState:
                 save += "0"
         return save
 
-    
     # fix: there is a bug with how the frontend is handling this function call
-    def read_str(self, str):
+    def read_str(self, bit_str):
         """ This function is utilized by the frontend and requires certain checks """
-        assert len(str) == GAME_VECTOR_LENGTH
+
+        if len(bit_str) != GAME_VECTOR_LENGTH:
+            raise ValueError(f"Invalid input length! Expected {GAME_VECTOR_LENGTH} bits. ")
         new_state = self.copy() # creates a copy of itself just in case there is an error
         try:
-            new_state.vector = np.array([bool(int(b)) for b in str], dtype=bool)
+            new_state.vector = np.array([bool(int(b)) for b in bit_str], dtype=bool)
         except ValueError:
             raise ValueError("Invalid input! Please provide a string consisting purely of 1s and 0s.")
         try:
@@ -203,7 +204,8 @@ class GameState:
                 if all(new_state.vector[i : i+3]):
                     t_idx = (i - 12) // 3
                     name = INDEX_MAP[t_idx] if t_idx in INDEX_MAP else f"Bit {i}"
-        except ValueError as e:
+                    raise ValueError(f"Invalid Binary: Triple consecutive 1s detected starting at {name}")
+        except ValueError:
             raise ValueError(f"Invalid Binary: Triple consecutive 1s detected starting at {name}")
 
         new_state._attacker = int(np.argmax(new_state.vector[new_state.IDX_ATTACKER])) if new_state.vector[new_state.IDX_ATTACKER].any() else NO_UNIT

@@ -270,13 +270,17 @@ window._pyApplyMove = apply_move
 
 @when("click", "#load-state-btn")
 def load_saved_state(event=None):
+
     global current_state
     raw_input = document.getElementById('save-input').value.strip()
-    if len(raw_input) != 138:
-        window.alert(f"Invalid state string! Expected exactly 138 bits, got {len(raw_input)}.")
-        return
 
-    current_state = current_state.read_str(raw_input)
+    try:
+        current_state = current_state.read_str(raw_input)
+    except ValueError as e:
+        error_msg = str(e)
+        print(f"Error loading state: {error_msg}")
+        window.alert(error_msg)
+    
     push_state_to_ui(current_state)
     print("State loaded and legal moves updated.")
 
