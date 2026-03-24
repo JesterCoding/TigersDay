@@ -4,21 +4,21 @@ from game.constants import *
 class GameState:
 
     IDX_BRITISH_CARDS_OFFSET = 0   #index where this information begins
-    IDX_MYSORE_CARDS_OFFSET = 6    # 6 cards for both mysore and british
-    IDX_NODES_OFFSET = 12    # 23 nodes * 3D vectors = 69
-    IDX_TURN_OFFSET = 81     # 4 turns (One-hot)
-    IDX_WHO_TO_MOVE_OFFSET = 85    # 3 options (One-hot)
-    IDX_COMBAT_STRENGTH_OFFSET = 88 # 4 options (One-hot): Only ever stored for Mysore
-    IDX_ATTACKER_OFFSET = 92    # 23x2 Attacker/Defender (One-hot)
-    IDX_DEFENDER_OFFSET = 115 #Index from which Defender values start showing up
+    IDX_MYSORE_CARDS_OFFSET = CARDS    # 6 cards for both mysore and british
+    IDX_NODES_OFFSET = IDX_MYSORE_CARDS_OFFSET + CARDS   # 23 nodes * 3D vectors = 69
+    IDX_TURN_OFFSET = IDX_NODES_OFFSET + 3*NODES     # 4 turns (One-hot)
+    IDX_WHO_TO_MOVE_OFFSET = IDX_TURN_OFFSET + 4    # 3 options (One-hot)
+    IDX_COMBAT_STRENGTH_OFFSET = IDX_WHO_TO_MOVE_OFFSET + 3 # 4 options (One-hot): Only ever stored for Mysore
+    IDX_ATTACKER_OFFSET = IDX_COMBAT_STRENGTH_OFFSET + 4    # 23x2 Attacker/Defender (One-hot)
+    IDX_DEFENDER_OFFSET = IDX_ATTACKER_OFFSET + 2*NODES #Index from which Defender values start showing up
 
-    IDX_BRITISH_CARDS = slice(IDX_BRITISH_CARDS_OFFSET, IDX_BRITISH_CARDS_OFFSET + 6)
-    IDX_MYSORE_CARDS = slice(IDX_MYSORE_CARDS_OFFSET, IDX_MYSORE_CARDS_OFFSET + 6)
+    IDX_BRITISH_CARDS = slice(IDX_BRITISH_CARDS_OFFSET, IDX_BRITISH_CARDS_OFFSET + CARDS)
+    IDX_MYSORE_CARDS = slice(IDX_MYSORE_CARDS_OFFSET, IDX_MYSORE_CARDS_OFFSET + CARDS)
     IDX_TURN = slice(IDX_TURN_OFFSET, IDX_TURN_OFFSET + 4)
     IDX_WHO_TO_MOVE = slice(IDX_WHO_TO_MOVE_OFFSET, IDX_WHO_TO_MOVE_OFFSET + 3)
     IDX_COMBAT_STRENGTH = slice(IDX_COMBAT_STRENGTH_OFFSET, IDX_COMBAT_STRENGTH_OFFSET + 4)
-    IDX_ATTACKER = slice(IDX_ATTACKER_OFFSET, IDX_ATTACKER_OFFSET + 23)
-    IDX_DEFENDER = slice(IDX_DEFENDER_OFFSET, IDX_DEFENDER_OFFSET + 23)
+    IDX_ATTACKER = slice(IDX_ATTACKER_OFFSET, IDX_ATTACKER_OFFSET + NODES)
+    IDX_DEFENDER = slice(IDX_DEFENDER_OFFSET, IDX_DEFENDER_OFFSET + NODES)
 
     def __init__(self):
         self.vector = np.zeros(GAME_VECTOR_LENGTH, dtype=bool)
