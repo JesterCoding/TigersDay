@@ -10,7 +10,7 @@ class GameState:
     IDX_WHO_TO_MOVE_OFFSET = IDX_TURN_OFFSET + 4    # 3 options (One-hot)
     IDX_COMBAT_STRENGTH_OFFSET = IDX_WHO_TO_MOVE_OFFSET + 3 # 4 options (One-hot): Only ever stored for Mysore
     IDX_ATTACKER_OFFSET = IDX_COMBAT_STRENGTH_OFFSET + 4    # 23x2 Attacker/Defender (One-hot)
-    IDX_DEFENDER_OFFSET = IDX_ATTACKER_OFFSET + 2*NODES #Index from which Defender values start showing up
+    IDX_DEFENDER_OFFSET = IDX_ATTACKER_OFFSET + NODES #Index from which Defender values start showing up
 
     IDX_BRITISH_CARDS = slice(IDX_BRITISH_CARDS_OFFSET, IDX_BRITISH_CARDS_OFFSET + CARDS)
     IDX_MYSORE_CARDS = slice(IDX_MYSORE_CARDS_OFFSET, IDX_MYSORE_CARDS_OFFSET + CARDS)
