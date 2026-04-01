@@ -176,6 +176,7 @@ def js_obj(d):
 
 def build_move_list(state):
     mask = get_legal_moves(state)
+    print(f"DEBUG: Mask length: {len(mask)}, Expected Edges: {EDGES}")  
     moves = []
     offset = 0
     for name, size, move_type in MOVE_SPACE:
@@ -183,6 +184,7 @@ def build_move_list(state):
         for local_idx in range(size):
             if chunk[local_idx]:
                 global_idx = offset + local_idx
+                print(f"Checking {name} ({move_type}): local_idx={local_idx}, offset={offset}")
                 if move_type == "node":
                     desc = INDEX_MAP[local_idx]
                 elif move_type == "edge":

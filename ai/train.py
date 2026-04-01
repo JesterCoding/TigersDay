@@ -245,7 +245,7 @@ def train(
                 stage.temperature,
                 stage.temperature_cutoff,
             )
-            buffer.add(samples)
+            buffer.add(samples) # type: ignore 
             global_iter += 1
 
             # ── Training ─────────────────────────────────────────────────────

@@ -18,7 +18,7 @@ def get_legal_moves(state: GameState):
             trapped_army
         ))
     else:
-        phase0 = np.zeros(103, dtype=bool)
+        phase0 = np.zeros(BRITISH_MOVES_SPACE, dtype=bool)
 
     if state.to_move == 1:
         sepoy_mutiny = state.mysore_cards[1] * ((state.fresh_armies | state.tired_armies) & ~KEYS)
@@ -54,7 +54,7 @@ def get_legal_moves(state: GameState):
             mysore_pass
         ))
     else:
-        phase1 = np.zeros(302, dtype=bool)
+        phase1 = np.zeros(MYSORE_CARDS_SPACE, dtype=bool)
 
     if state.to_move == 2:
         highlanders = state.british_cards[1] * (state.empty & COASTAL)
@@ -90,7 +90,7 @@ def get_legal_moves(state: GameState):
             british_pass
         ))
     else:
-        phase2 = np.zeros(438, dtype=bool)
+        phase2 = np.zeros(BRITISH_CARDS_SPACE, dtype=bool)
 
     mask = np.concatenate((
         phase0,

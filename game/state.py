@@ -43,11 +43,11 @@ class GameState:
         self.set_node_fort(NODE_TO_IDX["Bednore"])
         self.set_node_fort(NODE_TO_IDX["Mangalore"])
         self.set_node_fort(NODE_TO_IDX["Bangalore"])
-        self.set_node_fort(NODE_TO_IDX["Srirangapatna"])
+        self.set_node_fort(NODE_TO_IDX["Seringapatam"])
         self.set_node_fort(NODE_TO_IDX["Erode"])
         self.set_node_fort(NODE_TO_IDX["Coimbatore"])
         self.set_node_fort(NODE_TO_IDX["Mahé"])
-        self.set_node_fort(NODE_TO_IDX["Palgautcherry"])
+        self.set_node_fort(NODE_TO_IDX["Alwaye"])
 
         self.turn = 1
         self.to_move = 0

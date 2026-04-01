@@ -2,15 +2,15 @@ var NODES = {
   Bombay:        { x:110, y: 74,  owner:'british', armyType:'active',  key:true,  coast:true,  labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
   Hyderabad:     { x:515, y:100,  owner:'british', armyType:'active',  key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
   Madras:        { x:618, y:322,  owner:'british', armyType:'active',  key:true,  coast:true,  labelAnchor:{anchor:'end',    dx:-18, dy:-24} },
-  Srirangapatna: { x:230, y:480,  owner:'mysore',  armyType:'fort',    key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
+  Seringapatam: { x:230, y:480,  owner:'mysore',  armyType:'fort',    key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
   Coimbatore:    { x:305, y:600,  owner:'mysore',  armyType:'fort',    key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
-  Pune:          { x:255, y:128,  owner:'empty',   armyType:'empty',   key:false, coast:false },
+  Poona:         { x:255, y:128,  owner:'empty',   armyType:'empty',   key:false, coast:false },
   Koppal:        { x:390, y:178,  owner:'empty',   armyType:'empty',   key:false, coast:false },
-  Vizag:         { x:656, y:162,  owner:'empty',   armyType:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
+  Masulipatam:         { x:656, y:162,  owner:'empty',   armyType:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
   Goa:           { x: 94, y:262,  owner:'empty',   armyType:'empty',   key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
   Darwar:        { x:232, y:232,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
   Anantapur:     { x:470, y:228,  owner:'empty',   armyType:'empty',   key:false, coast:false },
-  Bednore:       { x:300, y:295,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
+  Bednore:       { x:250, y:350,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
   Mangalore:     { x:118, y:398,  owner:'mysore',  armyType:'fort',    key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
   Bangalore:     { x:350, y:400,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
   Vellore:       { x:460, y:340,  owner:'empty',   armyType:'empty',   key:false, coast:false },
@@ -18,33 +18,33 @@ var NODES = {
   Pondicherry:   { x:610, y:446,  owner:'empty',   armyType:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
   Erode:         { x:405, y:515,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
   Trichy:        { x:506, y:580,  owner:'empty',   armyType:'empty',   key:false, coast:false },
-  Palgautcherry: { x:248, y:680,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
+  Alwaye:        { x:225, y:720,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
   Dindigul:      { x:415, y:670,  owner:'empty',   armyType:'empty',   key:false, coast:false },
+  Ramnad:        { x:415, y:770,  owner:'empty',   armyType:'empty',   key:false, coast:true },
   Travancore:    { x:260, y:830,  owner:'british', armyType:'active',  key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
-  Ceylon:        { x:534, y:735,  owner:'empty',   armyType:'empty',   key:false, coast:true  },
+  Ceylon:        { x:540, y:800,  owner:'empty',   armyType:'empty',   key:false, coast:true  },
 };
 
 const EDGES = [
-  ['Bombay', 'Pune'],
+  ['Bombay', 'Poona'],
   ['Bombay', 'Goa', {curve: -0.2}],
   ['Hyderabad', 'Koppal'],
-  ['Hyderabad', 'Vizag'],
+  ['Hyderabad', 'Masulipatam'],
   ['Hyderabad', 'Anantapur'],
-  ['Madras', 'Vizag', {curve: -0.2}],
+  ['Madras', 'Masulipatam', {curve: -0.2}],
   ['Madras', 'Anantapur'],
   ['Madras', 'Vellore'],
   ['Madras', 'Pondicherry'],
-  ['Srirangapatna', 'Mangalore'],
-  ['Srirangapatna', 'Bangalore'],
-  ['Srirangapatna', 'Mahé'],
-  ['Srirangapatna', 'Erode'],
+  ['Seringapatam', 'Mangalore'],
+  ['Seringapatam', 'Bangalore'],
+  ['Seringapatam', 'Mahé'],
+  ['Seringapatam', 'Erode'],
   ['Coimbatore', 'Mahé'],
   ['Coimbatore', 'Erode'],
-  ['Coimbatore', 'Palgautcherry'],
+  ['Coimbatore', 'Alwaye'],
   ['Coimbatore', 'Dindigul'],
-  ['Pune', 'Koppal'],
-  ['Pune', 'Goa'],
-  ['Pune', 'Darwar'],
+  ['Poona', 'Koppal'],
+  ['Poona', 'Darwar'],
   ['Koppal', 'Anantapur'],
   ['Koppal', 'Bednore'],
   ['Goa', 'Darwar'],
@@ -55,15 +55,16 @@ const EDGES = [
   ['Bednore', 'Bangalore'],
   ['Bangalore', 'Vellore'],
   ['Vellore', 'Erode'],
-  ['Mahé', 'Palgautcherry'],
   ['Pondicherry', 'Erode'],
   ['Pondicherry', 'Trichy'],
   ['Erode', 'Trichy'],
   ['Trichy', 'Dindigul'],
   ['Trichy', 'Ceylon', {curve: -0.2}],
-  ['Palgautcherry', 'Travancore'],
-  ['Dindigul', 'Travancore'],
-  ['Dindigul', 'Ceylon'],
+  ['Alwaye', 'Travancore'],
+  ['Alwaye', 'Ramnad'],
+  ['Dindigul', 'Ramnad'],
+  ['Ramnad', 'Ceylon'],
+  ['Ramnad', 'Travancore'],
   ['Travancore', 'Ceylon']
 ];
 
@@ -519,6 +520,7 @@ function submitMove() {
     }
 }
 
+/*
 // --- TURN-BASED WEBSOCKET INTEGRATION ---
 const ab = new WebSocket("ws://localhost:8765");
 const feedbackEl = document.getElementById('move-feedback');
@@ -578,3 +580,4 @@ window.submitMove = function() {
     
     document.getElementById('move-number-input').value = '';
 };
+*/
