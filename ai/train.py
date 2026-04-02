@@ -304,7 +304,7 @@ def stage_early_game() -> GameState:
     """A reasonable position after the opening of the game."""
     state = GameState()
     state.default_setup()
-    state.set_node_empty(random.randrange(23))
+    state.set_node_empty(random.randrange(NODES))
     state = perturb_state(state, 9)
     return state
 
@@ -315,13 +315,13 @@ def stage_mid_game() -> GameState:
     state.set_node_fresh_army(NODE_TO_IDX["Madras"])
     state.set_node_fresh_army(NODE_TO_IDX["Hyderabad"])
     state.set_node_fresh_army(NODE_TO_IDX["Travancore"])
-    state.set_node_fresh_army(random.randrange(23))
-    state.set_node_fort(NODE_TO_IDX["Srirangapatna"])
+    state.set_node_fresh_army(random.randrange(NODES))
+    state.set_node_fort(NODE_TO_IDX["Seringapatam"])
     state.set_node_fort(NODE_TO_IDX["Coimbatore"])
     state.set_node_fort(NODE_TO_IDX["Erode"])
     state.set_node_fort(NODE_TO_IDX["Mahé"])
-    state.set_node_fort(random.randrange(23))
-    state.set_node_fort(random.randrange(23))
+    state.set_node_fort(random.randrange(NODES))
+    state.set_node_fort(random.randrange(NODES))
     state.turn = 2
     state = perturb_state(state, 9)
     return state
@@ -329,15 +329,15 @@ def stage_mid_game() -> GameState:
 def stage_late_game() -> GameState:
     """A reasonable position late in the game."""
     state = GameState()
-    state.set_node_fort(NODE_TO_IDX["Srirangapatna"])
+    state.set_node_fort(NODE_TO_IDX["Seringapatam"])
     state.set_node_fort(NODE_TO_IDX["Coimbatore"])
-    state.set_node_fort(random.randrange(23))
-    state.set_node_fort(random.randrange(23))
-    state.set_node_fresh_army(random.randrange(23))
-    state.set_node_fresh_army(random.randrange(23))
-    state.set_node_fresh_army(random.randrange(23))
-    state.set_node_fresh_army(random.randrange(23))
-    state.set_node_fresh_army(random.randrange(23))
+    state.set_node_fort(random.randrange(NODES))
+    state.set_node_fort(random.randrange(NODES))
+    state.set_node_fresh_army(random.randrange(NODES))
+    state.set_node_fresh_army(random.randrange(NODES))
+    state.set_node_fresh_army(random.randrange(NODES))
+    state.set_node_fresh_army(random.randrange(NODES))
+    state.set_node_fresh_army(random.randrange(NODES))
     state.turn = 3
     state = perturb_state(state, 6)
     return state
@@ -345,14 +345,14 @@ def stage_late_game() -> GameState:
 def stage_end_game() -> GameState:
     """A reasonable position before the ending of the game."""
     state = GameState()
-    state.set_node_fort(random.randrange(23))
-    state.set_node_fort(random.randrange(23))
+    state.set_node_fort(random.randrange(NODES))
+    state.set_node_fort(random.randrange(NODES))
     state.set_node_fresh_army(NODE_TO_IDX["Bombay"])
     state.set_node_fresh_army(NODE_TO_IDX["Madras"])
     state.set_node_fresh_army(NODE_TO_IDX["Hyderabad"])
-    state.set_node_fresh_army(NODE_TO_IDX["Srirangapatna"])
+    state.set_node_fresh_army(NODE_TO_IDX["Seringapatam"])
     state.set_node_fresh_army(NODE_TO_IDX["Coimbatore"])
-    state.set_node_fresh_army(random.randrange(23))
+    state.set_node_fresh_army(random.randrange(NODES))
     state.turn = 4
     state = perturb_state(state, 6)
     return state
@@ -376,7 +376,6 @@ def setup_training_run(description: str):
     parser.add_argument("--save_every", type=int, default=25, help="Save a checkpoint every N iterations")
     args = parser.parse_args()
 
-    # Define the shared curriculum once
     curriculum = [
         CurriculumStage(name="End Game",   state_factory=stage_end_game,   iterations=2000, simulations=100),
         CurriculumStage(name="Late Game",  state_factory=stage_late_game,  iterations=2000, simulations=100),

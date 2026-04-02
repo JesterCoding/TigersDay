@@ -47,7 +47,7 @@ class GameState:
         self.set_node_fort(NODE_TO_IDX["Erode"])
         self.set_node_fort(NODE_TO_IDX["Coimbatore"])
         self.set_node_fort(NODE_TO_IDX["Mahé"])
-        self.set_node_fort(NODE_TO_IDX["Alwaye"])
+        self.set_node_fort(NODE_TO_IDX["Dindigul"])
 
         self.turn = 1
         self.to_move = 0
