@@ -43,9 +43,6 @@ def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", h
     # 2. Setup the Game and MCTS
     state = GameState()
     state.default_setup()
-    state.set_node_fresh_army(NODE_TO_IDX["Palgautcherry"])
-    state.set_node_fort(NODE_TO_IDX["Dindigul"])
-
     
     # Resolve any starting luck (e.g., initial card draws)
     state, _ = _resolve_luck_verbose(state)
