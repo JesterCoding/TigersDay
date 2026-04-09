@@ -212,7 +212,7 @@ def push_state_to_ui(state):
     window.updateCombatInfo(str(state.turn), who_name, attacker_name, defender_name, strength_str)
 
     moves = build_move_list(state)
-    window.renderMoveList(to_js(moves))
+    window.renderMoveList(moves)
 
 def apply_move(move_idx):
     global current_state

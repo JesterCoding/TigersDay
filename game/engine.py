@@ -103,6 +103,7 @@ def get_legal_moves(state: GameState):
 def legal_moves_dict(mask):
     legal_moves_dict = []
     offset = 0
+    move_string = "Undefined"
     for name, size, move_type in MOVE_SPACE:
         memory_chunk = mask[offset : offset+size]
         valid_local_moves = np.where(memory_chunk)[0]
@@ -110,33 +111,33 @@ def legal_moves_dict(mask):
             number = offset + idx
             if move_type == "node":
                 node_name = INDEX_MAP[idx]
-                move_string = f"{number} {name}: {node_name}"
+                move_string = node_name
             elif move_type == "edge":
                 src_name = INDEX_MAP[int(EDGE_SOURCES[idx])] 
                 dest_name = INDEX_MAP[int(EDGE_DESTS[idx])] 
-                move_string = f"{number} {name}: {src_name} -> {dest_name}"
+                move_string = src_name + " -> " + dest_name
             elif move_type == "bcard":
                 card_name = BRITISH_CARDS[idx]
-                move_string = f"{number} {name}: {card_name}"
+                move_string = card_name
             elif move_type == "mcard":
                 card_name = MYSORE_CARDS[idx]
-                move_string = f"{number} {name}: {card_name}"
+                move_string = card_name
             elif move_type == "blank":
-                move_string = f"{number} {name}"
+                move_string = "-"
             elif move_type == "coastal":
                 node = INDEX_MAP[idx // len(COASTAL_INDICES)]
                 coast = INDEX_MAP[int(COASTAL_INDICES[idx % len(COASTAL_INDICES)])]
                 if name == "Royal Navy":
-                    move_string = f"{number} {name}: {node} -> {coast}"
+                    move_string = node + " -> " + coast
                 elif name == "Sea Trade":
-                    move_string = f"{number} {name}: {coast} -> {node}"
+                    move_string = coast + " -> " + node
             else:
-                move_string = "Error"
+                move_string = str(idx)
             
             legal_moves_dict.append({
                 "idx": int(number),  
-                "type": move_type, 
-                "move": move_string
+                "type": name, 
+                "desc": move_string
             })
         offset += size
 
