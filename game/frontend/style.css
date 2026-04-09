@@ -437,7 +437,7 @@ svg#board {
 
 .move-entry {
     display: flex;
-    gap: 8px;
+    gap: 26px;
     padding: 1px 4px;
     border-radius: 2px;
     cursor: pointer;
@@ -464,7 +464,7 @@ svg#board {
 .move-type {
     color: #7a4a1a;
     font-family: 'Cinzel', serif;
-    font-size: 1rem;
+    font-size: 0.80rem;
     min-width: 130px;
     flex-shrink: 0;
 }
