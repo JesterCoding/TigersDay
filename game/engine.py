@@ -100,48 +100,53 @@ def get_legal_moves(state: GameState):
 
     return mask
 
-
-def print_legal_moves(mask):
+def legal_moves_dict(mask):
+    legal_moves_dict = []
     offset = 0
     for name, size, move_type in MOVE_SPACE:
         memory_chunk = mask[offset : offset+size]
         valid_local_moves = np.where(memory_chunk)[0]
-
         for idx in valid_local_moves:
             number = offset + idx
             if move_type == "node":
                 node_name = INDEX_MAP[idx]
-                print(f"{number} {name}: {node_name}")
+                move_string = f"{number} {name}: {node_name}"
             elif move_type == "edge":
                 src_name = INDEX_MAP[int(EDGE_SOURCES[idx])] 
                 dest_name = INDEX_MAP[int(EDGE_DESTS[idx])] 
-                print(f"{number} {name}: {src_name} -> {dest_name}")
+                move_string = f"{number} {name}: {src_name} -> {dest_name}"
             elif move_type == "bcard":
                 card_name = BRITISH_CARDS[idx]
-                print(f"{number} {name}: {card_name}")
+                move_string = f"{number} {name}: {card_name}"
             elif move_type == "mcard":
                 card_name = MYSORE_CARDS[idx]
-                print(f"{number} {name}: {card_name}")
+                move_string = f"{number} {name}: {card_name}"
             elif move_type == "blank":
-                print(f"{number} {name}")
+                move_string = f"{number} {name}"
             elif move_type == "coastal":
                 node = INDEX_MAP[idx // len(COASTAL_INDICES)]
                 coast = INDEX_MAP[int(COASTAL_INDICES[idx % len(COASTAL_INDICES)])]
                 if name == "Royal Navy":
-                    print(f"{number} {name}: {node} -> {coast}")
+                    move_string = f"{number} {name}: {node} -> {coast}"
                 elif name == "Sea Trade":
-                    print(f"{number} {name}: {coast} -> {node}")
-
+                    move_string = f"{number} {name}: {coast} -> {node}"
+            else:
+                move_string = "Error"
+            
+            legal_moves_dict.append({
+                "idx": int(number),  
+                "type": move_type, 
+                "move": move_string
+            })
         offset += size
+
+    return legal_moves_dict
 
 
 def main():
     default = GameState()
     default.default_setup()
-    default.to_move = 2
-    default.set_node_fort(NODE_TO_IDX["Ceylon"])
-    default.set_node_tired_army(NODE_TO_IDX["Travancore"])
-    print_legal_moves(get_legal_moves(default))
+    print(legal_moves_dict(get_legal_moves(default)))
 
 
 if __name__ == "__main__":

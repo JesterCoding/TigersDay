@@ -177,39 +177,9 @@ def js_obj(d):
 
 def build_move_list(state):
     mask = get_legal_moves(state)
-    print(f"DEBUG: Mask length: {len(mask)}, Expected Edges: {EDGES}")  
-    moves = []
-    offset = 0
-    for name, size, move_type in MOVE_SPACE:
-        chunk = mask[offset: offset + size]
-        for local_idx in range(size):
-            if chunk[local_idx]:
-                global_idx = offset + local_idx
-                print(f"Checking {name} ({move_type}): local_idx={local_idx}, offset={offset}")
-                if move_type == "node":
-                    desc = INDEX_MAP[local_idx]
-                elif move_type == "edge":
-                    src  = INDEX_MAP[int(EDGE_SOURCES[local_idx])]
-                    dest = INDEX_MAP[int(EDGE_DESTS[local_idx])]
-                    desc = src + " -> " + dest
-                elif move_type == "bcard":
-                    desc = BRITISH_CARDS[local_idx]
-                elif move_type == "mcard":
-                    desc = MYSORE_CARDS[local_idx]
-                elif move_type == "blank":
-                    desc = "-"
-                elif move_type == "coastal":
-                    node = INDEX_MAP[local_idx // len(COASTAL_INDICES)]
-                    coast = INDEX_MAP[int(COASTAL_INDICES[local_idx % len(COASTAL_INDICES)])]
-                    if name == "Royal Navy":
-                        desc = node + " -> " + coast
-                    elif name == "Sea Trade":
-                        desc = coast + " -> " + node
-                else:
-                    desc = str(local_idx)
-                moves.append(js_obj({"idx": global_idx, "type": name, "desc": desc}))
-        offset += size
-    return moves
+    python_moves = legal_moves_dict(mask)
+    js_moves = to_js(python_moves, dict_converter=js.Object.fromEntries)
+    return js_moves
 
 def push_state_to_ui(state):
     for i, name in enumerate(INDEX_MAP.values()):
