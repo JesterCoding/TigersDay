@@ -11,11 +11,11 @@ def get_legal_moves(state: GameState):
     if state.to_move == 0:
         legal_moves = (state.fresh_armies[EDGE_SOURCES] & legal_dest[EDGE_DESTS])
 
-        trapped_army = (state.fresh_armies & (np.bincount(EDGE_SOURCES,weights=legal_moves,minlength=NODES)==0))
+        tire_in_place = state.fresh_armies
 
         phase0 = np.concatenate((
             legal_moves,
-            trapped_army
+            tire_in_place
         ))
     else:
         phase0 = np.zeros(BRITISH_MOVES_SPACE, dtype=bool)
