@@ -27,7 +27,6 @@ def _resolve_luck_verbose(state: GameState):
 def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", human_side: str = "british"):
     """Loads a checkpoint and plays a match (AI vs AI or Human vs AI)."""
     
-    # 1. Load the Model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = AlphaTiger().to(device)
     
@@ -35,16 +34,13 @@ def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", h
         print(f"Cannot find checkpoint: {checkpoint_path}")
         return
 
-    # Pass None for the optimizer since we aren't training
     load_checkpoint(model, None, checkpoint_path)
-    model.eval() # CRITICAL: Turn off training mode
+    model.eval() 
     print(f"Loaded model from {checkpoint_path} onto {device}\n")
 
-    # 2. Setup the Game and MCTS
     state = GameState()
     state.default_setup()
     
-    # Resolve any starting luck (e.g., initial card draws)
     state, _ = _resolve_luck_verbose(state)
     
     mcts = MCTS(model, simulations=simulations)
@@ -54,7 +50,6 @@ def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", h
     match_title = "AI vs AI" if mode == "ai" else f"Human ({human_side.capitalize()}) vs AI"
     print(f"=== STARTING MATCH: {match_title} ===")
     
-    # 3. The Game Loop
     while Updater.get_state_winner(state) == 0:
         current_player = 'Mysore' if state.to_move == 1 else 'British'
         
@@ -62,7 +57,6 @@ def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", h
         print(f"MOVE {move_num} | Turn: {state.turn} | To Move: {current_player}")
         print(state)
         
-        # Determine if it is the human's turn
         is_human_turn = False
         if mode == "human":
             if (human_side == "mysore" and state.to_move == 1) or \
@@ -70,7 +64,6 @@ def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", h
                 is_human_turn = True
 
         if is_human_turn:
-            # --- HUMAN TURN LOGIC ---
             print("\n*** YOUR TURN ***")
             legal_mask = Engine.get_legal_moves(state)
             valid_moves = np.where(legal_mask)[0]
@@ -78,7 +71,6 @@ def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", h
             print("Legal Moves:")
             Engine.print_legal_moves(legal_mask)
             
-            # Input validation loop
             while True:
                 try:
                     user_input = input(f"\nEnter move ID to play (or 'q' to quit): ")
@@ -99,11 +91,9 @@ def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", h
             Engine.print_legal_moves(np.arange(MOVE_VECTOR_LENGTH) == best_move)
             
         else:
-            # --- AI TURN LOGIC ---
             print("\n*** AI IS THINKING ***")
             root = mcts.search(state)
             
-            # Temperature = 0.0 (Greedy play). Find the child with the most visits.
             best_move = None
             most_visits = -1
             best_child = None
@@ -121,22 +111,18 @@ def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", h
             print(f"\nAI played:")
             Engine.print_legal_moves(np.arange(MOVE_VECTOR_LENGTH) == best_move)
             
-        # Apply the move
         state = Updater.get_next_state(state, best_move)
         
-        # Resolve any luck caused by the move
         state, luck_history = _resolve_luck_verbose(state)
-        
-        # Clear the MCTS tree for the next turn
+
         mcts.root = None
         
         move_num += 1
 
-    # 4. Game Over
     winner = Updater.get_state_winner(state)
     print("=" * 40)
     print("MATCH OVER")
-    if winner == -1: # Assuming -1 is Mysore
+    if winner == -1: 
         print("Winner: Mysore (Tipu Sultan)!")
     else: 
         print("Winner: British!")

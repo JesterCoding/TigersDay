@@ -456,6 +456,7 @@ svg#board {
 .move-idx {
     color: #9a7a3a;
     min-width: 32px;
+    font-size: 1rem;
     text-align: right;
     flex-shrink: 0;
 }
@@ -463,13 +464,14 @@ svg#board {
 .move-type {
     color: #7a4a1a;
     font-family: 'Cinzel', serif;
-    font-size: .68rem;
+    font-size: 1rem;
     min-width: 130px;
     flex-shrink: 0;
 }
 
 .move-desc {
     color: #3a2a10;
+    font-size: 1rem;
 }
 
 .console-input-row {

@@ -1,219 +1,150 @@
 import asyncio
 import json
-import argparse
-import os
-import threading
-import http.server
-import functools
+import websockets
+import torch
 import numpy as np
 
+# Import your game engine modules
+import game.engine as Engine
+import game.updater as Updater
 from game.state import GameState
-from game.engine import *
-from game.updater import *
 from game.constants import *
-from ai.neural import AlphaTiger, load_checkpoint
 from ai.mcts import MCTS
+from ai.neural import AlphaTiger, load_checkpoint
 
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
+# Configuration
+PORT = 8887
+CHECKPOINT_PATH = "ai/training_results/alphatigerv1.pt"
+SIMULATIONS = 500
+HUMAN_SIDE = 1 # Assuming 1 is British, -1 is Mysore. Adjust as needed.
 
-try:
-    import websockets
-except ImportError:
-    print("Missing dependency: pip install websockets")
-    raise
+class GameServer:
+    def __init__(self):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = AlphaTiger().to(self.device)
+        load_checkpoint(self.model, None, CHECKPOINT_PATH)
+        self.model.eval()
+        
+        self.mcts = MCTS(self.model, simulations=SIMULATIONS)
+        
+        # Initialize Game State
+        self.state = GameState()
+        self.state.default_setup()
+        self._resolve_luck()
 
+    def _resolve_luck(self):
+        """Automatically resolve random events/luck before user input."""
+        while getattr(self.state, 'is_luck', False):
+            outcomes = Updater.get_luck_outcomes(self.state)
+            # For simplicity, picking the first outcome or randomly.
+            # Adjust if you want the UI to show dice rolls!
+            self.state = outcomes[0] 
 
-def state_to_message(state, checker):
-    """Convert GameState to the JSON dict the frontend expects."""
-    INDEX_MAP = []
-    for i, name in enumerate(INDEX_MAP):
-        offset = GameState.IDX_NODES_OFFSET + 3 * i
-        fresh = bool(state.vector[offset])
-        tired = bool(state.vector[offset + 1])
-        fort = bool(state.vector[offset + 2])
+    def serialize_state(self):
+        """
+        Converts the Python GameState into the JSON format expected by script.js.
+        You will need to adapt the mappings here to match your Python GameState structure.
+        """
+        # Example mapping: convert your Python board array/objects to the JS format
+        territories_list = []
+        
+        # NOTE: You will need to loop through your actual Python state representation here.
+        # This is pseudo-code for the translation:
+        # for territory_name, data in self.state.board.items():
+        #     territories_list.append({
+        #         "name": territory_name,
+        #         "owner": "british" if data.owner == 1 else "mysore" if data.owner == -1 else "empty",
+        #         "armyType": data.army_type # 'active', 'tired', 'fort', 'empty'
+        #     })
 
-        if fresh:
-            owner, army_type = "british", "active"
-        elif tired:
-            owner, army_type = "british", "tired"
-        elif fort:
-            owner, army_type = "mysore", "fort"
-        else:
-            owner, army_type = "empty", "empty"
+        who_to_move = "British Move" if self.state.to_move == 1 else "Mysore Move"
+        winner = Updater.get_state_winner(self.state)
+        
+        winner_str = None
+        if winner == 1: winner_str = "british"
+        elif winner == -1: winner_str = "mysore"
 
-        INDEX_MAP.append({"name": name, "owner": owner, "armyType": army_type})
+        return {
+            "type": "STATE",
+            "territories": territories_list,
+            "britishCards": [True] * 6, # Replace with actual card state from self.state
+            "mysoreCards": [True] * 6,  # Replace with actual card state from self.state
+            "turn": getattr(self.state, 'turn', 1),
+            "maxTurns": 12,
+            "whoToMove": who_to_move,
+            "winner": winner_str
+        }
 
-    british_cards = [bool(state.vector[GameState.IDX_BRITISH_CARDS_OFFSET + i]) for i in range(6)]
-    mysore_cards = [bool(state.vector[GameState.IDX_MYSORE_CARDS_OFFSET + i]) for i in range(6)]
+    async def handle_ai_turn(self, websocket):
+        """Runs the MCTS and applies the AI's move."""
+        if Updater.get_state_winner(self.state) != 0:
+            return # Game over
 
-    result = checker.check(state)
-    winner = None
-    if result == RESULT_BRITISH_WIN:
-        winner = "british"
-    elif result == RESULT_MYSORE_WIN:
-        winner = "mysore"
-
-    return {
-        "type": "STATE",
-        "INDEX_MAP": INDEX_MAP,
-        "britishCards": british_cards,
-        "mysoreCards": mysore_cards,
-        "turn": int(state.get_turn()),
-        "maxTurns": 4,
-        "whoToMove": state.WHO_TO_MOVE[state.get_who_to_move()],
-        "winner": winner,
-    }
-
-
-def describe_move(move_idx):
-    """Convert a move index to a human-readable string."""
-    offset = 0
-    for name, size, move_type in MOVE_SPACE:
-        if offset <= move_idx < offset + size:
-            local = move_idx - offset
-            if move_type == "node":
-                return f"{name}: {INDEX_MAP[local]}"
-            elif move_type == "edge":
-                src = EDGE_SOURCES[local]
-                dst = EDGE_DESTS[local]
-                return f"{name}: {INDEX_MAP[src]} -> {INDEX_MAP[dst]}"
-            elif move_type == "rn_matrix":
-                num_coastal = len(COASTAL_INDICES)
-                src = local // num_coastal
-                dst = int(COASTAL_INDICES[local % num_coastal])
-                return f"{name}: {INDEX_MAP[src]} -> {INDEX_MAP[dst]}"
-            elif move_type == "bcard":
-                return f"{name}: {BRITISH_CARDS[local]}"
-            elif move_type == "mcard":
-                return f"{name}: {MYSORE_CARDS[local]}"
-            else:
-                return name
-        offset += size
-    return f"Unknown move {move_idx}"
-
-
-def start_http_server(port, directory):
-    """Serve frontend/ as static files on the given port."""
-    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=directory)
-    httpd = http.server.HTTPServer(("", port), handler)
-    httpd.serve_forever()
-
-
-async def game_handler(websocket, model, num_simulations, delay):
-    """Handle a single WebSocket connection: run AI self-play and stream states.""" 
-    mcts = MCTS(model)
-
-    state = GameState()
-    state.default_setup()
-
-    # Send initial state
-    await websocket.send(json.dumps(state_to_message(state)))
-    await asyncio.sleep(delay)
-
-    game_result = 0
-    move_count = 0
-
-    print("\n=== New Game Started ===")
-    print(f"MCTS simulations per move: {num_simulations}")
-    print(f"Delay between moves: {delay}s\n")
-
-    while game_result == 0:
-        who = GameState.WHO_TO_MOVE[state.get_who_to_move()]
-        turn = state.get_turn()
-
-        # MCTS selects move
-        move_idx, _ = mcts.select_move(state, temperature=1.0 if move_count < 15 else 0.0)
-        move_count += 1
-
-        desc = describe_move(move_idx)
-        print(f"  Turn {turn} | {who:15s} | {desc}")
-
+        # Tell UI AI is thinking
+        await websocket.send(json.dumps({"type": "STATUS", "message": "🤖 AI is thinking..."}))
+        
+        # Run search
+        root = self.mcts.search(self.state)
+        best_move = max(root.children.items(), key=lambda item: item[1].visit_count)[0]
+        
         # Apply move
-        state, game_result, luck_info = updater.apply_move(state, move_idx)
+        self.state = Updater.get_next_state(self.state, best_move)
+        self._resolve_luck()
+        self.mcts.root = None # Reset tree for next turn
+        
+        # Send updated state to client
+        await websocket.send(json.dumps(self.serialize_state()))
 
-        # Handle luck turns
-        if luck_info is not None:
-            state = MCTS.resolve_luck(state, luck_info)
-            print(f"  {'':6s} | {'LUCK':15s} | {luck_info['player']} discards (random)")
-            game_result = checker.check(state)
+    async def handler(self, websocket, path):
+        print("Client connected!")
+        
+        # Send initial state
+        await websocket.send(json.dumps(self.serialize_state()))
 
-        # Send updated state to frontend
-        msg = state_to_message(state, checker)
-        try:
-            await websocket.send(json.dumps(msg))
-        except websockets.exceptions.ConnectionClosed:
-            print("Client disconnected.")
-            return
+        # Check if AI goes first
+        if self.state.to_move != HUMAN_SIDE:
+            await self.handle_ai_turn(websocket)
 
-        await asyncio.sleep(delay)
+        async for message in websocket:
+            data = json.loads(message)
+            
+            if data['type'] == 'MOVE_IDX':
+                # User submitted a move ID via the console UI
+                move_idx = data['idx']
+                
+                legal_mask = Engine.get_legal_moves(self.state)
+                valid_moves = np.where(legal_mask)[0]
+                
+                if move_idx in valid_moves:
+                    self.state = Updater.get_next_state(self.state, move_idx)
+                    self._resolve_luck()
+                    
+                    # Send updated state
+                    await websocket.send(json.dumps(self.serialize_state()))
+                    
+                    # Trigger AI turn immediately if it's the AI's turn
+                    if self.state.to_move != HUMAN_SIDE:
+                        # Give the UI a tiny moment to render the player's move first
+                        await asyncio.sleep(0.1) 
+                        await self.handle_ai_turn(websocket)
+                else:
+                    await websocket.send(json.dumps({"type": "MOVE_RESULT", "status": "invalid", "reason": "Illegal Move ID"}))
 
-        if move_count > 2000:
-            game_result = -1
-            break
+            elif data['type'] == 'MOVE':
+                # User clicked two nodes on the map: data['from'] and data['to']
+                # NOTE: You must map 'from' and 'to' strings to your Engine's integer move ID here.
+                # move_idx = self.map_ui_to_move_idx(data['from'], data['to'])
+                pass 
+                
+            elif data['type'] == 'RESET':
+                self.__init__() # Reset the game
+                await websocket.send(json.dumps(self.serialize_state()))
 
-    # Send game over
-    winner = "british" if game_result == 1 else "mysore"
-    print(f"\n=== Game Over: {winner.upper()} wins after {move_count} moves ===\n")
-
-    try:
-        await websocket.send(json.dumps({"type": "GAME_OVER", "winner": winner}))
-    except websockets.exceptions.ConnectionClosed:
-        pass
-
-
-async def ws_server(model, num_simulations, delay, ws_port):
-    """Run the WebSocket server."""
-    async with websockets.serve(
-        lambda ws: game_handler(ws, model, num_simulations, delay),
-        "", ws_port
-    ):
+async def main():
+    server = GameServer()
+    print(f"Starting AI WebSocket server on ws://localhost:{PORT}")
+    async with websockets.serve(server.handler, "localhost", PORT):
         await asyncio.Future()  # run forever
 
-
-def main():
-    parser = argparse.ArgumentParser(description="Tiger's Day AI Demo Server")
-    parser.add_argument('--checkpoint', type=str, default=None,
-                        help="Path to trained model checkpoint")
-    parser.add_argument('--simulations', type=int, default=50,
-                        help="MCTS simulations per move")
-    parser.add_argument('--delay', type=float, default=0.8,
-                        help="Seconds between moves (for watchability)")
-    parser.add_argument('--port', type=int, default=8080,
-                        help="HTTP server port for frontend")
-    parser.add_argument('--ws-port', type=int, default=8887,
-                        help="WebSocket server port")
-    args = parser.parse_args()
-
-    # Load model
-    model = TigerNet()
-    if args.checkpoint and os.path.exists(args.checkpoint):
-        load_checkpoint(model, None, args.checkpoint)
-        print(f"Loaded checkpoint: {args.checkpoint}")
-    else:
-        print("No checkpoint loaded — using untrained model (random play)")
-
-    # Start HTTP server in background thread
-    frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "game", "frontend")
-    http_thread = threading.Thread(
-        target=start_http_server, args=(args.port, frontend_dir), daemon=True)
-    http_thread.start()
-
-    print(f"\nHTTP server:      http://localhost:{args.port}")
-    print(f"WebSocket server: ws://localhost:{args.ws_port}")
-    print(f"Open http://localhost:{args.port} in your browser to watch the AI play.\n")
-
-    # Start WebSocket server
-    asyncio.run(ws_server(model, args.simulations, args.delay, args.ws_port))
-
-
 if __name__ == "__main__":
-    main()
-
-app = FastAPI()
-
-# 1. Mount the game folder FIRST so the browser can access the .py files
-app.mount("/game", StaticFiles(directory="game"), name="game")
-
-# 2. Mount the frontend folder SECOND to serve your index.html
-app.mount("/", StaticFiles(directory="game/frontend", html=True), name="frontend")
+    asyncio.run(main())
