@@ -1,150 +1,253 @@
-import asyncio
-import json
-import websockets
+import os
+import random
 import torch
 import numpy as np
+import argparse
+import uvicorn
 
-# Import your game engine modules
-import game.engine as Engine
-import game.updater as Updater
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
+from game.engine import *
+from game.updater import *
 from game.state import GameState
-from game.constants import *
+from game.constants import INDEX_MAP, WHO_TO_MOVE
 from ai.mcts import MCTS
 from ai.neural import AlphaTiger, load_checkpoint
 
-# Configuration
-PORT = 8887
-CHECKPOINT_PATH = "ai/training_results/alphatigerv1.pt"
-SIMULATIONS = 500
-HUMAN_SIDE = 1 # Assuming 1 is British, -1 is Mysore. Adjust as needed.
 
-class GameServer:
-    def __init__(self):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = AlphaTiger().to(self.device)
-        load_checkpoint(self.model, None, CHECKPOINT_PATH)
-        self.model.eval()
-        
-        self.mcts = MCTS(self.model, simulations=SIMULATIONS)
-        
-        # Initialize Game State
-        self.state = GameState()
-        self.state.default_setup()
-        self._resolve_luck()
+# ---------------------------------------------------------------------------
+# Globals set at startup via CLI args
+# ---------------------------------------------------------------------------
+app = FastAPI()
+ai_model = None
+mcts_sims = 500
 
-    def _resolve_luck(self):
-        """Automatically resolve random events/luck before user input."""
-        while getattr(self.state, 'is_luck', False):
-            outcomes = Updater.get_luck_outcomes(self.state)
-            # For simplicity, picking the first outcome or randomly.
-            # Adjust if you want the UI to show dice rolls!
-            self.state = outcomes[0] 
+# One of: "human" | "human_vs_ai" | "ai_vs_ai"
+match_mode = "human_vs_ai"
 
-    def serialize_state(self):
-        """
-        Converts the Python GameState into the JSON format expected by script.js.
-        You will need to adapt the mappings here to match your Python GameState structure.
-        """
-        # Example mapping: convert your Python board array/objects to the JS format
-        territories_list = []
-        
-        # NOTE: You will need to loop through your actual Python state representation here.
-        # This is pseudo-code for the translation:
-        # for territory_name, data in self.state.board.items():
-        #     territories_list.append({
-        #         "name": territory_name,
-        #         "owner": "british" if data.owner == 1 else "mysore" if data.owner == -1 else "empty",
-        #         "armyType": data.army_type # 'active', 'tired', 'fort', 'empty'
-        #     })
+# Which side the human controls in "human_vs_ai" mode
+human_player_side = "british"
 
-        who_to_move = "British Move" if self.state.to_move == 1 else "Mysore Move"
-        winner = Updater.get_state_winner(self.state)
-        
-        winner_str = None
-        if winner == 1: winner_str = "british"
-        elif winner == -1: winner_str = "mysore"
 
-        return {
-            "type": "STATE",
-            "territories": territories_list,
-            "britishCards": [True] * 6, # Replace with actual card state from self.state
-            "mysoreCards": [True] * 6,  # Replace with actual card state from self.state
-            "turn": getattr(self.state, 'turn', 1),
-            "maxTurns": 12,
-            "whoToMove": who_to_move,
-            "winner": winner_str
-        }
+# ---------------------------------------------------------------------------
+# Request / response models
+# ---------------------------------------------------------------------------
+class MoveRequest(BaseModel):
+    state_str: str
+    move_idx: int
 
-    async def handle_ai_turn(self, websocket):
-        """Runs the MCTS and applies the AI's move."""
-        if Updater.get_state_winner(self.state) != 0:
-            return # Game over
+class LoadRequest(BaseModel):
+    state_str: str
 
-        # Tell UI AI is thinking
-        await websocket.send(json.dumps({"type": "STATUS", "message": "🤖 AI is thinking..."}))
-        
-        # Run search
-        root = self.mcts.search(self.state)
-        best_move = max(root.children.items(), key=lambda item: item[1].visit_count)[0]
-        
-        # Apply move
-        self.state = Updater.get_next_state(self.state, best_move)
-        self._resolve_luck()
-        self.mcts.root = None # Reset tree for next turn
-        
-        # Send updated state to client
-        await websocket.send(json.dumps(self.serialize_state()))
 
-    async def handler(self, websocket, path):
-        print("Client connected!")
-        
-        # Send initial state
-        await websocket.send(json.dumps(self.serialize_state()))
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+def _resolve_luck(state: GameState) -> GameState:
+    """Loops until all luck states are resolved, picking a random outcome each time."""
+    while state.is_luck:
+        outcomes = get_luck_outcomes(state)
+        idx = random.randrange(len(outcomes))
+        state = outcomes[idx]
+        print(f"🎲 Luck resolved — outcome index: {idx}")
+    return state
 
-        # Check if AI goes first
-        if self.state.to_move != HUMAN_SIDE:
-            await self.handle_ai_turn(websocket)
 
-        async for message in websocket:
-            data = json.loads(message)
-            
-            if data['type'] == 'MOVE_IDX':
-                # User submitted a move ID via the console UI
-                move_idx = data['idx']
-                
-                legal_mask = Engine.get_legal_moves(self.state)
-                valid_moves = np.where(legal_mask)[0]
-                
-                if move_idx in valid_moves:
-                    self.state = Updater.get_next_state(self.state, move_idx)
-                    self._resolve_luck()
-                    
-                    # Send updated state
-                    await websocket.send(json.dumps(self.serialize_state()))
-                    
-                    # Trigger AI turn immediately if it's the AI's turn
-                    if self.state.to_move != HUMAN_SIDE:
-                        # Give the UI a tiny moment to render the player's move first
-                        await asyncio.sleep(0.1) 
-                        await self.handle_ai_turn(websocket)
-                else:
-                    await websocket.send(json.dumps({"type": "MOVE_RESULT", "status": "invalid", "reason": "Illegal Move ID"}))
+def _ai_move(state: GameState) -> GameState:
+    """Runs MCTS and applies the best move, then resolves any luck."""
+    print("\n*** AI IS THINKING ***")
+    mcts = MCTS(ai_model, simulations=mcts_sims)
+    root = mcts.search(state)
 
-            elif data['type'] == 'MOVE':
-                # User clicked two nodes on the map: data['from'] and data['to']
-                # NOTE: You must map 'from' and 'to' strings to your Engine's integer move ID here.
-                # move_idx = self.map_ui_to_move_idx(data['from'], data['to'])
-                pass 
-                
-            elif data['type'] == 'RESET':
-                self.__init__() # Reset the game
-                await websocket.send(json.dumps(self.serialize_state()))
+    best_move, most_visits = None, -1
+    for move, child in root.children.items():
+        if child.visit_count > most_visits:
+            most_visits = child.visit_count
+            best_move = move
 
-async def main():
-    server = GameServer()
-    print(f"Starting AI WebSocket server on ws://localhost:{PORT}")
-    async with websockets.serve(server.handler, "localhost", PORT):
-        await asyncio.Future()  # run forever
+    print(f"AI eval: {root.eval:+.3f} | Best Move ID: {best_move}")
+    state = get_next_state(state, best_move)
+    return _resolve_luck(state)
 
+
+
+
+
+def generate_game_data(state: GameState) -> dict:
+    """Serialises GameState into a JSON-friendly dict for the frontend."""
+    nodes = []
+    for i, name in enumerate(INDEX_MAP.values()):
+        if state.fresh_armies[i]:
+            a_type = "fresh"
+        elif state.tired_armies[i]:
+            a_type = "tired"
+        elif state.forts[i]:
+            a_type = "fort"
+        else:
+            a_type = "empty"
+        nodes.append({"name": name, "armyType": a_type})
+
+    mask = get_legal_moves(state)
+    try:
+        moves = legal_moves_dict(mask)
+    except AttributeError:
+        moves = {int(i): f"Move ID {i}" for i in np.where(mask)[0]}
+
+    return {
+        "state_str": "".join(["1" if bool(x) else "0" for x in state.vector]),
+        "winner": get_state_winner(state),
+        "moves": moves,
+        "match_mode": match_mode,
+        "human_side": human_player_side,
+        "ui_state": {
+            "british_cards": [bool(x) for x in state.british_cards],
+            "mysore_cards": [bool(x) for x in state.mysore_cards],
+            "turn": int(state.turn),
+            "who_to_move": WHO_TO_MOVE[state.to_move],
+            "attacker": INDEX_MAP.get(state.attacker, "None") if state.attacker != -1 else "None",
+            "defender": INDEX_MAP.get(state.defender, "None") if state.defender != -1 else "None",
+            "card_strength": int(state.card_strength) if state.card_strength != -1 else 0,
+            "nodes": nodes,
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
+# API endpoints
+# ---------------------------------------------------------------------------
+@app.get("/api/init")
+async def init_game():
+    """Initialises a fresh board and resolves any opening luck states."""
+    state = GameState()
+    state.default_setup()
+    state = _resolve_luck(state)
+    return generate_game_data(state)
+
+
+@app.post("/api/load-state")
+async def load_state(req: LoadRequest):
+    """Restores a game from a saved bit-string."""
+    try:
+        state = GameState().read_str(req.state_str)
+        return generate_game_data(state)
+    except ValueError as e:
+        return {"error": str(e)}
+
+
+@app.post("/api/play-move")
+async def play_move(req: MoveRequest):
+    """Executes a human move and resolves any luck states."""
+    try:
+        state = GameState().read_str(req.state_str)
+        state = get_next_state(state, req.move_idx)
+        state = _resolve_luck(state)
+        return generate_game_data(state)
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.post("/api/play-ai")
+async def play_ai(req: LoadRequest):
+    """
+    Advances the game by one AI move.
+
+    - In ai_vs_ai mode the frontend calls this repeatedly to drive both sides.
+    - In human_vs_ai mode it can be called to nudge a stuck AI turn.
+    - Returns an error if called in pure-human mode.
+    """
+    if match_mode == "human":
+        return {"error": "AI moves are disabled in human-vs-human mode."}
+
+    try:
+        state = GameState().read_str(req.state_str)
+
+        if get_state_winner(state) != 0:
+            return generate_game_data(state)
+
+        state = _ai_move(state)
+        return generate_game_data(state)
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ---------------------------------------------------------------------------
+# Static frontend
+# ---------------------------------------------------------------------------
+app.mount("/", StaticFiles(directory="public", html=True), name="public")
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(
+        description="Serve the game UI. Supports human/human, human/AI, and AI/AI spectator modes."
+    )
+    parser.add_argument(
+        "--ckpt",
+        type=str,
+        default="ai/training_results/alphatigerv6.pt",
+        help="Path to the AlphaTiger checkpoint file",
+    )
+    parser.add_argument(
+        "--sims",
+        type=int,
+        default=500,
+        help="Number of MCTS simulations per move (default: 500)",
+    )
+    parser.add_argument(
+        "--mode",
+        type=str,
+        choices=["human", "human_vs_ai", "ai_vs_ai"],
+        default="human_vs_ai",
+        help=(
+            "human      — two humans take turns in the browser\n"
+            "human_vs_ai — one human plays, AI responds automatically\n"
+            "ai_vs_ai   — AI controls both sides; humans watch the frontend update"
+        ),
+    )
+    parser.add_argument(
+        "--human",
+        type=str,
+        choices=["british", "mysore"],
+        default="british",
+        help="Which side the human plays in human_vs_ai mode (default: british)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port for the web server (default: 8000)",
+    )
+
+    args = parser.parse_args()
+
+    mcts_sims = args.sims
+    match_mode = args.mode
+    human_player_side = args.human
+
+    # Load AI model (required for human_vs_ai and ai_vs_ai)
+    if match_mode != "human":
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        ai_model = AlphaTiger().to(device)
+
+        if os.path.exists(args.ckpt):
+            load_checkpoint(ai_model, None, args.ckpt)
+            ai_model.eval()
+            print(f"✅ Loaded model from {args.ckpt} onto {device}")
+        else:
+            print(
+                f"⚠️  Checkpoint '{args.ckpt}' not found. "
+                "AI will play with uninitialised weights."
+            )
+    else:
+        print("ℹ️  Running in human-vs-human mode — AI model not loaded.")
+
+    print(f"🚀 Starting server → http://localhost:{args.port}")
+    print(f"   Mode : {match_mode}")
+    if match_mode == "human_vs_ai":
+        print(f"   Human side : {human_player_side}")
+
+    uvicorn.run(app, host="0.0.0.0", port=args.port, log_level="info")

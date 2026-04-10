@@ -1,5 +1,4 @@
 import numpy as np
-import time
 from game.constants import *
 from game.state import GameState
     
@@ -143,11 +142,14 @@ def legal_moves_dict(mask):
 
     return legal_moves_dict
 
+def print_legal_moves(mask):
+    for move in legal_moves_dict(mask):
+        print(f"{move["idx"]} {move["type"]} : {move["desc"]}")
 
 def main():
     default = GameState()
     default.default_setup()
-    print(legal_moves_dict(get_legal_moves(default)))
+    print_legal_moves(get_legal_moves(default))
 
 
 if __name__ == "__main__":
