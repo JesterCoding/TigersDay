@@ -146,6 +146,16 @@ def print_legal_moves(mask):
     for move in legal_moves_dict(mask):
         print(f"{move["idx"]} {move["type"]} : {move["desc"]}")
 
+def print_legal_move(mask, move_idx):
+    moves = legal_moves_dict(mask)
+    for move in moves:
+        if move["idx"] == move_idx:
+            move_desc = move["desc"]
+            move_type = move["type"]
+            move_idx = move["idx"]
+            break    
+    print(f"{move_idx} {move_type} : {move_desc}")
+
 def main():
     default = GameState()
     default.default_setup()

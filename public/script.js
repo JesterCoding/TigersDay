@@ -444,10 +444,7 @@ function updateUI(uiState, moves) {
     window.renderMoveList(moves);
 }
 
-// ---------------------------------------------------------------------------
-// Player map — who controls each side: 'human' or 'ai'
-// Built once from the first server response and never changes mid-game.
-// ---------------------------------------------------------------------------
+
 let players = { british: 'human', mysore: 'human' };
 
 function buildPlayerMap(matchMode, humanSide) {
@@ -456,7 +453,6 @@ function buildPlayerMap(matchMode, humanSide) {
     } else if (matchMode === 'ai_vs_ai') {
         players = { british: 'ai', mysore: 'ai' };
     } else {
-        // human_vs_ai: one side is human, the other is AI
         const human = (humanSide || 'british').toLowerCase();
         players = { british: 'ai', mysore: 'ai' };
         players[human] = 'human';
@@ -465,14 +461,12 @@ function buildPlayerMap(matchMode, humanSide) {
 }
 
 function currentSideIsAi(uiState) {
-    // who_to_move is e.g. "British Move", "Mysore Card", "British Card" etc.
     const whoToMove = (uiState.who_to_move || '').toLowerCase();
     if (whoToMove.includes('british')) return players.british === 'ai';
     if (whoToMove.includes('mysore'))  return players.mysore  === 'ai';
     return false;
 }
 
-// ---------------------------------------------------------------------------
 // Central response handler — every API call funnels through here
 // ---------------------------------------------------------------------------
 function handleServerResponse(data) {
@@ -491,17 +485,12 @@ function handleServerResponse(data) {
         return;
     }
 
-    // Kick off AI move if it's the AI's turn, with a short delay so the
-    // board visibly updates before the next think begins.
     if (currentSideIsAi(data.ui_state)) {
         const delay = players.british === 'ai' && players.mysore === 'ai' ? 800 : 300;
         setTimeout(() => triggerAiMove(data.state_str), delay);
     }
 }
 
-// ---------------------------------------------------------------------------
-// AI move
-// ---------------------------------------------------------------------------
 async function triggerAiMove(stateStr) {
     console.log("AI is thinking…");
     document.getElementById('move-feedback').innerText = "AI thinking…";
@@ -521,9 +510,6 @@ async function triggerAiMove(stateStr) {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Human move
-// ---------------------------------------------------------------------------
 window.applyMove = async function(moveIdx) {
     const feedback = document.getElementById('move-feedback');
     feedback.textContent = 'Processing…';
@@ -543,9 +529,6 @@ window.applyMove = async function(moveIdx) {
     }
 };
 
-// ---------------------------------------------------------------------------
-// Load saved state
-// ---------------------------------------------------------------------------
 document.getElementById('load-state-btn').addEventListener('click', async () => {
     const rawInput = document.getElementById('save-input').value.trim();
     try {
@@ -564,9 +547,6 @@ document.getElementById('load-state-btn').addEventListener('click', async () => 
     }
 });
 
-// ---------------------------------------------------------------------------
-// Save state — uses the live bit-string, no Pyodide needed
-// ---------------------------------------------------------------------------
 function saveState() {
     if (!currentBitString) { alert("No game state to save yet."); return; }
     const binStr = currentBitString;
@@ -610,9 +590,6 @@ function saveState() {
     document.getElementById('settings-menu').classList.add('hidden');
 }
 
-// ---------------------------------------------------------------------------
-// Settings actions — undo/reset now hit REST endpoints
-// ---------------------------------------------------------------------------
 function sendReset() {
     if (!confirm('Reset the board to the starting position?')) return;
     initGame();
@@ -624,9 +601,6 @@ function sendUndo() {
     document.getElementById('settings-menu').classList.add('hidden');
 }
 
-// ---------------------------------------------------------------------------
-// Init
-// ---------------------------------------------------------------------------
 async function initGame() {
     renderEdges();
     window.renderNodes();
@@ -636,7 +610,7 @@ async function initGame() {
     try {
         const response = await fetch('/api/init');
         const data = await response.json();
-        buildPlayerMap(data.match_mode, data.human_side);  // set once from server config
+        buildPlayerMap(data.match_mode, data.human_side);  
         handleServerResponse(data);
         console.log("Game engine ready.");
     } catch (err) {

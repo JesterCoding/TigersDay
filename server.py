@@ -17,23 +17,14 @@ from ai.mcts import MCTS
 from ai.neural import AlphaTiger, load_checkpoint
 
 
-# ---------------------------------------------------------------------------
-# Globals set at startup via CLI args
-# ---------------------------------------------------------------------------
 app = FastAPI()
 ai_model = None
 mcts_sims = 500
-
-# One of: "human" | "human_vs_ai" | "ai_vs_ai"
 match_mode = "human_vs_ai"
-
-# Which side the human controls in "human_vs_ai" mode
 human_player_side = "british"
+threshold = 0.1
 
 
-# ---------------------------------------------------------------------------
-# Request / response models
-# ---------------------------------------------------------------------------
 class MoveRequest(BaseModel):
     state_str: str
     move_idx: int
@@ -42,11 +33,9 @@ class LoadRequest(BaseModel):
     state_str: str
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 def _resolve_luck(state: GameState) -> GameState:
     """Loops until all luck states are resolved, picking a random outcome each time."""
+    """Runs in constant time since will only loop twice in the worst case scenario."""
     while state.is_luck:
         outcomes = get_luck_outcomes(state)
         idx = random.randrange(len(outcomes))
@@ -61,19 +50,31 @@ def _ai_move(state: GameState) -> GameState:
     mcts = MCTS(ai_model, simulations=mcts_sims)
     root = mcts.search(state)
 
-    best_move, most_visits = None, -1
+    move_idx_dict = {}
+    best_move, most_visits = None, 0
     for move, child in root.children.items():
         if child.visit_count > most_visits:
             most_visits = child.visit_count
             best_move = move
+        if child.visit_count/mcts_sims >= threshold:
+            move_idx_dict[move] = child.visit_count/mcts_sims
 
-    print(f"AI eval: {root.eval:+.3f} | Best Move ID: {best_move}")
+    mask = get_legal_moves(state)
+
+    print("---------------------------")
+    print(f"AI eval: {root.eval:+.3f} | Best Move Id: {best_move}")
+    print_legal_move(mask, best_move)
+
+    print("---------------------------")
+    print(f"Moves above threshold value of {threshold}.")
+    print("---------------------------")
+    for move in move_idx_dict:
+        print_legal_move(mask, move)
+        print(move_idx_dict[move])
+    print("---------------------------")    
+
     state = get_next_state(state, best_move)
     return _resolve_luck(state)
-
-
-
-
 
 def generate_game_data(state: GameState) -> dict:
     """Serialises GameState into a JSON-friendly dict for the frontend."""
@@ -114,9 +115,6 @@ def generate_game_data(state: GameState) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# API endpoints
-# ---------------------------------------------------------------------------
 @app.get("/api/init")
 async def init_game():
     """Initialises a fresh board and resolves any opening luck states."""
@@ -124,7 +122,6 @@ async def init_game():
     state.default_setup()
     state = _resolve_luck(state)
     return generate_game_data(state)
-
 
 @app.post("/api/load-state")
 async def load_state(req: LoadRequest):
@@ -134,8 +131,7 @@ async def load_state(req: LoadRequest):
         return generate_game_data(state)
     except ValueError as e:
         return {"error": str(e)}
-
-
+    
 @app.post("/api/play-move")
 async def play_move(req: MoveRequest):
     """Executes a human move and resolves any luck states."""
@@ -172,15 +168,8 @@ async def play_ai(req: LoadRequest):
         return {"error": str(e)}
 
 
-# ---------------------------------------------------------------------------
-# Static frontend
-# ---------------------------------------------------------------------------
 app.mount("/", StaticFiles(directory="public", html=True), name="public")
 
-
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Serve the game UI. Supports human/human, human/AI, and AI/AI spectator modes."
@@ -221,14 +210,20 @@ if __name__ == "__main__":
         default=8000,
         help="Port for the web server (default: 8000)",
     )
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=0.1,
+        help="Threshold for showing top-K AI moves",
+    )
 
     args = parser.parse_args()
 
     mcts_sims = args.sims
     match_mode = args.mode
     human_player_side = args.human
+    threshold = args.threshold
 
-    # Load AI model (required for human_vs_ai and ai_vs_ai)
     if match_mode != "human":
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         ai_model = AlphaTiger().to(device)
