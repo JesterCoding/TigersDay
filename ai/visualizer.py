@@ -40,7 +40,6 @@ def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", h
 
     state = GameState()
     state.default_setup()
-    # state.set_node_fresh_army(NODE_TO_IDX["Mahé"])
     
     state, _ = _resolve_luck_verbose(state)
     
@@ -124,7 +123,7 @@ def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", h
     print("=" * 40)
     print("MATCH OVER")
     if winner == -1: 
-        print("Winner: Mysore (Tipu Sultan)!")
+        print("Winner: Mysore!")
     else: 
         print("Winner: British!")
 
