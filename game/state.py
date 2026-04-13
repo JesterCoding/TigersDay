@@ -41,7 +41,7 @@ class GameState:
         self.set_node_fresh_army(NODE_TO_IDX["Poona"])
 
         self.set_node_fort(NODE_TO_IDX["Darwar"])
-        self.set_node_fort(NODE_TO_IDX["Bednore"])
+        self.set_node_fort(NODE_TO_IDX["Chitaldoorg"])
         self.set_node_fort(NODE_TO_IDX["Mangalore"])
         self.set_node_fort(NODE_TO_IDX["Bangalore"])
         self.set_node_fort(NODE_TO_IDX["Seringapatam"])
