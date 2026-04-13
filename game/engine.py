@@ -144,7 +144,7 @@ def legal_moves_dict(mask):
 
 def print_legal_moves(mask):
     for move in legal_moves_dict(mask):
-        print(f"{move["idx"]} {move["type"]} : {move["desc"]}")
+        print(f"{move['idx']} {move['type']} : {move['desc']}")
 
 def print_legal_move(mask, move_idx):
     moves = legal_moves_dict(mask)

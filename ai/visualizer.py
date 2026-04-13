@@ -40,6 +40,7 @@ def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", h
 
     state = GameState()
     state.default_setup()
+    # state.set_node_fresh_army(NODE_TO_IDX["Mahé"])
     
     state, _ = _resolve_luck_verbose(state)
     
@@ -133,7 +134,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ckpt", 
         type=str, 
-        default="ai/training_results/alphatigerv1.pt", 
+        default="ai/training_results/alphatigerv6.pt", 
         help="Path to the model checkpoint file"
     )
     parser.add_argument(
