@@ -338,6 +338,7 @@ def stage_late_game() -> GameState:
     state.set_node_fresh_army(random.randrange(NODES))
     state.set_node_fresh_army(random.randrange(NODES))
     state.set_node_fresh_army(random.randrange(NODES))
+    state.set_node_fresh_army(random.randrange(NODES))
     state.turn = 3
     state = perturb_state(state, 6)
     return state
