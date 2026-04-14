@@ -219,9 +219,12 @@ class GameState:
 def main():
     default = GameState()
     default.default_setup()
-    default.set_node_fresh_army(NODE_TO_IDX["Palgautcherry"])
-    default.set_node_fort(NODE_TO_IDX["Dindigul"])
     print(default)
+
+    print(f"Coastal Length: {len(COASTAL_INDICES)}")
+    print(f"Move Vector Length: {MOVE_VECTOR_LENGTH}")
+    print(f"Game Vector Length: {GAME_VECTOR_LENGTH}")
+    print(f"Edges Count: {EDGES//2}")
 
 if __name__ == "__main__":
     main()
