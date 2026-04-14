@@ -70,7 +70,7 @@ def _ai_move(state: GameState) -> GameState:
     print("---------------------------")
     for move in move_idx_dict:
         print_legal_move(mask, move)
-        print(move_idx_dict[move])
+        print(f"Prior: {move_idx_dict[move]}")
     print("---------------------------")    
 
     state = get_next_state(state, best_move)
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ckpt",
         type=str,
-        default="ai/training_results/alphatigerv6.pt",
+        default="ai/models/alphatigerv8.pt",
         help="Path to the AlphaTiger checkpoint file",
     )
     parser.add_argument(
