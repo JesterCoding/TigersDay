@@ -45,15 +45,20 @@ class Node:
                 self.children[i] = Node(outcome, self, i, prior)
 
 class MCTS:
-    def __init__(self, model, simulations = 100, puct = 1.5):
+    def __init__(self, model, simulations = 100, puct = 1.5, dalpha = 0.5, depsilon = 0.25):
         self.model = model
         self.simulations = simulations
         self.puct = puct
+        self.dalpha = dalpha
+        self.depsilon = depsilon
         self.root = None
 
     def search(self, root_state):
         if self.root is None:
             self.root = Node(root_state.copy())
+
+        # lazy generate dirichlet root noise
+        noise_dict = None
 
         for _ in range(self.simulations):
             node = self.root
@@ -63,7 +68,12 @@ class MCTS:
                 if node.is_luck:
                     node = random.choice(list(node.children.values()))
                 else:
-                    node = self.select_child(node)
+                    # generate noise on simulation 1
+                    if node is self.root and noise_dict is None:
+                        legal_moves = list(self.root.children.keys())
+                        noise = np.random.dirichlet([self.dalpha] * len(legal_moves))
+                        noise_dict = {move: n for move, n in zip(legal_moves, noise)}
+                    node = self.select_child(node, noise_dict if node is self.root else None)
 
             # lazy evaluation, actually do it
             if node.state is None:
@@ -99,19 +109,24 @@ class MCTS:
             node.value_sum += value
             node = node.parent
 
-    def select_child(self, node):
+    def select_child(self, node, noise_dict=None):
         best_score, best_child = -np.inf, None
-        for child in node.children.values():
+        for move, child in node.children.items():
             exploitation = -child.eval if node.state.to_move == 1 else child.eval
             # flip evaluation for mysore turn
-            exploration = self.puct * child.prior * (np.sqrt(node.visit_count) / (1 + child.visit_count))
+
+            if noise_dict is not None and move in noise_dict:
+                dprior = (1-self.depsilon) * child.prior + self.depsilon * noise_dict[move]
+            # blend dirichlet noise at select time
+
+            exploration = self.puct * dprior * (np.sqrt(node.visit_count) / (1 + child.visit_count))
             score = exploitation + exploration
             if score > best_score:
                 best_score = score
                 best_child = child
         assert best_child is not None
         return best_child
-    
+
     # retain subtree if mcts already has it
     def update_root(self, action, luck_trajectory):
         if self.root is None or action not in self.root.children:
