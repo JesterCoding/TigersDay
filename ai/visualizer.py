@@ -133,7 +133,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ckpt", 
         type=str, 
-        default="ai/training_results/alphatigerv6.pt", 
+        default="ai/models/alphatigerv8.pt", 
         help="Path to the model checkpoint file"
     )
     parser.add_argument(
