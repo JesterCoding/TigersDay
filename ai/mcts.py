@@ -115,11 +115,12 @@ class MCTS:
             exploitation = -child.eval if node.state.to_move == 1 else child.eval
             # flip evaluation for mysore turn
 
+            prior = child.prior
             if noise_dict is not None and move in noise_dict:
-                dprior = (1-self.depsilon) * child.prior + self.depsilon * noise_dict[move]
+                prior = (1-self.depsilon) * prior + self.depsilon * noise_dict[move]
             # blend dirichlet noise at select time
 
-            exploration = self.puct * dprior * (np.sqrt(node.visit_count) / (1 + child.visit_count))
+            exploration = self.puct * prior * (np.sqrt(node.visit_count) / (1 + child.visit_count))
             score = exploitation + exploration
             if score > best_score:
                 best_score = score
