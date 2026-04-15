@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import argparse
 
-import game.engine as Engine  # Make sure Engine is imported!
+import game.engine as Engine
 import game.updater as Updater
 from game.state import GameState
 from game.constants import *
@@ -43,7 +43,8 @@ def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", h
     
     state, _ = _resolve_luck_verbose(state)
     
-    mcts = MCTS(model, simulations=simulations)
+    mcts = MCTS(model, simulations=simulations, depsilon = 0)
+    # turn off dirichlet noise
 
     move_num = 1
     
@@ -115,7 +116,7 @@ def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", h
         
         state, luck_history = _resolve_luck_verbose(state)
 
-        mcts.root = None
+        mcts.update_root(best_move, luck_history)
         
         move_num += 1
 
