@@ -37,7 +37,7 @@ class CurriculumStage:
     iterations: int                         # self-play + train cycles for this stage
     simulations: int = 100                  # MCTS simulations per move
     temperature: float = 1.0               # softmax temperature for move selection
-    temperature_cutoff: int = 999           # after this many moves, temperature → 0
+    temperature_cutoff: int = 0           # after this many moves, temperature → 0
 
 
 @dataclass
@@ -378,11 +378,11 @@ def setup_training_run(description: str):
     args = parser.parse_args()
 
     curriculum = [
-        CurriculumStage(name="End Game",   state_factory=stage_end_game,   iterations=2000, simulations=100),
-        CurriculumStage(name="Late Game",  state_factory=stage_late_game,  iterations=2000, simulations=100),
-        CurriculumStage(name="Mid Game",   state_factory=stage_mid_game,   iterations=2000, simulations=500),
-        CurriculumStage(name="Early Game", state_factory=stage_early_game, iterations=2000, simulations=500),
-        CurriculumStage(name="Full Game",  state_factory=stage_full_game,  iterations=2000, simulations=500),
+        CurriculumStage(name="End Game",   state_factory=stage_end_game,   iterations=2000, simulations=100, temperature_cutoff = 3),
+        CurriculumStage(name="Late Game",  state_factory=stage_late_game,  iterations=2000, simulations=100, temperature_cutoff = 6),
+        CurriculumStage(name="Mid Game",   state_factory=stage_mid_game,   iterations=2000, simulations=500, temperature_cutoff = 9),
+        CurriculumStage(name="Early Game", state_factory=stage_early_game, iterations=2000, simulations=500, temperature_cutoff = 12),
+        CurriculumStage(name="Full Game",  state_factory=stage_full_game,  iterations=2000, simulations=500, temperature_cutoff = 15),
     ]
 
     # Apply overrides
