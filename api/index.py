@@ -81,4 +81,5 @@ async def play_move(req: MoveRequest):
     except Exception as e:
         return {"error": str(e)}
 
-app.mount("/", StaticFiles(directory="public", html=True), name="public")
+# May or may not need this code
+#app.mount("/", StaticFiles(directory="public", html=True), name="public")
