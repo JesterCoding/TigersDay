@@ -378,11 +378,12 @@ def setup_training_run(description: str):
     args = parser.parse_args()
 
     curriculum = [
-        CurriculumStage(name="End Game",   state_factory=stage_end_game,   iterations=2000, simulations=100, temperature_cutoff = 3),
-        CurriculumStage(name="Late Game",  state_factory=stage_late_game,  iterations=2000, simulations=100, temperature_cutoff = 6),
-        CurriculumStage(name="Mid Game",   state_factory=stage_mid_game,   iterations=2000, simulations=500, temperature_cutoff = 9),
-        CurriculumStage(name="Early Game", state_factory=stage_early_game, iterations=2000, simulations=500, temperature_cutoff = 12),
-        CurriculumStage(name="Full Game",  state_factory=stage_full_game,  iterations=2000, simulations=500, temperature_cutoff = 15),
+        CurriculumStage(name="End Game",   state_factory=stage_end_game,   iterations=2000, simulations=500, temperature_cutoff = 3),
+        CurriculumStage(name="Late Game",  state_factory=stage_late_game,  iterations=2000, simulations=500, temperature_cutoff = 6),
+        CurriculumStage(name="Mid Game",   state_factory=stage_mid_game,   iterations=2000, simulations=1000, temperature_cutoff = 9),
+        CurriculumStage(name="Early Game", state_factory=stage_early_game, iterations=2000, simulations=1000, temperature_cutoff = 12),
+        CurriculumStage(name="Full Game",  state_factory=stage_full_game,  iterations=2000, simulations=1000, temperature_cutoff = 15),
+        CurriculumStage(name="Deep Game",  state_factory=stage_full_game,  iterations=500, simulations=5000, temperature_cutoff = 18),
     ]
 
     # Apply overrides
