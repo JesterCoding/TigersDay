@@ -18,7 +18,10 @@ from ai.neural import AlphaTiger, load_checkpoint
 
 
 app = FastAPI()
-ai_model = None
+
+ai_model_british = None
+ai_model_mysore = None
+
 mcts_sims = 500
 match_mode = "human_vs_ai"
 human_player_side = "british"
@@ -47,7 +50,11 @@ def _resolve_luck(state: GameState) -> GameState:
 def _ai_move(state: GameState) -> GameState:
     """Runs MCTS and applies the best move, then resolves any luck."""
     print("\n*** AI IS THINKING ***")
-    mcts = MCTS(ai_model, simulations=mcts_sims)
+    
+    current_side = str(WHO_TO_MOVE[state.to_move]).lower()
+    active_model = ai_model_british if "british" in current_side else ai_model_mysore
+    
+    mcts = MCTS(active_model, simulations=mcts_sims, depsilon=0)
     root = mcts.search(state)
 
     move_idx_dict = {}
@@ -57,7 +64,7 @@ def _ai_move(state: GameState) -> GameState:
             most_visits = child.visit_count
             best_move = move
         if child.visit_count/mcts_sims >= threshold:
-            move_idx_dict[move] = child.visit_count/mcts_sims
+            move_idx_dict[move] = (child.visit_count/mcts_sims, child.prior)
 
     mask = get_legal_moves(state)
 
@@ -70,7 +77,7 @@ def _ai_move(state: GameState) -> GameState:
     print("---------------------------")
     for move in move_idx_dict:
         print_legal_move(mask, move)
-        print(f"Prior: {move_idx_dict[move]}")
+        print(f"(Visit Count, Prior): {move_idx_dict[move]}")
     print("---------------------------")    
 
     state = get_next_state(state, best_move)
@@ -178,7 +185,19 @@ if __name__ == "__main__":
         "--ckpt",
         type=str,
         default="ai/models/alphatigerv8.pt",
-        help="Path to the AlphaTiger checkpoint file",
+        help="Path to the default AlphaTiger checkpoint file",
+    )
+    parser.add_argument(
+        "--ckpt_british",
+        type=str,
+        default=None,
+        help="Path to the checkpoint file specifically for the British AI (overrides --ckpt)",
+    )
+    parser.add_argument(
+        "--ckpt_mysore",
+        type=str,
+        default=None,
+        help="Path to the checkpoint file specifically for the Mysore AI (overrides --ckpt)",
     )
     parser.add_argument(
         "--sims",
@@ -226,19 +245,34 @@ if __name__ == "__main__":
 
     if match_mode != "human":
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        ai_model = AlphaTiger().to(device)
+        
+        def load_ai(ckpt_path):
+            model = AlphaTiger().to(device)
+            if os.path.exists(ckpt_path):
+                load_checkpoint(model, None, ckpt_path)
+                model.eval()
+                print(f"✅ Loaded model from {ckpt_path} onto {device}")
+            else:
+                print(f"⚠️  Checkpoint '{ckpt_path}' not found. AI will play with uninitialised weights.")
+            return model
 
-        if os.path.exists(args.ckpt):
-            load_checkpoint(ai_model, None, args.ckpt)
-            ai_model.eval()
-            print(f"✅ Loaded model from {args.ckpt} onto {device}")
+        # Determine which checkpoint to use for each side
+        path_british = args.ckpt_british if args.ckpt_british else args.ckpt
+        path_mysore = args.ckpt_mysore if args.ckpt_mysore else args.ckpt
+
+        print("Initializing British AI...")
+        ai_model_british = load_ai(path_british)
+
+        # Optimize memory: if they point to the same path, just reference the same model object
+        if path_british == path_mysore:
+            print("Initializing Mysore AI... (Mirroring British AI model)")
+            ai_model_mysore = ai_model_british
         else:
-            print(
-                f"⚠️  Checkpoint '{args.ckpt}' not found. "
-                "AI will play with uninitialised weights."
-            )
+            print("Initializing Mysore AI...")
+            ai_model_mysore = load_ai(path_mysore)
+            
     else:
-        print("ℹ️  Running in human-vs-human mode — AI model not loaded.")
+        print("ℹ️  Running in human-vs-human mode — AI models not loaded.")
 
     print(f"🚀 Starting server → http://localhost:{args.port}")
     print(f"   Mode : {match_mode}")
