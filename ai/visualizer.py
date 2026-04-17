@@ -107,7 +107,7 @@ def play_match(checkpoint_path: str, simulations: int, mode: str, human_side: st
                     
             print(f"AI prior: {best_child.prior:.4f}")
             print(f"AI eval: {root.eval:+.3f}")
-            print(f"(Visits: {most_visits}/{simulations})")
+            print(f"(Visits: {most_visits}/{root.visit_count})")
             
             print(f"\nAI played:")
             Engine.print_legal_moves(np.arange(MOVE_VECTOR_LENGTH) == best_move)
