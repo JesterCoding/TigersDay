@@ -55,7 +55,7 @@ class TrainerConfig:
 
     # ── Training ──────────────────────────────────────────────────────────────
     # How many gradient steps to take after each self-play game.
-    train_steps_per_iter: int = 5
+    train_steps_per_iter: int = 1
 
     # ── MCTS ──────────────────────────────────────────────────────────────────
     puct: float = 1.5
@@ -373,8 +373,6 @@ def setup_training_run(description: str):
     parser.add_argument("--resume", type=str, help="Path to checkpoint .pt file")
     parser.add_argument("--sims", type=int, default=None, help="Override MCTS simulations for all stages")
     parser.add_argument("--iters", type=int, default=None, help="Override games per stage for all stages")
-    parser.add_argument("--batch_size", type=int, default=256, help="Training batch size (default: 256)")
-    parser.add_argument("--save_every", type=int, default=25, help="Save a checkpoint every N iterations")
     args = parser.parse_args()
 
     curriculum = [
@@ -394,14 +392,7 @@ def setup_training_run(description: str):
         for stage in curriculum:
             stage.iterations = args.iters
 
-    config = TrainerConfig(
-        buffer_size=50_000,
-        batch_size=args.batch_size,
-        min_buffer_size=1_000,
-        train_steps_per_iter=5,
-        save_every=args.save_every,
-        checkpoint_dir="checkpoints",
-    )
+    config = TrainerConfig()
 
     return args, curriculum, config
 
