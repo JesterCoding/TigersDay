@@ -62,7 +62,7 @@ class TrainerConfig:
 
     # ── Checkpointing ─────────────────────────────────────────────────────────
     checkpoint_dir: str = "checkpoints"
-    save_every: int = 10                   # save a checkpoint every N global iters
+    save_every: int = 100                   # save a checkpoint every N global iters
 
 
 # ─── Replay buffer ────────────────────────────────────────────────────────────
