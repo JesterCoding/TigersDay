@@ -18,7 +18,8 @@ class Node:
     @property
     def eval(self):
         if self.visit_count == 0:
-            return 0.0
+            return self.parent.eval
+            # assume unplayed nodes are as good as parent
         return self.value_sum / self.visit_count
     
     @property
