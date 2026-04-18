@@ -64,20 +64,17 @@ def _ai_move(state: GameState) -> GameState:
             most_visits = child.visit_count
             best_move = move
         if child.visit_count/mcts_sims >= threshold:
-            move_idx_dict[move] = (child.visit_count/mcts_sims, child.prior)
-
-    mask = get_legal_moves(state)
+            move_idx_dict[move] = (child.visit_count/mcts_sims, round(float(child.prior),3))
 
     print("---------------------------")
-    print(f"AI eval: {root.eval:+.3f} | Best Move Id: {best_move}")
-    print_legal_move(mask, best_move)
+    print(f"AI eval: {root.eval:+.3f}")
+    print_legal_moves(np.arange(MOVE_VECTOR_LENGTH) == best_move)
 
     print("---------------------------")
-    print(f"Moves above threshold value of {threshold}.")
-    print("---------------------------")
+    print(f"Moves above threshold of {threshold}")
     for move in move_idx_dict:
-        print_legal_move(mask, move)
-        print(f"(Visit Count, Prior): {move_idx_dict[move]}")
+        print_legal_moves(np.arange(MOVE_VECTOR_LENGTH) == move)
+        print(f"Visit Count, Prior: {move_idx_dict[move]}")
     print("---------------------------")    
 
     state = get_next_state(state, best_move)

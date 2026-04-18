@@ -24,7 +24,7 @@ def _resolve_luck_verbose(state: GameState):
         print(state)
     return state, luck_trajectory
 
-def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", human_side: str = "british"):
+def play_match(checkpoint_path: str, simulations: int, mode: str, human_side: str):
     """Loads a checkpoint and plays a match (AI vs AI or Human vs AI)."""
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -107,7 +107,7 @@ def play_match(checkpoint_path: str, simulations: int = 500, mode: str = "ai", h
                     
             print(f"AI prior: {best_child.prior:.4f}")
             print(f"AI eval: {root.eval:+.3f}")
-            print(f"(Visits: {most_visits}/{simulations})")
+            print(f"(Visits: {most_visits}/{root.visit_count})")
             
             print(f"\nAI played:")
             Engine.print_legal_moves(np.arange(MOVE_VECTOR_LENGTH) == best_move)
@@ -140,8 +140,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--sims", 
         type=int, 
-        default=500, 
-        help="Number of MCTS simulations for the AI (default: 500)"
+        default=400, 
+        help="Number of MCTS simulations for the AI"
     )
     parser.add_argument(
         "--mode", 

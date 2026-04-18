@@ -55,14 +55,14 @@ class TrainerConfig:
 
     # ── Training ──────────────────────────────────────────────────────────────
     # How many gradient steps to take after each self-play game.
-    train_steps_per_iter: int = 5
+    train_steps_per_iter: int = 1
 
     # ── MCTS ──────────────────────────────────────────────────────────────────
     puct: float = 1.5
 
     # ── Checkpointing ─────────────────────────────────────────────────────────
     checkpoint_dir: str = "checkpoints"
-    save_every: int = 10                   # save a checkpoint every N global iters
+    save_every: int = 100                   # save a checkpoint every N global iters
 
 
 # ─── Replay buffer ────────────────────────────────────────────────────────────
@@ -373,16 +373,15 @@ def setup_training_run(description: str):
     parser.add_argument("--resume", type=str, help="Path to checkpoint .pt file")
     parser.add_argument("--sims", type=int, default=None, help="Override MCTS simulations for all stages")
     parser.add_argument("--iters", type=int, default=None, help="Override games per stage for all stages")
-    parser.add_argument("--batch_size", type=int, default=256, help="Training batch size (default: 256)")
-    parser.add_argument("--save_every", type=int, default=25, help="Save a checkpoint every N iterations")
     args = parser.parse_args()
 
     curriculum = [
-        CurriculumStage(name="End Game",   state_factory=stage_end_game,   iterations=2000, simulations=100, temperature_cutoff = 3),
-        CurriculumStage(name="Late Game",  state_factory=stage_late_game,  iterations=2000, simulations=100, temperature_cutoff = 6),
-        CurriculumStage(name="Mid Game",   state_factory=stage_mid_game,   iterations=2000, simulations=500, temperature_cutoff = 9),
-        CurriculumStage(name="Early Game", state_factory=stage_early_game, iterations=2000, simulations=500, temperature_cutoff = 12),
-        CurriculumStage(name="Full Game",  state_factory=stage_full_game,  iterations=2000, simulations=500, temperature_cutoff = 15),
+        CurriculumStage(name="End Game",   state_factory=stage_end_game,   iterations=5000, simulations=400, temperature_cutoff = 3),
+        CurriculumStage(name="Late Game",  state_factory=stage_late_game,  iterations=5000, simulations=400, temperature_cutoff = 6),
+        CurriculumStage(name="Mid Game",   state_factory=stage_mid_game,   iterations=5000, simulations=800, temperature_cutoff = 9),
+        CurriculumStage(name="Early Game", state_factory=stage_early_game, iterations=5000, simulations=800, temperature_cutoff = 12),
+        CurriculumStage(name="Full Game",  state_factory=stage_full_game,  iterations=5000, simulations=800, temperature_cutoff = 15),
+        CurriculumStage(name="Deep Game",  state_factory=stage_full_game,  iterations=1000, simulations=4000, temperature_cutoff = 18),
     ]
 
     # Apply overrides
@@ -393,14 +392,7 @@ def setup_training_run(description: str):
         for stage in curriculum:
             stage.iterations = args.iters
 
-    config = TrainerConfig(
-        buffer_size=50_000,
-        batch_size=args.batch_size,
-        min_buffer_size=1_000,
-        train_steps_per_iter=5,
-        save_every=args.save_every,
-        checkpoint_dir="checkpoints",
-    )
+    config = TrainerConfig()
 
     return args, curriculum, config
 

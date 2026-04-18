@@ -54,14 +54,26 @@ class MCTS:
         self.root = None
 
     def search(self, root_state):
+        # only call search on decision nodes
+
         if self.root is None:
             self.root = Node(root_state.copy())
 
         # lazy generate dirichlet root noise
         noise_dict = None
 
-        for _ in range(self.simulations):
+        # early stopping
+        warmup = self.simulations // 5
+        stop_threshold = 0.9
+
+        for current_sim in range(self.simulations):
             node = self.root
+
+            if current_sim > warmup:
+                most_visit = max(child.visit_count for child in self.root.children.values())
+                if most_visit / self.root.visit_count > stop_threshold:
+                    return self.root
+                # stop early if move is obvious
 
             while node.is_expanded:
                 # luck is slippery
