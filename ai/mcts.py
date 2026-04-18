@@ -63,7 +63,7 @@ class MCTS:
         noise_dict = None
 
         # early stopping
-        warmup = self.simulations / 5
+        warmup = self.simulations // 5
         stop_threshold = 0.9
 
         for current_sim in range(self.simulations):
