@@ -37,15 +37,6 @@ class AlphaTiger(nn.Module):
         x = torch.tensor(state.vector, dtype=torch.float32, device=device).unsqueeze(0)
         value, policy_logits = self.forward(x)
         return value.item(), policy_logits.squeeze(0).cpu().numpy()
-
-    """
-        if device.type == 'cuda':
-            # half precision on gpu
-            with torch.autocast(device_type='cuda', dtype=torch.float16):
-                value, policy_logits = self.forward(x)
-        else:
-            value, policy_logits = self.forward(x)
-    """
     
 def save_checkpoint(model, optimizer, iteration, path):
     torch.save({
