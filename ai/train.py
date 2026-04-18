@@ -376,12 +376,12 @@ def setup_training_run(description: str):
     args = parser.parse_args()
 
     curriculum = [
-        CurriculumStage(name="End Game",   state_factory=stage_end_game,   iterations=2000, simulations=400, temperature_cutoff = 3),
-        CurriculumStage(name="Late Game",  state_factory=stage_late_game,  iterations=2000, simulations=400, temperature_cutoff = 6),
-        CurriculumStage(name="Mid Game",   state_factory=stage_mid_game,   iterations=2000, simulations=800, temperature_cutoff = 9),
-        CurriculumStage(name="Early Game", state_factory=stage_early_game, iterations=2000, simulations=800, temperature_cutoff = 12),
-        CurriculumStage(name="Full Game",  state_factory=stage_full_game,  iterations=2000, simulations=800, temperature_cutoff = 15),
-        CurriculumStage(name="Deep Game",  state_factory=stage_full_game,  iterations=500, simulations=4000, temperature_cutoff = 18),
+        CurriculumStage(name="End Game",   state_factory=stage_end_game,   iterations=5000, simulations=400, temperature_cutoff = 3),
+        CurriculumStage(name="Late Game",  state_factory=stage_late_game,  iterations=5000, simulations=400, temperature_cutoff = 6),
+        CurriculumStage(name="Mid Game",   state_factory=stage_mid_game,   iterations=5000, simulations=800, temperature_cutoff = 9),
+        CurriculumStage(name="Early Game", state_factory=stage_early_game, iterations=5000, simulations=800, temperature_cutoff = 12),
+        CurriculumStage(name="Full Game",  state_factory=stage_full_game,  iterations=5000, simulations=800, temperature_cutoff = 15),
+        CurriculumStage(name="Deep Game",  state_factory=stage_full_game,  iterations=1000, simulations=4000, temperature_cutoff = 18),
     ]
 
     # Apply overrides
