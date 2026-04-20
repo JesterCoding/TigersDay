@@ -43,3 +43,5 @@ __pycache__/
 *.pyc
 .venv
 venv
+
+/arena_log.txt
