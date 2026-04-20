@@ -105,6 +105,7 @@ def play_match(ckpt_mysore: str, ckpt_british: str, sims_mysore: int, sims_briti
             print("\n🤝 AIs agree on the best move.")
 
         # 5. The actual player's AI makes the move
+
         if current_player == 'Mysore':
             best_move = move_m
             best_child = child_m
@@ -116,6 +117,8 @@ def play_match(ckpt_mysore: str, ckpt_british: str, sims_mysore: int, sims_briti
             
         print(f"\n{current_player} AI executes:")
         Engine.print_legal_moves(np.arange(MOVE_VECTOR_LENGTH) == best_move)
+        
+        assert best_child is not None
         print(f"prior: {best_child.prior:.3f} | eval: {active_eval:+.3f}")
             
         # 6. Execute move and resolve luck
