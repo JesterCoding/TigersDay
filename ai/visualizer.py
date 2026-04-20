@@ -147,8 +147,8 @@ if __name__ == "__main__":
     
     parser.add_argument("--ckpt_mysore", type=str, required=True, help="Path to Mysore AI checkpoint")
     parser.add_argument("--ckpt_british", type=str, required=True, help="Path to British AI checkpoint")
-    parser.add_argument("--sims_mysore", type=int, default=400, help="Number of MCTS simulations for Mysore AI")
-    parser.add_argument("--sims_british", type=int, default=400, help="Number of MCTS simulations for British AI")
+    parser.add_argument("--sims_mysore", type=int, default=DEFAULT_SIMS, help="Number of MCTS simulations for Mysore AI")
+    parser.add_argument("--sims_british", type=int, default=DEFAULT_SIMS, help="Number of MCTS simulations for British AI")
     
     args = parser.parse_args()
     play_match(args.ckpt_mysore, args.ckpt_british, args.sims_mysore, args.sims_british)
