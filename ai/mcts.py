@@ -149,6 +149,11 @@ class MCTS:
         
         current_node = self.root.children[action]
 
+        if current_node.state is None:
+            # drop subtree if unexpanded
+            self.root = None
+            return
+
         for idx in luck_trajectory:
             if idx in current_node.children:
                 current_node = current_node.children[idx]
