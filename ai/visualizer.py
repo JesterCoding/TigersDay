@@ -1,3 +1,4 @@
+import math
 import os
 import random
 import torch
@@ -15,14 +16,16 @@ from ai.train import *
 def _resolve_luck_verbose(state: GameState):
     """Resolves luck and prints what happened."""
     luck_trajectory = []
+    luck_branches = []
     while state.is_luck:
         outcomes = Updater.get_luck_outcomes(state)
+        luck_branches.append(len(outcomes))
         idx = random.randrange(len(outcomes))
         state = outcomes[idx]
         luck_trajectory.append(idx)
-        print(f"🎲 Luck resolved! Outcome index: {idx}")
+        print(f"🎲 Luck resolved! Outcome index: {idx} of {len(outcomes)}")
         print(state)
-    return state, luck_trajectory
+    return state, luck_trajectory, luck_branches
 
 def play_match(checkpoint_path: str, simulations: int, mode: str, human_side: str):
     """Loads a checkpoint and plays a match (AI vs AI or Human vs AI)."""
@@ -41,12 +44,15 @@ def play_match(checkpoint_path: str, simulations: int, mode: str, human_side: st
     state = GameState()
     state.default_setup()
     
-    state, _ = _resolve_luck_verbose(state)
+    state, _ , _ = _resolve_luck_verbose(state)
     
     mcts = MCTS(model, simulations=simulations, depsilon = 0)
     # turn off dirichlet noise
 
     move_num = 1
+
+    luck_branching_factors = []
+    decision_branching_factors = []
     
     match_title = "AI vs AI" if mode == "ai" else f"Human ({human_side.capitalize()}) vs AI"
     print(f"=== STARTING MATCH: {match_title} ===")
@@ -57,6 +63,8 @@ def play_match(checkpoint_path: str, simulations: int, mode: str, human_side: st
         print("-" * 40)
         print(f"MOVE {move_num} | Turn: {state.turn} | To Move: {current_player}")
         print(state)
+
+        decision_branching_factors.append(int(np.sum(Engine.get_legal_moves(state))))
         
         is_human_turn = False
         if mode == "human":
@@ -69,7 +77,7 @@ def play_match(checkpoint_path: str, simulations: int, mode: str, human_side: st
             legal_mask = Engine.get_legal_moves(state)
             valid_moves = np.where(legal_mask)[0]
             
-            print("Legal Moves:")
+            print(f"{decision_branching_factors[-1]} Legal Moves:")
             Engine.print_legal_moves(legal_mask)
             
             while True:
@@ -92,7 +100,7 @@ def play_match(checkpoint_path: str, simulations: int, mode: str, human_side: st
             Engine.print_legal_moves(np.arange(MOVE_VECTOR_LENGTH) == best_move)
             
         else:
-            print("\n*** AI IS THINKING ***")
+            print("\n*** AI IS PLAYING ***")
             root = mcts.search(state)
             
             best_move = None
@@ -105,16 +113,14 @@ def play_match(checkpoint_path: str, simulations: int, mode: str, human_side: st
                     best_child = child_node
                     best_move = move
                     
-            print(f"AI prior: {best_child.prior:.4f}")
-            print(f"AI eval: {root.eval:+.3f}")
-            print(f"(Visits: {most_visits}/{root.visit_count})")
-            
-            print(f"\nAI played:")
             Engine.print_legal_moves(np.arange(MOVE_VECTOR_LENGTH) == best_move)
+            print(f"prior: {best_child.prior:.3f} | eval: {root.eval:+.3f}")
+            print(f"(Visits: {most_visits}/{root.visit_count})")
             
         state = Updater.get_next_state(state, best_move)
         
-        state, luck_history = _resolve_luck_verbose(state)
+        state, luck_history, luck_branches = _resolve_luck_verbose(state)
+        luck_branching_factors.extend(luck_branches)
 
         mcts.update_root(best_move, luck_history)
         
@@ -127,6 +133,10 @@ def play_match(checkpoint_path: str, simulations: int, mode: str, human_side: st
         print("Winner: Mysore!")
     else: 
         print("Winner: British!")
+    print("=" * 40)
+    print(f"Game Tree Complexity: {math.prod(decision_branching_factors)}")
+    print(f"Average Choices per Turn: {np.mean(decision_branching_factors):.2f}")
+    print(f"Luck happened {len(luck_branching_factors)} times with {np.prod(luck_branching_factors)} Possibilities")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Play against AlphaTiger or watch it play itself.")

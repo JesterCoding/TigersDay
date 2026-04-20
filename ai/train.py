@@ -122,22 +122,20 @@ def self_play_game(
     mcts: MCTS,
     state_factory: Callable[[], GameState],
     temperature: float,
-    temperature_cutoff: int,
-) -> List[Tuple[np.ndarray, np.ndarray, np.float32]]:
+    temperature_cutoff: int):
     """
     Play one game via MCTS self-play from `state_factory()`.
 
     Returns a list of training samples:  (state_vector, policy_target, outcome)
-    where outcome is +1 (Mysore wins) or −1 (British wins) from the perspective
-    used throughout the codebase.
+    where outcome is -1 for Mysore win and +1 for British win absolutely.
 
-    Only decision states (non-luck) are recorded — luck resolutions have no
+    Only decision states are recorded — luck resolutions have no
     learnable policy, so they are skipped.
     """
     state = state_factory()
     state, _ = _resolve_luck(state)
 
-    history: List[Tuple[np.ndarray, np.ndarray]] = []
+    history: List[Tuple[np.ndarray, np.ndarray, np.ndarray]] = []
     move_num = 0
 
     while True:
@@ -149,9 +147,10 @@ def self_play_game(
 
         root = mcts.search(state)
         policy = _get_policy_target(root, temp)
+        legal_mask = Engine.get_legal_moves(state)
 
         # Record this decision point
-        history.append((state.vector.copy(), policy))
+        history.append((state.vector.copy(), policy, legal_mask))
 
         # Sample a move and advance the state
         move = int(np.random.choice(MOVE_VECTOR_LENGTH, p=policy))
@@ -162,7 +161,7 @@ def self_play_game(
         move_num += 1
 
     winner = Updater.get_state_winner(state)
-    return [(sv, pt, np.float32(winner)) for sv, pt in history]
+    return [(sv, pt, lm, np.float32(winner)) for sv, pt, lm in history]
 
 
 # ─── Training step ────────────────────────────────────────────────────────────
@@ -174,18 +173,19 @@ def train_step(
     device: torch.device
 ) -> Tuple[float, float, float]:
     """One gradient update. Returns (total, value, policy) losses."""
-    states, policies, values = zip(*batch)
+    states, policies, masks, values = zip(*batch)
 
     state_t  = torch.tensor(np.array(states),   dtype=torch.float32, device=device)
     policy_t = torch.tensor(np.array(policies), dtype=torch.float32, device=device)
     value_t  = torch.tensor(np.array(values),   dtype=torch.float32, device=device).unsqueeze(1)
+    mask_t   = torch.tensor(np.array(masks),    dtype=torch.bool,    device=device)
 
     pred_value, pred_logits = model(state_t)
+    pred_logits = pred_logits.masked_fill(~mask_t, -1e9)
 
-    value_loss  = nn.MSELoss()(pred_value, value_t)
-    # CrossEntropyLoss expects raw logits and a soft target — use KL-style loss
     log_probs   = torch.log_softmax(pred_logits, dim=-1)
     policy_loss = -(policy_t * log_probs).sum(dim=-1).mean()
+    value_loss  = nn.MSELoss()(pred_value, value_t)
 
     loss = value_loss + policy_loss
 
