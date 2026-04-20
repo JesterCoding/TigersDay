@@ -22,7 +22,7 @@ app = FastAPI()
 ai_model_british = None
 ai_model_mysore = None
 
-mcts_sims = 500
+mcts_sims = DEFAULT_SIMS
 match_mode = "human_vs_ai"
 human_player_side = "british"
 threshold = 0.1
@@ -181,7 +181,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ckpt",
         type=str,
-        default="ai/models/alphatigerv8.pt",
+        default=DEFAULT_MODEL,
         help="Path to the default AlphaTiger checkpoint file",
     )
     parser.add_argument(
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--sims",
         type=int,
-        default=500,
+        default=DEFAULT_SIMS,
         help="Number of MCTS simulations per move (default: 500)",
     )
     parser.add_argument(

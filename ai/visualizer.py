@@ -144,13 +144,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ckpt", 
         type=str, 
-        default="ai/models/alphatigerv8.pt", 
+        default=DEFAULT_MODEL, 
         help="Path to the model checkpoint file"
     )
     parser.add_argument(
         "--sims", 
         type=int, 
-        default=400, 
+        default=DEFAULT_SIMS, 
         help="Number of MCTS simulations for the AI"
     )
     parser.add_argument(
