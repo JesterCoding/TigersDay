@@ -41,7 +41,7 @@ def get_best_move(root):
             
     return best_move, best_child
 
-def play_match(ckpt_mysore: str, ckpt_british: str, simulations: int):
+def play_match(ckpt_mysore: str, ckpt_british: str, sims_mysore: int, sims_british: int):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     # 1. Load both models separately
@@ -65,8 +65,8 @@ def play_match(ckpt_mysore: str, ckpt_british: str, simulations: int):
     state, _ , _ = _resolve_luck_verbose(state)
     
     # 2. Spin up two separate MCTS brains
-    mcts_mysore = MCTS(model_mysore, simulations=simulations, depsilon=0)
-    mcts_british = MCTS(model_british, simulations=simulations, depsilon=0)
+    mcts_mysore = MCTS(model_mysore, simulations=sims_mysore, depsilon=0)
+    mcts_british = MCTS(model_british, simulations=sims_british, depsilon=0)
 
     move_num = 1
     luck_branching_factors = []
@@ -147,7 +147,8 @@ if __name__ == "__main__":
     
     parser.add_argument("--ckpt_mysore", type=str, required=True, help="Path to Mysore AI checkpoint")
     parser.add_argument("--ckpt_british", type=str, required=True, help="Path to British AI checkpoint")
-    parser.add_argument("--sims", type=int, default=400, help="Number of MCTS simulations")
+    parser.add_argument("--sims_mysore", type=int, default=400, help="Number of MCTS simulations for Mysore AI")
+    parser.add_argument("--sims_british", type=int, default=400, help="Number of MCTS simulations for British AI")
     
     args = parser.parse_args()
-    play_match(args.ckpt_mysore, args.ckpt_british, args.sims)
+    play_match(args.ckpt_mysore, args.ckpt_british, args.sims_mysore, args.sims_british)

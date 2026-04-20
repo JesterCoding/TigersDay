@@ -63,8 +63,8 @@ def _ai_move(state: GameState) -> GameState:
         if child.visit_count > most_visits:
             most_visits = child.visit_count
             best_move = move
-        if child.visit_count/mcts_sims >= threshold:
-            move_idx_dict[move] = (child.visit_count/mcts_sims, round(float(child.prior),3))
+        if child.visit_count/mcts.root.visit_count >= threshold:
+            move_idx_dict[move] = (round(child.visit_count/mcts.root.visit_count, 3),round(float(child.prior),3))
 
     print("---------------------------")
     print(f"AI eval: {root.eval:+.3f}")
