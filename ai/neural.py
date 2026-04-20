@@ -17,6 +17,7 @@ class AlphaTiger(nn.Module):
         self.policy_fc1 = nn.Linear(hidden_size, hidden_size)
         self.policy_fc2 = nn.Linear(hidden_size, output_size)
 
+    @torch.compile
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
