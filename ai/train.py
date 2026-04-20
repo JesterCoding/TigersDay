@@ -173,7 +173,7 @@ def train_step(
     device: torch.device
 ) -> Tuple[float, float, float]:
     """One gradient update. Returns (total, value, policy) losses."""
-    states, policies, values, masks = zip(*batch)
+    states, policies, masks, values = zip(*batch)
 
     state_t  = torch.tensor(np.array(states),   dtype=torch.float32, device=device)
     policy_t = torch.tensor(np.array(policies), dtype=torch.float32, device=device)
@@ -181,7 +181,7 @@ def train_step(
     mask_t   = torch.tensor(np.array(masks),    dtype=torch.bool,    device=device)
 
     pred_value, pred_logits = model(state_t)
-    pred_logits = pred_logits.masked_fill(~mask_t, -np.inf)
+    pred_logits = pred_logits.masked_fill(~mask_t, -1e9)
 
     log_probs   = torch.log_softmax(pred_logits, dim=-1)
     policy_loss = -(policy_t * log_probs).sum(dim=-1).mean()
