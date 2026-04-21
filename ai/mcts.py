@@ -1,5 +1,6 @@
 import numpy as np
 import random
+from game.constants import *
 import game.updater as Updater
 import game.engine as Engine
 
@@ -163,3 +164,20 @@ class MCTS:
             
         self.root = current_node
         self.root.parent = None
+
+    def find_move(self, state, temperature = 0.0):
+        root = self.search(state)
+        counts = np.zeros(MOVE_VECTOR_LENGTH, dtype=np.float32)
+        for m, child in root.children.items():
+            counts[m] = child.visit_count
+
+        if temperature == 0.0 or counts.sum() == 0:
+            move = int(np.argmax(counts))
+            policy = np.zeros(MOVE_VECTOR_LENGTH, dtype=np.float32)
+            policy[move] = 1.0
+            return move, policy
+
+        counts **= 1.0 / temperature
+        policy = counts / counts.sum()
+        move = int(np.random.choice(MOVE_VECTOR_LENGTH, p=policy))
+        return move, policy

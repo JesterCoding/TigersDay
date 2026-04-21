@@ -28,19 +28,6 @@ def _resolve_luck_log(state: GameState, log_file):
         log_file.write(str(state) + "\n")
     return state, luck_trajectory, luck_branches
 
-def get_best_move(root):
-    """Helper to extract the most visited move from an MCTS root."""
-    best_move = None
-    most_visits = -1
-    best_child = None
-    
-    for move, child in root.children.items():
-        if child.visit_count > most_visits:
-            most_visits = child.visit_count
-            best_child = child
-            best_move = move
-            
-    return best_move, best_child
 
 def play_match(model_mysore, model_british, sims_mysore: int, sims_british: int, log_file) -> int:
     """
@@ -75,17 +62,14 @@ def play_match(model_mysore, model_british, sims_mysore: int, sims_british: int,
         decision_branching_factors.append(int(np.sum(Engine.get_legal_moves(state))))
         
         # BOTH models evaluate the board
-        root_mysore = mcts_mysore.search(state)
-        root_british = mcts_british.search(state)
-        
-        move_m, child_m = get_best_move(root_mysore)
-        move_b, child_b = get_best_move(root_british)
+        move_m, _ = mcts_mysore.find_move(state, temperature = 1.0)
+        move_b, _ = mcts_british.find_move(state, temperature = 1.0)
         
         # Check for disagreement
         if move_m != move_b:
             disagreement_count += 1
             log("\n🚨 AIS DISAGREE ON THE BEST MOVE! 🚨")
-            log(f"--> Mysore AI prefers (Eval: {root_mysore.eval:+.3f}):")
+            log(f"--> Mysore AI prefers (Eval: {mcts_mysore.root.eval:+.3f}):")
             
             # Capture engine prints by temporarily redirecting stdout
             old_stdout = sys.stdout
@@ -93,7 +77,7 @@ def play_match(model_mysore, model_british, sims_mysore: int, sims_british: int,
             Engine.print_legal_moves(np.arange(MOVE_VECTOR_LENGTH) == move_m)
             sys.stdout = old_stdout
             
-            log(f"--> British AI prefers (Eval: {root_british.eval:+.3f}):")
+            log(f"--> British AI prefers (Eval: {mcts_british.root.eval:+.3f}):")
             old_stdout = sys.stdout
             sys.stdout = log_file
             Engine.print_legal_moves(np.arange(MOVE_VECTOR_LENGTH) == move_b)
@@ -105,12 +89,12 @@ def play_match(model_mysore, model_british, sims_mysore: int, sims_british: int,
         # The actual player's AI makes the move
         if current_player == 'Mysore':
             best_move = move_m
-            best_child = child_m
-            active_eval = root_mysore.eval
+            active_eval = mcts_mysore.root.eval
+            active_mcts = mcts_mysore
         else:
             best_move = move_b
-            best_child = child_b
-            active_eval = root_british.eval
+            active_eval = mcts_british.root.eval
+            active_mcts = mcts_british
             
         log(f"\n{current_player} AI executes:")
         old_stdout = sys.stdout
@@ -118,8 +102,7 @@ def play_match(model_mysore, model_british, sims_mysore: int, sims_british: int,
         Engine.print_legal_moves(np.arange(MOVE_VECTOR_LENGTH) == best_move)
         sys.stdout = old_stdout
         
-        assert best_child is not None
-        log(f"prior: {best_child.prior:.3f} | eval: {active_eval:+.3f}")
+        log(f"prior: {active_mcts.root.children[best_move].prior:.3f} | eval: {active_eval:+.3f}")
             
         # Execute move and resolve luck
         state = Updater.get_next_state(state, best_move)

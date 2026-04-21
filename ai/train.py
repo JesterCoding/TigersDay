@@ -18,16 +18,12 @@ from ai.neural import AlphaTiger, load_checkpoint, save_checkpoint
 from game.state import GameState
 
 
-# ─── Data structures ──────────────────────────────────────────────────────────
-
-Sample = Tuple[np.ndarray, np.ndarray, float]  # (state_vector, policy, value)
+Sample = Tuple[np.ndarray, np.ndarray, float]
 
 @dataclass
 class CurriculumStage:
     """
-    One stage of curriculum learning.
-
-    `state_factory` is a zero-argument callable that returns a fresh GameState.
+   `state_factory` is a zero-argument callable that returns a fresh GameState.
     This is the hook for curriculum learning — early stages can return simplified
     or mid-game states so the model learns easier patterns first.
 
@@ -56,16 +52,12 @@ class TrainerConfig:
     # ── Training ──────────────────────────────────────────────────────────────
     # How many gradient steps to take after each self-play game.
     train_steps_per_iter: int = 1
-
-    # ── MCTS ──────────────────────────────────────────────────────────────────
     puct: float = 1.5
 
     # ── Checkpointing ─────────────────────────────────────────────────────────
     checkpoint_dir: str = "checkpoints"
     save_every: int = 100                   # save a checkpoint every N global iters
 
-
-# ─── Replay buffer ────────────────────────────────────────────────────────────
 
 class ReplayBuffer:
     def __init__(self, maxlen: int):
@@ -79,30 +71,6 @@ class ReplayBuffer:
 
     def __len__(self) -> int:
         return len(self.buffer)
-
-
-# ─── Self-play ────────────────────────────────────────────────────────────────
-
-def _get_policy_target(root, temperature: float) -> np.ndarray:
-    """
-    Convert the MCTS visit-count distribution at `root` into a probability vector
-    over the full move space.
-
-    temperature = 1.0  → proportional to visit counts  (exploration)
-    temperature = 0.0  → one-hot at the most-visited child  (exploitation)
-    """
-    counts = np.zeros(MOVE_VECTOR_LENGTH, dtype=np.float32)
-    for move, child in root.children.items():
-        counts[move] = child.visit_count
-
-    if temperature == 0.0 or counts.sum() == 0:
-        best = int(np.argmax(counts))
-        policy = np.zeros(MOVE_VECTOR_LENGTH, dtype=np.float32)
-        policy[best] = 1.0
-        return policy
-
-    counts **= 1.0 / temperature
-    return counts / counts.sum()
 
 
 def _resolve_luck(state: GameState) -> tuple[GameState, list[int]]:
@@ -144,16 +112,13 @@ def self_play_game(
             break
 
         temp = temperature if move_num < temperature_cutoff else 0.0
-
-        root = mcts.search(state)
-        policy = _get_policy_target(root, temp)
+        move, policy = mcts.find_move(state, temp)
         legal_mask = Engine.get_legal_moves(state)
 
         # Record this decision point
         history.append((state.vector.copy(), policy, legal_mask))
 
         # Sample a move and advance the state
-        move = int(np.random.choice(MOVE_VECTOR_LENGTH, p=policy))
         state = Updater.get_next_state(state, move)
         state, luck_history = _resolve_luck(state)
         mcts.update_root(move, luck_history)
@@ -163,8 +128,6 @@ def self_play_game(
     winner = Updater.get_state_winner(state)
     return [(sv, pt, lm, np.float32(winner)) for sv, pt, lm in history]
 
-
-# ─── Training step ────────────────────────────────────────────────────────────
 
 def train_step(
     model: AlphaTiger,
@@ -195,8 +158,6 @@ def train_step(
 
     return loss.item(), value_loss.item(), policy_loss.item()
 
-
-# ─── Main training loop ───────────────────────────────────────────────────────
 
 def train(
     curriculum: List[CurriculumStage],
@@ -287,12 +248,6 @@ def train(
     print(f"\nTraining complete — final model saved to {final_path}")
     return model
 
-
-# ─── Example curriculum ───────────────────────────────────────────────────────
-#
-# Each stage is a plain Python function that returns a GameState.
-# You can layer in complexity however you like — different turns, card setups,
-# board positions, etc.
 
 def stage_full_game() -> GameState:
     """Standard starting position."""
