@@ -45,7 +45,7 @@ def play_match(model_mysore, model_british, sims_mysore: int, sims_british: int,
     mcts_mysore = MCTS(model_mysore, simulations=sims_mysore, depsilon=0)
     mcts_british = MCTS(model_british, simulations=sims_british, depsilon=0)
 
-    move_num = 1
+    move_num = 0
     luck_branching_factors = []
     decision_branching_factors = []
     disagreement_count = 0
@@ -61,9 +61,10 @@ def play_match(model_mysore, model_british, sims_mysore: int, sims_british: int,
 
         decision_branching_factors.append(int(np.sum(Engine.get_legal_moves(state))))
         
-        # BOTH models evaluate the board
-        move_m, _ = mcts_mysore.find_move(state, temperature = 1.0)
-        move_b, _ = mcts_british.find_move(state, temperature = 1.0)
+        # Both models evaluate with variable openings
+        temperature = 1.0 if move_num < 6 else 0.0
+        move_m, _ = mcts_mysore.find_move(state, temperature)
+        move_b, _ = mcts_british.find_move(state, temperature)
         
         # Check for disagreement
         if move_m != move_b:
@@ -123,7 +124,7 @@ def play_match(model_mysore, model_british, sims_mysore: int, sims_british: int,
     else: 
         log("Winner: British!")
     log("=" * 60)
-    log(f"Total Disagreements: {disagreement_count}/{move_num - 1} turns")
+    log(f"Total Disagreements: {disagreement_count}/{move_num} turns")
     if decision_branching_factors:
         log(f"Game Tree Complexity: {math.prod(decision_branching_factors):.2e}")
         log(f"Average Choices per Turn: {np.mean(decision_branching_factors):.2f}")

@@ -55,7 +55,7 @@ class MCTS:
         self.depsilon = depsilon
         self.root = None
 
-    def search(self, root_state):
+    def _search(self, root_state):
         # only call search on decision nodes
 
         if self.root is None:
@@ -166,7 +166,7 @@ class MCTS:
         self.root.parent = None
 
     def find_move(self, state, temperature = 0.0):
-        root = self.search(state)
+        root = self._search(state)
         counts = np.zeros(MOVE_VECTOR_LENGTH, dtype=np.float32)
         for m, child in root.children.items():
             counts[m] = child.visit_count

@@ -55,19 +55,16 @@ def _ai_move(state: GameState) -> GameState:
     active_model = ai_model_british if "british" in current_side else ai_model_mysore
     
     mcts = MCTS(active_model, simulations=mcts_sims, depsilon=0)
-    root = mcts.search(state)
+    best_move, _ = mcts.find_move(state)
 
     move_idx_dict = {}
-    best_move, most_visits = None, 0
-    for move, child in root.children.items():
-        if child.visit_count > most_visits:
-            most_visits = child.visit_count
-            best_move = move
-        if child.visit_count/mcts.root.visit_count >= threshold:
-            move_idx_dict[move] = (round(child.visit_count/mcts.root.visit_count, 3),round(float(child.prior),3))
+    for move, child in mcts.root.children.items():
+        visit_ratio = child.visit_count/mcts.root.visit_count
+        if visit_ratio >= threshold:
+            move_idx_dict[move] = (round(visit_ratio, 3),round(float(child.prior),3))
 
     print("---------------------------")
-    print(f"AI eval: {root.eval:+.3f}")
+    print(f"AI eval: {mcts.root.eval:+.3f}")
     print_legal_moves(np.arange(MOVE_VECTOR_LENGTH) == best_move)
 
     print("---------------------------")
