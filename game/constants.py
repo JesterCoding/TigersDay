@@ -134,3 +134,13 @@ MOVE_VECTOR_LENGTH = BRITISH_MOVES_SPACE + MYSORE_CARDS_SPACE + BRITISH_CARDS_SP
 
 DEFAULT_MODEL = "ai/models/alphatigerv11.pt" 
 DEFAULT_SIMS = 400
+
+MYSORE_CARDS_ABBREV = ["IR", "SM", "FA", "MS", "CR", "ST"]
+BRITISH_CARDS_ABBREV = ["WB", "HL", "RN", "DR", "FM", "PS"]
+NODES_ABBREV = {
+    0: "bom", 1: "hyd", 2: "mad", 3: "srp", 4: "cbt",
+    5: "sat", 6: "rch", 7: "msp", 8: "goa", 9: "dwr",
+    10: "ant", 11: "ctd", 12: "mlr", 13: "blr", 14: "vlr",
+    15: "mhe", 16: "pdc", 17: "erd", 18: "tri", 19: "alw",
+    20: "dng", 21: "rmd", 22: "trv", 23: "cyl", 24: "pna"
+}
