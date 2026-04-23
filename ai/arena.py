@@ -36,6 +36,8 @@ def play_match(model_mysore, model_british, sims_mysore: int, sims_british: int,
     """
     def log(text):
         log_file.write(str(text) + "\n")
+    
+    replay = []
 
     state = GameState()
     state.default_setup()
@@ -98,6 +100,7 @@ def play_match(model_mysore, model_british, sims_mysore: int, sims_british: int,
             active_mcts = mcts_british
             
         log(f"\n{current_player} AI executes:")
+        replay.append(best_move)
         old_stdout = sys.stdout
         sys.stdout = log_file
         Engine.print_legal_moves(np.arange(MOVE_VECTOR_LENGTH) == best_move)
@@ -108,6 +111,7 @@ def play_match(model_mysore, model_british, sims_mysore: int, sims_british: int,
         # Execute move and resolve luck
         state = Updater.get_next_state(state, best_move)
         state, luck_history, luck_branches = _resolve_luck_log(state, log_file)
+        replay.extend(luck_history)
         luck_branching_factors.extend(luck_branches)
 
         # Update BOTH MCTS trees
@@ -119,6 +123,8 @@ def play_match(model_mysore, model_british, sims_mysore: int, sims_british: int,
     winner = Updater.get_state_winner(state)
     log("=" * 60)
     log("MATCH OVER")
+    with open("replay_log.txt", "a", encoding="utf-8") as replay_file:
+        replay_file.write(str(replay) + "\n")
     if winner == -1: 
         log("Winner: Mysore!")
     else: 
@@ -156,6 +162,8 @@ def run_arena(ckpt1_path: str, ckpt2_path: str, sims1: int, sims2: int, games_pe
     print(f"⚔️ ARENA INITIATED: {ckpt1_path} vs {ckpt2_path} ⚔️")
     print(f"Logging match details to: {log_path}")
     print("-" * 50)
+
+    open("replay_log.txt", "w", encoding="utf-8")
 
     with open(log_path, "w", encoding="utf-8") as log_file:
         log_file.write(f"ARENA LOG: {ckpt1_path} vs {ckpt2_path}\n\n")
