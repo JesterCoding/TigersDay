@@ -135,8 +135,27 @@ MOVE_VECTOR_LENGTH = BRITISH_MOVES_SPACE + MYSORE_CARDS_SPACE + BRITISH_CARDS_SP
 DEFAULT_MODEL = "ai/models/alphatigerv11.pt" 
 DEFAULT_SIMS = 400
 
-MYSORE_CARDS_ABBREV = ["IR", "SM", "FA", "MS", "CR", "ST"]
-BRITISH_CARDS_ABBREV = ["WB", "HL", "RN", "DR", "FM", "PS"]
+CARDS_ABBREV = {
+    "Iron Rockets": "IR",
+    "Sepoy Mutiny": "SM",
+    "French Alliance": "FA",
+    "Monsoon": "MS",
+    "Cavalry Raid": "CR",
+    "Sea Trade": "ST",
+    "Wall Breach": "WB",
+    "Highlanders": "HL",
+    "Royal Navy": "RN",
+    "Divide and Rule": "DR",
+    "Force March": "FM",
+    "Princely States": "PS",
+    "Draw Iron Rockets": "IR",
+    "Draw Sepoy Mutiny": "SM",
+    "Draw French Alliance": "FA",
+    "Draw Wall Breach": "WB",
+    "Draw Highlanders": "HL",
+    "Draw Royal Navy": "RN"
+}
+
 NODES_ABBREV = {
     0: "bom", 1: "hyd", 2: "mad", 3: "srp", 4: "cbt",
     5: "sat", 6: "rch", 7: "msp", 8: "goa", 9: "dwr",
