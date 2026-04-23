@@ -2,7 +2,7 @@ import game.updater as Updater
 from game.state import GameState
 from game.constants import *
 
-def parse(replay_log):
+def interpret(replay_log):
     state = GameState()
     state.default_setup()
 
@@ -30,7 +30,7 @@ def parse(replay_log):
         state_history.append(state.vector.copy())
 
     algebraic += "# "
-    if Updater.get_state_winner(state):
+    if Updater.get_state_winner(state) == 1:
         algebraic += "1-0"
     else:
         algebraic += "0-1"
@@ -88,4 +88,4 @@ def notate(state, move):
     return "none"
 
 if __name__ == "__main__":
-    print(parse([78, 186, 2, 776, 10, 147, 485, 80, 132, 941, 3, 442, 483, 0, 74, 444, 911, 0, 1, 461, 958, 64, 131, 939, 0, 31, 439, 483, 0, 74, 186, 2, 785, 9, 461, 957, 1, 3, 440, 909, 0, 102, 461, 958, 70, 128, 938, 1, 56, 186, 2, 911, 31, 437, 779, 1, 51, 442, 934, 0, 87, 461, 958, 86, 461, 958, 31, 439, 573, 15, 437, 781, 1, 46, 124, 958, 58, 186, 2, 934, 1])[0])
+    print(interpret([78, 186, 2, 776, 10, 147, 485, 80, 132, 941, 3, 442, 483, 0, 74, 444, 911, 0, 1, 461, 958, 64, 131, 939, 0, 31, 439, 483, 0, 74, 186, 2, 785, 9, 461, 957, 1, 3, 440, 909, 0, 102, 461, 958, 70, 128, 938, 1, 56, 186, 2, 911, 31, 437, 779, 1, 51, 442, 934, 0, 87, 461, 958, 86, 461, 958, 31, 439, 573, 15, 437, 781, 1, 46, 124, 958, 58, 186, 2, 934, 1])[0])

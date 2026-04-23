@@ -9,6 +9,7 @@ import sys
 import game.engine as Engine
 import game.updater as Updater
 from game.state import GameState
+from game.replay import interpret
 from game.constants import *
 from ai.mcts import MCTS
 from ai.neural import AlphaTiger, load_checkpoint
@@ -125,6 +126,7 @@ def play_match(model_mysore, model_british, sims_mysore: int, sims_british: int,
     log("MATCH OVER")
     with open("replay_log.txt", "a", encoding="utf-8") as replay_file:
         replay_file.write(str(replay) + "\n")
+        replay_file.write(interpret(replay)[0] + "\n")
     if winner == -1: 
         log("Winner: Mysore!")
     else: 
