@@ -485,12 +485,12 @@ function handleServerResponse(data) {
     updateUI(data.ui_state, data.moves);
     setStatus('connected', '⬤ &nbsp;CONNECTED');
 
-    startProgressiveEval(data.state_str);
-
     if (data.winner !== 0) {
         showGameOver(data.winner);
         return;
     }
+
+    startProgressiveEval(data.state_str);
 
     if (currentSideIsAi(data.ui_state)) {
         const delay = players.british === 'ai' && players.mysore === 'ai' ? 800 : 300;
