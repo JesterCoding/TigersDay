@@ -167,7 +167,48 @@ async def play_ai(req: LoadRequest):
         return generate_game_data(state)
     except Exception as e:
         return {"error": str(e)}
+    
+class EvalStepRequest(BaseModel):
+    state_str: str
+    batch_size: int = 400
 
+active_eval_trees = {}
+
+@app.post("/api/eval-step")
+async def eval_step(req: EvalStepRequest):
+    global active_eval_trees
+    
+    if ai_model_british is None and ai_model_mysore is None:
+        return {"eval_score": 0.0, "total_sims": 0}
+
+    state = GameState().read_str(req.state_str)
+    current_side = str(WHO_TO_MOVE[state.to_move]).lower()
+    
+    # Pick the correct model
+    active_model = ai_model_british if "british" in current_side else ai_model_mysore
+    
+    if req.state_str not in active_eval_trees:
+        active_eval_trees.clear()
+
+        mcts_instance = MCTS(active_model, simulations=req.batch_size, depsilon=0)
+        active_eval_trees[req.state_str] = {
+            "mcts": mcts_instance,
+            "total_sims": 0
+        }
+        
+    tree_data = active_eval_trees[req.state_str]
+    mcts = tree_data["mcts"]
+    
+    mcts.simulations = req.batch_size
+    mcts.search(state, stop = False)
+    
+    tree_data["total_sims"] += req.batch_size
+    score = float(mcts.root.eval)
+        
+    return {
+        "eval_score": score,
+        "total_sims": tree_data["total_sims"]
+    }
 
 app.mount("/", StaticFiles(directory="public", html=True), name="public")
 

@@ -55,7 +55,7 @@ class MCTS:
         self.depsilon = depsilon
         self.root = None
 
-    def _search(self, root_state):
+    def search(self, root_state, stop):
         # only call search on decision nodes
 
         if self.root is None:
@@ -65,7 +65,7 @@ class MCTS:
         noise_dict = None
 
         # early stopping
-        warmup = self.simulations // 5
+        warmup = self.simulations // 5 if stop else self.simulations
         stop_threshold = 0.9
 
         for current_sim in range(self.simulations):
@@ -166,7 +166,7 @@ class MCTS:
         self.root.parent = None
 
     def find_move(self, state, temperature = 0.0):
-        root = self._search(state)
+        root = self.search(state, stop = True)
         counts = np.zeros(MOVE_VECTOR_LENGTH, dtype=np.float32)
         for m, child in root.children.items():
             counts[m] = child.visit_count
