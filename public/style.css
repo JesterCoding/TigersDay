@@ -561,10 +561,10 @@ svg#board {
     text-align: center;
     color: white;
     font-family: 'Cinzel', serif;
-    font-size: 1.15rem; /* Increased size (was 0.75rem) */
+    font-size: 1.15rem;
     font-weight: bold;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.9); /* Slightly stronger shadow for readability */
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.9);
+    white-space: nowrap;
     pointer-events: none;
     z-index: 10;
-    /* Removed the transition: left since it no longer moves */
 }

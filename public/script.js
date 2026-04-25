@@ -635,7 +635,6 @@ function setEvalBar(score, depth) {
     const label = document.getElementById('eval-label');
     
     bar.style.width = `${mysorePercentage}%`;
-    label.style.left = `clamp(5%, ${mysorePercentage}%, 95%)`;
     
     const sign = score > 0 ? '+' : '';
     const indicator = depth === 'fast' ? '*' : ''; 
