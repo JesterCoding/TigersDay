@@ -19,13 +19,13 @@ var NODES = {
   Seringapatam:  { x:230, y:480,  owner:'mysore',  armyType:'fort',    key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
   Coimbatore:    { x:305, y:600,  owner:'mysore',  armyType:'fort',    key:true,  coast:false, labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
   Satara:        { x:255, y:128,  owner:'empty',   armyType:'empty',   key:false, coast:false },
-  Poona:         { x:345, y:70,  owner:'empty',   armyType:'empty',   key:false, coast:false },
-  Raichur:        { x:390, y:178,  owner:'empty',   armyType:'empty',   key:false, coast:false },
+  Poona:         { x:345, y:70,   owner:'empty',   armyType:'empty',   key:false, coast:false },
+  Raichur:       { x:390, y:178,  owner:'empty',   armyType:'empty',   key:false, coast:false },
   Masulipatam:   { x:656, y:162,  owner:'empty',   armyType:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
   Goa:           { x: 94, y:262,  owner:'empty',   armyType:'empty',   key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
   Darwar:        { x:232, y:232,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
   Anantapur:     { x:470, y:228,  owner:'empty',   armyType:'empty',   key:false, coast:false },
-  Chitaldoorg:       { x:250, y:350,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
+  Chitaldoorg:   { x:250, y:350,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
   Mangalore:     { x:118, y:398,  owner:'mysore',  armyType:'fort',    key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
   Bangalore:     { x:350, y:400,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
   Vellore:       { x:460, y:340,  owner:'empty',   armyType:'empty',   key:false, coast:false },
@@ -33,8 +33,8 @@ var NODES = {
   Pondicherry:   { x:610, y:446,  owner:'empty',   armyType:'empty',   key:false, coast:true,  labelAnchor:{anchor:'end',   dx:-12, dy:-16} },
   Erode:         { x:405, y:515,  owner:'mysore',  armyType:'fort',    key:false, coast:false },
   Trichy:        { x:506, y:580,  owner:'empty',   armyType:'empty',   key:false, coast:false },
-  Alwaye:        { x:225, y:720,  owner:'mysore',  armyType:'empty',    key:false, coast:false },
-  Dindigul:      { x:415, y:670,  owner:'empty',   armyType:'fort',   key:false, coast:false },
+  Alwaye:        { x:225, y:720,  owner:'mysore',  armyType:'empty',   key:false, coast:false },
+  Dindigul:      { x:415, y:670,  owner:'empty',   armyType:'fort',    key:false, coast:false },
   Ramnad:        { x:415, y:770,  owner:'empty',   armyType:'empty',   key:false, coast:true },
   Travancore:    { x:260, y:830,  owner:'british', armyType:'active',  key:false, coast:true,  labelAnchor:{anchor:'start', dx: 12, dy:-16} },
   Ceylon:        { x:540, y:800,  owner:'empty',   armyType:'empty',   key:false, coast:true  },
@@ -485,6 +485,8 @@ function handleServerResponse(data) {
     updateUI(data.ui_state, data.moves);
     setStatus('connected', '⬤ &nbsp;CONNECTED');
 
+    startProgressiveEval(data.state_str);
+
     if (data.winner !== 0) {
         showGameOver(data.winner);
         return;
@@ -638,12 +640,6 @@ function setEvalBar(score, depth) {
     const sign = score > 0 ? '+' : '';
     const indicator = depth === 'fast' ? '*' : ''; 
     label.innerText = `${sign}${score.toFixed(2)}${indicator}`;
-
-    if (depth === 'deep') {
-        bar.classList.remove('thinking');
-    } else {
-        bar.classList.add('thinking');
-    }
 }
 
 async function fetchEval(stateStr, sims) {
@@ -662,7 +658,6 @@ async function fetchEval(stateStr, sims) {
 }
 
 async function triggerProgressiveEval(stateStr) {
-    document.getElementById('eval-bar-british').classList.add('thinking');
 
     const fastScore = await fetchEval(stateStr, 400);
     
@@ -695,6 +690,71 @@ function toggleEvalBar() {
     }
     
     document.getElementById('settings-menu').classList.add('hidden');
+}
+
+// 1. Updates the CSS horizontal tug-of-war bar
+function setEvalBar(score, totalSims) {
+    const mysorePercentage = ((1 - score) / 2) * 100;
+    const bar = document.getElementById('eval-bar-mysore');
+    const label = document.getElementById('eval-label');
+    
+    if (bar && label) {
+        // Update the width of the green bar
+        bar.style.width = `${mysorePercentage}%`;
+        
+        // Move the label, keeping your clamp so the text doesn't fall off the edges
+        label.style.left = `clamp(5%, ${mysorePercentage}%, 95%)`;
+        
+        // Determine the sign to show (+ for British, nothing for Mysore)
+        const sign = score > 0 ? '+' : '';
+        
+        // Format simulation count nicely (e.g., 4000 -> 4.0k)
+        let simStr = totalSims.toString();
+        if (totalSims >= 1000) {
+            simStr = (totalSims / 1000).toFixed(1) + 'k';
+        }
+        
+        label.innerText = `${sign}${score.toFixed(2)} (${simStr})`;
+    }
+}
+
+let currentEvalLoopState = null;
+
+async function startProgressiveEval(stateStr) {
+    currentEvalLoopState = stateStr;
+    const MAX_SIMS = 1000000; 
+    let currentTotal = 0;
+
+    const mysoreBar = document.getElementById('eval-bar-mysore');
+
+    setEvalBar(0.0, 0);
+
+    while (stateStr === currentBitString && currentTotal < MAX_SIMS) {
+        const batchSize = currentTotal === 0 ? 40 : 400;
+
+        try {
+            const res = await fetch('/api/eval-step', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ state_str: stateStr, batch_size: batchSize })
+            });
+            const data = await res.json();
+            
+            // Abort if board changed
+            if (stateStr !== currentBitString || stateStr !== currentEvalLoopState) {
+                break; 
+            }
+
+            currentTotal = data.total_sims;
+            setEvalBar(data.eval_score, data.total_sims);
+
+            await new Promise(r => setTimeout(r, 50));
+
+        } catch (err) {
+            console.error("Eval bar loop failed:", err);
+            break; 
+        }
+    }
 }
 
 initGame();
