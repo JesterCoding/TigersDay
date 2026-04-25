@@ -10,6 +10,7 @@ const actionBtns = document.getElementById('action-buttons');
 let selectedTerritoryName = null;
 let selectedSource = null;
 let currentBitString = ""; 
+let evalBarEnabled = true;
 
 var NODES = {
   Bombay:        { x:110, y: 74,  owner:'british', armyType:'active',  key:true,  coast:true,  labelAnchor:{anchor:'middle', dx:0,   dy:-24} },
@@ -621,6 +622,79 @@ async function initGame() {
         setStatus('disconnected', '⬤ &nbsp;NOT CONNECTED');
         console.error("Failed to reach server:", err);
     }
+}
+
+function setEvalBar(score, depth) {
+    const clamped = Math.max(-1, Math.min(1, score));
+    
+    const mysorePercentage = ((1 - clamped) / 2) * 100;
+    
+    const bar = document.getElementById('eval-bar-mysore');
+    const label = document.getElementById('eval-label');
+    
+    bar.style.width = `${mysorePercentage}%`;
+    label.style.left = `clamp(5%, ${mysorePercentage}%, 95%)`;
+    
+    const sign = score > 0 ? '+' : '';
+    const indicator = depth === 'fast' ? '*' : ''; 
+    label.innerText = `${sign}${score.toFixed(2)}${indicator}`;
+
+    if (depth === 'deep') {
+        bar.classList.remove('thinking');
+    } else {
+        bar.classList.add('thinking');
+    }
+}
+
+async function fetchEval(stateStr, sims) {
+    try {
+        const res = await fetch('/api/eval', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ state_str: stateStr, sims: sims })
+        });
+        const data = await res.json();
+        return data.eval_score; 
+    } catch (err) {
+        console.error(`Eval fetch failed for ${sims} sims:`, err);
+        return null;
+    }
+}
+
+async function triggerProgressiveEval(stateStr) {
+    document.getElementById('eval-bar-british').classList.add('thinking');
+
+    const fastScore = await fetchEval(stateStr, 400);
+    
+    if (fastScore !== null && stateStr === currentBitString) {
+        setEvalBar(fastScore, 'fast');
+        
+        const deepScore = await fetchEval(stateStr, 4000);
+        
+        if (deepScore !== null && stateStr === currentBitString) {
+            setEvalBar(deepScore, 'deep');
+        }
+    }
+}
+
+function toggleEvalBar() {
+    evalBarEnabled = !evalBarEnabled;
+    const wrapper = document.getElementById('eval-bar-wrapper');
+    const btn = document.getElementById('toggle-eval-btn');
+    
+    if (evalBarEnabled) {
+        wrapper.style.display = ''; 
+        btn.innerText = 'Hide Eval Bar';
+        
+        if (currentBitString) {
+            triggerProgressiveEval(currentBitString);
+        }
+    } else {
+        wrapper.style.display = 'none';
+        btn.innerText = 'Show Eval Bar';
+    }
+    
+    document.getElementById('settings-menu').classList.add('hidden');
 }
 
 initGame();

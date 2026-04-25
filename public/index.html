@@ -17,8 +17,9 @@
     <button id="settings-icon" onclick="toggleSettings()">⚙</button>
     <div id="settings-menu" class="hidden">
         <button onclick="sendReset()">Reset Board</button>
-        <button onclick="sendUndo()">↩ Undo Last Move</button>
-        <button onclick="saveState()">💾 Save Progress</button>
+        <button onclick="sendUndo()"> Undo Last Move</button>
+        <button onclick="saveState()"> Save Progress</button>
+        <button id="toggle-eval-btn" onclick="toggleEvalBar()"> Toggle Eval Bar</button>
     </div>
 </div>
 
@@ -63,6 +64,10 @@
     </div>
 
     <div class="map-card">
+        <div id="eval-bar-wrapper">
+            <div id="eval-bar-mysore"></div>
+            <div id="eval-label">0.00</div>
+        </div>
         <svg id="board" viewBox="0 0 760 880" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <linearGradient id="seaGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8ec4dc"/><stop offset="100%" stop-color="#5a9ab8"/></linearGradient>
