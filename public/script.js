@@ -626,21 +626,6 @@ async function initGame() {
     }
 }
 
-function setEvalBar(score, depth) {
-    const clamped = Math.max(-1, Math.min(1, score));
-    
-    const mysorePercentage = ((1 - clamped) / 2) * 100;
-    
-    const bar = document.getElementById('eval-bar-mysore');
-    const label = document.getElementById('eval-label');
-    
-    bar.style.width = `${mysorePercentage}%`;
-    
-    const sign = score > 0 ? '+' : '';
-    const indicator = depth === 'fast' ? '*' : ''; 
-    label.innerText = `${sign}${score.toFixed(2)}${indicator}`;
-}
-
 async function fetchEval(stateStr, sims) {
     try {
         const res = await fetch('/api/eval', {
@@ -700,14 +685,8 @@ function setEvalBar(score, totalSims) {
     if (bar && label) {
         // Update the width of the green bar
         bar.style.width = `${mysorePercentage}%`;
-        
-        // Move the label, keeping your clamp so the text doesn't fall off the edges
-        label.style.left = `clamp(5%, ${mysorePercentage}%, 95%)`;
-        
-        // Determine the sign to show (+ for British, nothing for Mysore)
+
         const sign = score > 0 ? '+' : '';
-        
-        // Format simulation count nicely (e.g., 4000 -> 4.0k)
         let simStr = totalSims.toString();
         if (totalSims >= 1000) {
             simStr = (totalSims / 1000).toFixed(1) + 'k';
