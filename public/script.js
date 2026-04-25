@@ -705,10 +705,8 @@ async function startProgressiveEval(stateStr) {
 
     const mysoreBar = document.getElementById('eval-bar-mysore');
 
-    setEvalBar(0.0, 0);
-
     while (stateStr === currentBitString && currentTotal < MAX_SIMS) {
-        const batchSize = currentTotal === 0 ? 40 : 400;
+        const batchSize = 400;
 
         try {
             const res = await fetch('/api/eval-step', {
