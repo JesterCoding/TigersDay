@@ -544,6 +544,7 @@ svg#board {
     position: relative;
     overflow: hidden;
     margin-bottom: 0px;
+    box-shadow: 0 0 4px #000a;
 }
 
 #eval-bar-mysore {
@@ -575,7 +576,7 @@ svg#board {
     gap: 4px;
     background: var(--parchment);
     box-shadow: 0 0 0 3px #2a1a08, 0 4px 18px #000a;
-    padding: 8px;
+    padding: 4px;
 }
 
 .engine-line {
