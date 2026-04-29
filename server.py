@@ -1,5 +1,6 @@
 import os
 import random
+from networkx import tree_data
 import torch
 import numpy as np
 import argparse
@@ -11,6 +12,7 @@ from pydantic import BaseModel
 
 from game.engine import *
 from game.updater import *
+from game.replay import notate
 from game.state import GameState
 from game.constants import INDEX_MAP, WHO_TO_MOVE
 from ai.mcts import MCTS
@@ -204,10 +206,21 @@ async def eval_step(req: EvalStepRequest):
     
     tree_data["total_sims"] += req.batch_size
     score = float(mcts.root.eval)
+
+    # Sort children by visit count
+    best_children = sorted(mcts.root.children.items(), key=lambda item: item[1].visit_count, reverse=True)
+    
+    top_moves_data = []
+    for move, node in best_children[:3]:
+        top_moves_data.append({
+            "move_name": notate(state, move),
+            "eval": node.eval
+        })
         
     return {
         "eval_score": score,
-        "total_sims": tree_data["total_sims"]
+        "total_sims": tree_data["total_sims"],
+        "top_moves": top_moves_data
     }
 
 app.mount("/", StaticFiles(directory="public", html=True), name="public")

@@ -568,3 +568,66 @@ svg#board {
     pointer-events: none;
     z-index: 10;
 }
+
+#engine-lines-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+    background: var(--parchment);
+    border: 2px solid var(--border);
+    border-radius: 3px;
+    box-shadow: 0 0 0 3px #2a1a08, 0 4px 18px #000a;
+    padding: 8px;
+}
+
+.engine-line {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background .1s;
+}
+
+.engine-eval-square {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 24px;
+    border-radius: 3px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    font-weight: bold;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.engine-eval-square.mysore-favored {
+    background-color: #2e7a2e; /* Mysore Green */
+    color: #ffffff;
+    border: 1px solid #4a7a2a;
+}
+
+.engine-eval-square.british-favored {
+    background-color: #c0281a; /* British Red */
+    color: #ffffff;
+    border: 1px solid #7a2a2a;
+}
+
+.engine-eval-square.neutral {
+    background-color: var(--ink);
+    color: var(--parchment);
+    border: 1px solid var(--border);
+}
+
+.engine-move {
+    font-family: monospace;
+    font-size: 0.80rem;
+    color: #3a2a10;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
