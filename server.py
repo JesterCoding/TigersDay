@@ -291,36 +291,32 @@ if __name__ == "__main__":
     human_player_side = args.human
     threshold = args.threshold
 
-    if match_mode != "human":
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        
-        def load_ai(ckpt_path):
-            model = AlphaTiger().to(device)
-            if os.path.exists(ckpt_path):
-                load_checkpoint(model, None, ckpt_path)
-                model.eval()
-                print(f"✅ Loaded model from {ckpt_path} onto {device}")
-            else:
-                print(f"⚠️  Checkpoint '{ckpt_path}' not found. AI will play with uninitialised weights.")
-            return model
-
-        # Determine which checkpoint to use for each side
-        path_british = args.ckpt_british if args.ckpt_british else args.ckpt
-        path_mysore = args.ckpt_mysore if args.ckpt_mysore else args.ckpt
-
-        print("Initializing British AI...")
-        ai_model_british = load_ai(path_british)
-
-        # Optimize memory: if they point to the same path, just reference the same model object
-        if path_british == path_mysore:
-            print("Initializing Mysore AI... (Mirroring British AI model)")
-            ai_model_mysore = ai_model_british
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    def load_ai(ckpt_path):
+        model = AlphaTiger().to(device)
+        if os.path.exists(ckpt_path):
+            load_checkpoint(model, None, ckpt_path)
+            model.eval()
+            print(f"✅ Loaded model from {ckpt_path} onto {device}")
         else:
-            print("Initializing Mysore AI...")
-            ai_model_mysore = load_ai(path_mysore)
-            
+            print(f"⚠️  Checkpoint '{ckpt_path}' not found. AI will play with uninitialised weights.")
+        return model
+
+    # Determine which checkpoint to use for each side
+    path_british = args.ckpt_british if args.ckpt_british else args.ckpt
+    path_mysore = args.ckpt_mysore if args.ckpt_mysore else args.ckpt
+
+    print("Initializing British AI...")
+    ai_model_british = load_ai(path_british)
+
+    # Optimize memory: if they point to the same path, just reference the same model object
+    if path_british == path_mysore:
+        print("Initializing Mysore AI... (Mirroring British AI model)")
+        ai_model_mysore = ai_model_british
     else:
-        print("ℹ️  Running in human-vs-human mode — AI models not loaded.")
+        print("Initializing Mysore AI...")
+        ai_model_mysore = load_ai(path_mysore)         
 
     print(f"🚀 Starting server → http://localhost:{args.port}")
     print(f"   Mode : {match_mode}")
