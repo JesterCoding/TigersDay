@@ -7,7 +7,7 @@ from typing import Callable, List, Optional, Tuple
 import argparse
 import numpy as np
 import torch
-import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 
 import game.updater as Updater
@@ -146,9 +146,8 @@ def train_step(
     pred_value, pred_logits = model(state_t)
     pred_logits = pred_logits.masked_fill(~mask_t, -1e9)
 
-    log_probs   = torch.log_softmax(pred_logits, dim=-1)
-    policy_loss = -(policy_t * log_probs).sum(dim=-1).mean()
-    value_loss  = nn.MSELoss()(pred_value, value_t)
+    policy_loss = F.cross_entropy(pred_logits, policy_t)
+    value_loss  = F.mse_loss(pred_value, value_t)
 
     loss = value_loss + policy_loss
 
