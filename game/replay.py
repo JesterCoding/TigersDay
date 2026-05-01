@@ -87,5 +87,70 @@ def notate(state, move):
         offset += size
     return "none"
 
+def parse_replay_log(filepath):
+    """Reads the log file and extracts just the move lists."""
+    games = []
+    with open(filepath, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('['):
+                continue
+            
+            moves = line.split()
+            games.append(moves)        
+    return games
+
+def build_move_tree(games, max_depth=4):
+    """
+    Builds a tree structure tracking how many times each sequence was played.
+    Structure: { 'mad>pdc': {'count': 45, 'next': { 'SM:trv': ... } } }
+    """
+    tree = {}
+    
+    for game in games:
+        current_node = tree
+        
+        # Only look as deep as the max_depth (or the end of a short game)
+        for i in range(min(max_depth, len(game))):
+            move = game[i]
+            
+            if move not in current_node:
+                current_node[move] = {"count": 0, "next": {}}
+            
+            # Increment the count for this specific sequence
+            current_node[move]["count"] += 1
+            
+            # Move down into the next level of the tree
+            current_node = current_node[move]["next"]
+    return tree
+
+def print_tree(tree, total_games, current_depth=1, max_depth=4, indent=""):
+    """Recursively prints the tree sorted by the most popular moves."""
+    
+    # Sort the current branches by count (highest to lowest)
+    sorted_moves = sorted(tree.items(), key=lambda item: item[1]["count"], reverse=True)
+    
+    for move, data in sorted_moves:
+        count = data["count"]
+        percentage = (count / total_games) * 100
+        
+        # Print the move and its stats
+        print(f"{indent}Move {current_depth}: {move} [{count} games, {percentage:.1f}%]")
+        
+        # If we haven't hit our depth limit, dive into the responses
+        if current_depth < max_depth and data["next"]:
+            print_tree(data["next"], count, current_depth + 1, max_depth, indent + "    |-- ")
+
 if __name__ == "__main__":
-    print(interpret([78, 186, 2, 776, 10, 147, 485, 80, 132, 941, 3, 442, 483, 0, 74, 444, 911, 0, 1, 461, 958, 64, 131, 939, 0, 31, 439, 483, 0, 74, 186, 2, 785, 9, 461, 957, 1, 3, 440, 909, 0, 102, 461, 958, 70, 128, 938, 1, 56, 186, 2, 911, 31, 437, 779, 1, 51, 442, 934, 0, 87, 461, 958, 86, 461, 958, 31, 439, 573, 15, 437, 781, 1, 46, 124, 958, 58, 186, 2, 934, 1])[0])
+    filepath = 'replay_log.txt'  # Make sure this is in the same folder as the script
+    
+    games = parse_replay_log(filepath)
+    print(f"Total Games Parsed: {len(games)}\n")
+    print("OPENING RESPONSE TREE:")
+    print("======================")
+    
+    # Set how many moves deep you want to look (4 means looking at the first 4 moves)
+    depth_to_analyze = 4 
+    
+    move_tree = build_move_tree(games, max_depth=depth_to_analyze)
+    print_tree(move_tree, total_games=len(games), max_depth=depth_to_analyze)

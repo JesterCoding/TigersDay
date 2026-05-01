@@ -485,12 +485,12 @@ function handleServerResponse(data) {
     updateUI(data.ui_state, data.moves);
     setStatus('connected', '⬤ &nbsp;CONNECTED');
 
-    startProgressiveEval(data.state_str);
-
     if (data.winner !== 0) {
         showGameOver(data.winner);
         return;
     }
+
+    startProgressiveEval(data.state_str);
 
     if (currentSideIsAi(data.ui_state)) {
         const delay = players.british === 'ai' && players.mysore === 'ai' ? 800 : 300;
@@ -626,55 +626,10 @@ async function initGame() {
     }
 }
 
-function setEvalBar(score, depth) {
-    const clamped = Math.max(-1, Math.min(1, score));
-    
-    const mysorePercentage = ((1 - clamped) / 2) * 100;
-    
-    const bar = document.getElementById('eval-bar-mysore');
-    const label = document.getElementById('eval-label');
-    
-    bar.style.width = `${mysorePercentage}%`;
-    label.style.left = `clamp(5%, ${mysorePercentage}%, 95%)`;
-    
-    const sign = score > 0 ? '+' : '';
-    const indicator = depth === 'fast' ? '*' : ''; 
-    label.innerText = `${sign}${score.toFixed(2)}${indicator}`;
-}
-
-async function fetchEval(stateStr, sims) {
-    try {
-        const res = await fetch('/api/eval', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ state_str: stateStr, sims: sims })
-        });
-        const data = await res.json();
-        return data.eval_score; 
-    } catch (err) {
-        console.error(`Eval fetch failed for ${sims} sims:`, err);
-        return null;
-    }
-}
-
-async function triggerProgressiveEval(stateStr) {
-
-    const fastScore = await fetchEval(stateStr, 400);
-    
-    if (fastScore !== null && stateStr === currentBitString) {
-        setEvalBar(fastScore, 'fast');
-        
-        const deepScore = await fetchEval(stateStr, 4000);
-        
-        if (deepScore !== null && stateStr === currentBitString) {
-            setEvalBar(deepScore, 'deep');
-        }
-    }
-}
-
 function toggleEvalBar() {
     evalBarEnabled = !evalBarEnabled;
     const wrapper = document.getElementById('eval-bar-wrapper');
+    const engineLines = document.getElementById('engine-lines-container'); // Grab the new lines container
     const btn = document.getElementById('toggle-eval-btn');
     
     if (evalBarEnabled) {
@@ -682,10 +637,11 @@ function toggleEvalBar() {
         btn.innerText = 'Hide Eval Bar';
         
         if (currentBitString) {
-            triggerProgressiveEval(currentBitString);
+            startProgressiveEval(currentBitString); // Changed from triggerProgressiveEval
         }
     } else {
         wrapper.style.display = 'none';
+        if (engineLines) engineLines.style.display = 'none'; // Hide engine lines too!
         btn.innerText = 'Show Eval Bar';
     }
     
@@ -701,14 +657,8 @@ function setEvalBar(score, totalSims) {
     if (bar && label) {
         // Update the width of the green bar
         bar.style.width = `${mysorePercentage}%`;
-        
-        // Move the label, keeping your clamp so the text doesn't fall off the edges
-        label.style.left = `clamp(5%, ${mysorePercentage}%, 95%)`;
-        
-        // Determine the sign to show (+ for British, nothing for Mysore)
+
         const sign = score > 0 ? '+' : '';
-        
-        // Format simulation count nicely (e.g., 4000 -> 4.0k)
         let simStr = totalSims.toString();
         if (totalSims >= 1000) {
             simStr = (totalSims / 1000).toFixed(1) + 'k';
@@ -726,11 +676,10 @@ async function startProgressiveEval(stateStr) {
     let currentTotal = 0;
 
     const mysoreBar = document.getElementById('eval-bar-mysore');
-
-    setEvalBar(0.0, 0);
+    const engineLinesContainer = document.getElementById('engine-lines-container');
 
     while (stateStr === currentBitString && currentTotal < MAX_SIMS) {
-        const batchSize = currentTotal === 0 ? 40 : 400;
+        const batchSize = 400;
 
         try {
             const res = await fetch('/api/eval-step', {
@@ -742,11 +691,45 @@ async function startProgressiveEval(stateStr) {
             
             // Abort if board changed
             if (stateStr !== currentBitString || stateStr !== currentEvalLoopState) {
+                if (engineLinesContainer) engineLinesContainer.style.display = 'none';
                 break; 
             }
 
             currentTotal = data.total_sims;
+            
+            // 1. Update the tug-of-war bar
             setEvalBar(data.eval_score, data.total_sims);
+
+            // 2. Update the Engine Lines
+            if (engineLinesContainer && data.top_moves && data.top_moves.length > 0) {
+                engineLinesContainer.style.display = 'flex'; 
+                engineLinesContainer.innerHTML = ''; // Clear previous
+
+                data.top_moves.forEach((moveData) => {
+                    const evalVal = parseFloat(moveData.eval);
+                    
+                    // Format Eval (e.g., "+1.45" or "-0.30")
+                    let evalStr = evalVal.toFixed(2);
+                    if (evalVal > 0) evalStr = '+' + evalStr;
+                    
+                    // Assign the colored square class
+                    if (evalVal > 0) squareClass = 'british-favored';
+                    else squareClass = 'mysore-favored';
+
+                    // Build the row
+                    const lineDiv = document.createElement('div');
+                    lineDiv.className = 'engine-line';
+                    
+                    lineDiv.innerHTML = `
+                        <div class="engine-eval-square ${squareClass}">${evalStr}</div>
+                        <span class="engine-move">${moveData.move_name}</span>
+                    `;
+                    
+                    engineLinesContainer.appendChild(lineDiv);
+                });
+            } else if (engineLinesContainer) {
+                engineLinesContainer.style.display = 'none';
+            }
 
             await new Promise(r => setTimeout(r, 50));
 

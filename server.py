@@ -1,5 +1,6 @@
 import os
 import random
+from networkx import tree_data
 import torch
 import numpy as np
 import argparse
@@ -11,6 +12,7 @@ from pydantic import BaseModel
 
 from game.engine import *
 from game.updater import *
+from game.replay import notate
 from game.state import GameState
 from game.constants import INDEX_MAP, WHO_TO_MOVE
 from ai.mcts import MCTS
@@ -207,10 +209,21 @@ async def eval_step(req: EvalStepRequest):
     
     tree_data["total_sims"] += req.batch_size
     score = float(mcts.root.eval)
+
+    # Sort children by visit count
+    best_children = sorted(mcts.root.children.items(), key=lambda item: item[1].visit_count, reverse=True)
+    
+    top_moves_data = []
+    for move, node in best_children[:3]:
+        top_moves_data.append({
+            "move_name": notate(state, move),
+            "eval": node.eval
+        })
         
     return {
         "eval_score": score,
-        "total_sims": tree_data["total_sims"]
+        "total_sims": tree_data["total_sims"],
+        "top_moves": top_moves_data
     }
 
 class HistoryRequest(BaseModel):
@@ -292,36 +305,32 @@ if __name__ == "__main__":
     human_player_side = args.human
     threshold = args.threshold
 
-    if match_mode != "human":
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        
-        def load_ai(ckpt_path):
-            model = AlphaTiger().to(device)
-            if os.path.exists(ckpt_path):
-                load_checkpoint(model, None, ckpt_path)
-                model.eval()
-                print(f"✅ Loaded model from {ckpt_path} onto {device}")
-            else:
-                print(f"⚠️  Checkpoint '{ckpt_path}' not found. AI will play with uninitialised weights.")
-            return model
-
-        # Determine which checkpoint to use for each side
-        path_british = args.ckpt_british if args.ckpt_british else args.ckpt
-        path_mysore = args.ckpt_mysore if args.ckpt_mysore else args.ckpt
-
-        print("Initializing British AI...")
-        ai_model_british = load_ai(path_british)
-
-        # Optimize memory: if they point to the same path, just reference the same model object
-        if path_british == path_mysore:
-            print("Initializing Mysore AI... (Mirroring British AI model)")
-            ai_model_mysore = ai_model_british
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    def load_ai(ckpt_path):
+        model = AlphaTiger().to(device)
+        if os.path.exists(ckpt_path):
+            load_checkpoint(model, None, ckpt_path)
+            model.eval()
+            print(f"✅ Loaded model from {ckpt_path} onto {device}")
         else:
-            print("Initializing Mysore AI...")
-            ai_model_mysore = load_ai(path_mysore)
-            
+            print(f"⚠️  Checkpoint '{ckpt_path}' not found. AI will play with uninitialised weights.")
+        return model
+
+    # Determine which checkpoint to use for each side
+    path_british = args.ckpt_british if args.ckpt_british else args.ckpt
+    path_mysore = args.ckpt_mysore if args.ckpt_mysore else args.ckpt
+
+    print("Initializing British AI...")
+    ai_model_british = load_ai(path_british)
+
+    # Optimize memory: if they point to the same path, just reference the same model object
+    if path_british == path_mysore:
+        print("Initializing Mysore AI... (Mirroring British AI model)")
+        ai_model_mysore = ai_model_british
     else:
-        print("ℹ️  Running in human-vs-human mode — AI models not loaded.")
+        print("Initializing Mysore AI...")
+        ai_model_mysore = load_ai(path_mysore)         
 
     print(f"🚀 Starting server → http://localhost:{args.port}")
     print(f"   Mode : {match_mode}")
