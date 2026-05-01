@@ -306,6 +306,9 @@ def stage_end_game() -> GameState:
 
 def perturb_state(state, depth):
     for _ in range(depth):
+        if Updater.get_state_winner(state) != 0:
+            break
+
         legal_mask = Engine.get_legal_moves(state)
         state = Updater.get_next_state(state, np.random.choice(np.nonzero(legal_mask)[0]))
         while state.is_luck:
