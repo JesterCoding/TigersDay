@@ -10,12 +10,13 @@ import torch
 
 from ai.mcts import MCTS
 from ai.neural import AlphaTiger, load_checkpoint, save_checkpoint
-from ai.train import *
+from ai.train import * # type: ignore
 
 def train(
     curriculum: List[CurriculumStage],
     config: TrainerConfig = TrainerConfig(),
     resume_path: Optional[str] = None,
+    final_model_name: str = "final.pt",
 ) -> AlphaTiger:
     
     os.makedirs(config.checkpoint_dir, exist_ok=True)
@@ -41,17 +42,14 @@ def train(
 
         games_played = 0
         
-        # Share memory for multiprocessing
         model.share_memory() 
         num_workers = 8
         
-        # Safe context for PyTorch on Linux
         ctx = mp.get_context("spawn")
 
         while games_played < stage.iterations:
             batch_size = min(num_workers, stage.iterations - games_played)
             
-            # ── Self-play (Batched) ──────────────────────────────────────────
             model.eval()
             
             with ProcessPoolExecutor(max_workers=batch_size, mp_context=ctx) as executor:
@@ -77,7 +75,6 @@ def train(
             
             games_played += batch_size
 
-            # ── Training (Sequential) ────────────────────────────────────────
             total_loss = val_loss = pol_loss = 0.0
             steps = 0
 
@@ -93,7 +90,6 @@ def train(
                     pol_loss   += pl
                     steps      += 1
 
-            # ── Logging ──────────────────────────────────────────────────────
             prefix = f"[{stage.name}] iter {games_played:>4}/{stage.iterations} | buf {len(buffer):>6}"
             if steps:
                 if len(batch_samples) == 0:
@@ -113,7 +109,7 @@ def train(
                 save_checkpoint(model, optimizer, global_iter, path)
                 print(f"  ↳ saved {path}")
 
-    final_path = os.path.join(config.checkpoint_dir, "final.pt")
+    final_path = os.path.join(config.checkpoint_dir, final_model_name)
     save_checkpoint(model, optimizer, global_iter, final_path)
     print(f"\nTraining complete — final model saved to {final_path}")
     return model
@@ -132,17 +128,15 @@ class CustomStateFactory:
 if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
     
-    # Pre-parse the new custom argument so setup_training_run doesn't crash on an unknown arg
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--state_file", type=str, default=None, help="Path to file containing the game string representation")
+    parser.add_argument("--model_name", type=str, default="final.pt", help="Name of the final saved model file")
     custom_args, remaining_argv = parser.parse_known_args()
     
-    # Rewrite sys.argv to hide the extra argument from the inner setup function
     sys.argv = [sys.argv[0]] + remaining_argv
     
     args, curriculum, config = setup_training_run("AlphaTiger Multiprocessing Trainer")
     
-    # If the file is provided, override the curriculum's state factories
     if custom_args.state_file and os.path.exists(custom_args.state_file):
         with open(custom_args.state_file, 'r') as f:
             state_str = f.read().strip()
@@ -150,4 +144,4 @@ if __name__ == "__main__":
         for stage in curriculum:
             stage.state_factory = CustomStateFactory(stage.state_factory, state_str)
 
-    train(curriculum, config=config, resume_path=args.resume)
+    train(curriculum, config=config, resume_path=args.resume, final_model_name=custom_args.model_name)
