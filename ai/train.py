@@ -265,11 +265,8 @@ def stage_early_game() -> GameState:
 def stage_mid_game() -> GameState:
     """A reasonable position midway through the game."""
     state = GameState()
-    state.set_node_fresh_army(NODE_TO_IDX["Bombay"])
-    state.set_node_fresh_army(NODE_TO_IDX["Madras"])
-    state.set_node_fresh_army(NODE_TO_IDX["Hyderabad"])
-    state.set_node_fresh_army(NODE_TO_IDX["Travancore"])
-    state.set_node_fresh_army(random.randrange(NODES))
+    for _ in range(random.randrange(4,8)):
+        state.set_node_fresh_army(random.randrange(NODES))
     state.set_node_fort(NODE_TO_IDX["Seringapatam"])
     state.set_node_fort(NODE_TO_IDX["Coimbatore"])
     state.set_node_fort(NODE_TO_IDX["Erode"])
