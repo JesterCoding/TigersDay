@@ -15,6 +15,7 @@ from game.state import GameState
 from game.constants import INDEX_MAP, WHO_TO_MOVE
 from ai.mcts import MCTS
 from ai.neural import AlphaTiger, load_checkpoint
+from game.replay import interpret  
 
 
 app = FastAPI()
@@ -58,6 +59,8 @@ def _ai_move(state: GameState) -> GameState:
     best_move, _ = mcts.find_move(state)
 
     move_idx_dict = {}
+
+    assert mcts.root != None
     for move, child in mcts.root.children.items():
         visit_ratio = child.visit_count/mcts.root.visit_count
         if visit_ratio >= threshold:
@@ -209,6 +212,17 @@ async def eval_step(req: EvalStepRequest):
         "eval_score": score,
         "total_sims": tree_data["total_sims"]
     }
+
+class HistoryRequest(BaseModel):
+    replay_log: list[int]
+
+@app.post("/api/get-notation")
+async def get_notation(req: HistoryRequest):
+    try:
+        algebraic_str, _ = interpret(req.replay_log)
+        return {"notation": algebraic_str}
+    except Exception as e:
+        return {"error": str(e)}
 
 app.mount("/", StaticFiles(directory="public", html=True), name="public")
 
