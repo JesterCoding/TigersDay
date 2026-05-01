@@ -4,46 +4,51 @@ import torch.nn.functional as F
 from game.constants import *
 
 class AlphaTiger(nn.Module):
-    def __init__(self, input_size=GAME_VECTOR_LENGTH, hidden_size=256):
+    def __init__(self, input_size=GAME_VECTOR_LENGTH, hidden_size=256, use_factorization=True, policy_out_size=None):
         super(AlphaTiger, self).__init__()
+        self.use_factorization = use_factorization
 
-        # factorization of RN and ST
-        self.rn_size = NODES * len(COASTAL_INDICES)
-        self.st_size = NODES * len(COASTAL_INDICES)
+        if self.use_factorization:
+            self.rn_size = NODES * len(COASTAL_INDICES)
+            self.st_size = NODES * len(COASTAL_INDICES)
 
-        target_indices = []
-        offset = 0
-        for name, size, move_type in MOVE_SPACE:
-            if name == "Royal Navy":
-                self.rn_start = offset
-            elif name == "Sea Trade":
-                self.st_start = offset
-            else:
-                target_indices.extend(range(offset, offset + size))
-            offset += size
+            target_indices = []
+            offset = 0
+            for name, size, move_type in MOVE_SPACE:
+                if name == "Royal Navy":
+                    self.rn_start = offset
+                elif name == "Sea Trade":
+                    self.st_start = offset
+                else:
+                    target_indices.extend(range(offset, offset + size))
+                offset += size
 
-        self.base_size = len(target_indices)
-        self.factorized_size = len(target_indices) + NODES * 4
-        self.register_buffer("base_idx_map", torch.tensor(target_indices, dtype=torch.long))
+            self.base_size = len(target_indices)
+            self.factorized_size = len(target_indices) + NODES * 4
+            self.register_buffer("base_idx_map", torch.tensor(target_indices, dtype=torch.long))
 
-        rn_src_list, rn_dest_list = [], []
-        st_src_list, st_dest_list = [], []
+            rn_src_list, rn_dest_list = [], []
+            st_src_list, st_dest_list = [], []
 
-        for idx in range(self.rn_size):
-            node_idx = idx // len(COASTAL_INDICES)
-            coast_idx = COASTAL_INDICES[idx % len(COASTAL_INDICES)]
+            for idx in range(self.rn_size):
+                node_idx = idx // len(COASTAL_INDICES)
+                coast_idx = COASTAL_INDICES[idx % len(COASTAL_INDICES)]
 
-            rn_src_list.append(node_idx)
-            rn_dest_list.append(coast_idx)
+                rn_src_list.append(node_idx)
+                rn_dest_list.append(coast_idx)
 
-            st_src_list.append(coast_idx)
-            st_dest_list.append(node_idx)
-        
-        # buffer everything to gpu
-        self.register_buffer("rn_src_idx", torch.tensor(rn_src_list, dtype=torch.long))
-        self.register_buffer("rn_dest_idx", torch.tensor(rn_dest_list, dtype=torch.long))
-        self.register_buffer("st_src_idx", torch.tensor(st_src_list, dtype=torch.long))
-        self.register_buffer("st_dest_idx", torch.tensor(st_dest_list, dtype=torch.long))
+                st_src_list.append(coast_idx)
+                st_dest_list.append(node_idx)
+            
+            # buffer everything to gpu
+            self.register_buffer("rn_src_idx", torch.tensor(rn_src_list, dtype=torch.long))
+            self.register_buffer("rn_dest_idx", torch.tensor(rn_dest_list, dtype=torch.long))
+            self.register_buffer("st_src_idx", torch.tensor(st_src_list, dtype=torch.long))
+            self.register_buffer("st_dest_idx", torch.tensor(st_dest_list, dtype=torch.long))
+            
+            final_policy_size = self.factorized_size
+        else:
+            final_policy_size = policy_out_size if policy_out_size else MOVE_VECTOR_LENGTH
 
         self.fc1 = nn.Linear(input_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
@@ -54,7 +59,7 @@ class AlphaTiger(nn.Module):
 
         self.policy_fc1 = nn.Linear(hidden_size, hidden_size)
         # return factorized output
-        self.policy_fc2 = nn.Linear(hidden_size, self.factorized_size)
+        self.policy_fc2 = nn.Linear(hidden_size, final_policy_size)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
@@ -66,6 +71,9 @@ class AlphaTiger(nn.Module):
 
         policy = F.relu(self.policy_fc1(x))
         raw_logits = self.policy_fc2(policy)
+        
+        if not self.use_factorization:
+            return value, raw_logits
         
         batch_size = raw_logits.shape[0]
         
@@ -80,7 +88,7 @@ class AlphaTiger(nn.Module):
         st_dest = raw_logits[:, idx : idx + NODES]
 
         final_logits = torch.zeros((batch_size, MOVE_VECTOR_LENGTH), device=raw_logits.device)
-        final_logits[:, self.base_idx_map] = base_logits
+        final_logits[:, self.base_idx_map] = base_logits #type: ignore
         final_logits[:, self.rn_start : self.rn_start + self.rn_size] = rn_src[:, self.rn_src_idx] + rn_dest[:, self.rn_dest_idx]
         final_logits[:, self.st_start : self.st_start + self.st_size] = st_src[:, self.st_src_idx] + st_dest[:, self.st_dest_idx]
 
@@ -107,3 +115,22 @@ def load_checkpoint(model, optimizer, path):
     if optimizer is not None:
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     return checkpoint.get('iteration', 0)
+
+def load_dynamic_model(path, device):
+    """Inspects a checkpoint and dynamically builds the correct AlphaTiger."""
+    checkpoint = torch.load(path, map_location=device, weights_only=False)
+    state_dict = checkpoint.get('model_state_dict', checkpoint)
+    
+    uses_factorization = 'base_idx_map' in state_dict
+    
+    policy_out_size = None
+    if 'policy_fc2.weight' in state_dict:
+        policy_out_size = state_dict['policy_fc2.weight'].shape[0]
+        
+    model = AlphaTiger(
+        use_factorization=uses_factorization, 
+        policy_out_size=policy_out_size
+    ).to(device)
+    
+    model.load_state_dict(state_dict)
+    return model

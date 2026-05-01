@@ -16,7 +16,7 @@ from game.replay import notate
 from game.state import GameState
 from game.constants import INDEX_MAP, WHO_TO_MOVE
 from ai.mcts import MCTS
-from ai.neural import AlphaTiger, load_checkpoint
+from ai.neural import AlphaTiger, load_checkpoint, load_dynamic_model
 from game.replay import interpret  
 
 
@@ -308,14 +308,20 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     def load_ai(ckpt_path):
-        model = AlphaTiger().to(device)
         if os.path.exists(ckpt_path):
-            load_checkpoint(model, None, ckpt_path)
-            model.eval()
-            print(f"✅ Loaded model from {ckpt_path} onto {device}")
+            try:
+                model = load_dynamic_model(ckpt_path, device)
+                model.eval()
+                print(f"✅ Loaded model from {ckpt_path} onto {device}")
+                return model
+            except Exception as e:
+                print(f"❌ Failed to load AI model from {ckpt_path}: {e}")
+                raise e
         else:
             print(f"⚠️  Checkpoint '{ckpt_path}' not found. AI will play with uninitialised weights.")
-        return model
+            model = AlphaTiger().to(device)
+            model.eval()
+            return model
 
     # Determine which checkpoint to use for each side
     path_british = args.ckpt_british if args.ckpt_british else args.ckpt

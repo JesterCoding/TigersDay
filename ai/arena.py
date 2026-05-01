@@ -12,7 +12,7 @@ from game.state import GameState
 from game.replay import interpret
 from game.constants import *
 from ai.mcts import MCTS
-from ai.neural import AlphaTiger, load_checkpoint
+from ai.neural import AlphaTiger, load_checkpoint, load_dynamic_model
 from ai.train import *
 
 def _resolve_luck_log(state: GameState, log_file):
@@ -69,6 +69,9 @@ def play_match(model_mysore, model_british, sims_mysore: int, sims_british: int,
         move_m, _ = mcts_mysore.find_move(state, temperature)
         move_b, _ = mcts_british.find_move(state, temperature)
         
+        assert mcts_mysore.root is not None
+        assert mcts_british.root is not None
+
         # Check for disagreement
         if move_m != move_b:
             disagreement_count += 1
@@ -107,6 +110,7 @@ def play_match(model_mysore, model_british, sims_mysore: int, sims_british: int,
         Engine.print_legal_moves(np.arange(MOVE_VECTOR_LENGTH) == best_move)
         sys.stdout = old_stdout
         
+        assert active_mcts.root is not None
         log(f"prior: {active_mcts.root.children[best_move].prior:.3f} | eval: {active_eval:+.3f}")
             
         # Execute move and resolve luck
@@ -148,11 +152,14 @@ def run_arena(ckpt1_path: str, ckpt2_path: str, sims1: int, sims2: int, games_pe
         print(f"Missing checkpoint! Ckpt1: {ckpt1_path} | Ckpt2: {ckpt2_path}")
         return
 
-    # Load models once to save time
-    model1 = AlphaTiger().to(device)
-    model2 = AlphaTiger().to(device)
-    load_checkpoint(model1, None, ckpt1_path)
-    load_checkpoint(model2, None, ckpt2_path)
+    # Dynamically load models regardless of their internal architecture
+    try:
+        model1 = load_dynamic_model(ckpt1_path, device)
+        model2 = load_dynamic_model(ckpt2_path, device)
+    except Exception as e:
+        print(f"Failed to dynamically load models: {e}")
+        return
+
     model1.eval()
     model2.eval()
 
