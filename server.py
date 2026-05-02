@@ -215,8 +215,19 @@ async def eval_step(req: EvalStepRequest):
     
     top_moves_data = []
     for move, node in best_children[:3]:
+        pv_line = [notate(state, move)]
+        curr_state = get_next_state(state, move)
+        curr_node = node
+        
+        while not curr_state.is_luck and curr_node.children and len(pv_line) < 8:
+            best_move, best_child = max(curr_node.children.items(), key=lambda item: item[1].visit_count)
+            pv_line.append(notate(curr_state, best_move))
+            
+            curr_state = get_next_state(curr_state, best_move)
+            curr_node = best_child
+            
         top_moves_data.append({
-            "move_name": notate(state, move),
+            "move_name": " ".join(pv_line),
             "eval": node.eval
         })
         
