@@ -75,8 +75,6 @@ class AlphaTiger(nn.Module):
         if not self.use_factorization:
             return value, raw_logits
         
-        batch_size = raw_logits.shape[0]
-        
         # unfactorize RN and ST for the game engine
         idx = 0
         base_logits = raw_logits[:, idx : idx + self.base_size]; idx += self.base_size
@@ -87,7 +85,7 @@ class AlphaTiger(nn.Module):
         st_src  = raw_logits[:, idx : idx + NODES]; idx += NODES
         st_dest = raw_logits[:, idx : idx + NODES]
 
-        final_logits = torch.zeros((batch_size, MOVE_VECTOR_LENGTH), device=raw_logits.device)
+        final_logits = raw_logits.new_zeros((raw_logits.shape[0], MOVE_VECTOR_LENGTH))
         final_logits[:, self.base_idx_map] = base_logits #type: ignore
         final_logits[:, self.rn_start : self.rn_start + self.rn_size] = rn_src[:, self.rn_src_idx] + rn_dest[:, self.rn_dest_idx]
         final_logits[:, self.st_start : self.st_start + self.st_size] = st_src[:, self.st_src_idx] + st_dest[:, self.st_dest_idx]
