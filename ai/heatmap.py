@@ -1,20 +1,25 @@
+import argparse
 import torch
 import matplotlib.pyplot as plt
 import seaborn as sns
 from game.constants import *
 
 if __name__ == "__main__":
-    # 1. Load the model weights (safely mapping to CPU)
-    checkpoint = torch.load(DEFAULT_MODEL, map_location='cpu', weights_only=False)
+    parser = argparse.ArgumentParser(description="Generate a heatmap for AlphaTiger model weights.")
+    parser.add_argument(
+        '--ckpt', 
+        type=str, 
+        default=DEFAULT_MODEL, 
+        help='Path to the model checkpoint file (default: uses DEFAULT_MODEL from constants)'
+    )
+    args = parser.parse_args()
+
+    checkpoint = torch.load(args.ckpt, map_location='cpu', weights_only=False)
     state_dict = checkpoint.get('model_state_dict', checkpoint)
 
-    # 2. Extract the weights for your final policy layer
-    # This pulls the actual 2D grid of floating-point numbers
     weights = state_dict['fc1.weight'].numpy()
 
-    # 3. Create the visual heatmap
     plt.figure(figsize=(16, 8))
-    # 'RdBu_r' gives a nice Red (positive) to Blue (negative) gradient
     sns.heatmap(weights, cmap='RdBu_r', center=0, 
                 cbar_kws={'label': 'Weight Magnitude'})
 
@@ -23,5 +28,4 @@ if __name__ == "__main__":
     plt.ylabel('Hidden Layer Slots (Output: 256)', fontsize=12)
     plt.tight_layout()
 
-    # 4. Show the window!
     plt.show()
