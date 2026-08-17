@@ -1265,7 +1265,7 @@ svg#board {
 
 @keyframes tradeTargetGlow {
     0% { box-shadow: 0 0 6px rgba(68, 204, 68, 0.5); }
-    100% { box-shadow: 0 0 14px rgba(68, 204, 68, 0.95); }
+    100% { box-shadow: 0 0 16px rgba(68, 204, 68, 0.95); }
 }
 
 @keyframes fadeIn {
