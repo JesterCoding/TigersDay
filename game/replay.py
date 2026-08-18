@@ -100,57 +100,127 @@ def parse_replay_log(filepath):
             games.append(moves)        
     return games
 
-def build_move_tree(games, max_depth=4):
+def build_move_tree(games, max_depth=6):
     """
     Builds a tree structure tracking how many times each sequence was played.
     Structure: { 'mad>pdc': {'count': 45, 'next': { 'SM:trv': ... } } }
     """
     tree = {}
-    
+
     for game in games:
+        moves = [
+            move for move in game
+            if move not in {"+", "#", "1-0", "0-1"}
+        ]
+
+        if "1-0" in game:
+            british_win = True
+        elif "0-1" in game:
+            british_win = False
+        else:
+            continue
+
         current_node = tree
-        
-        # Only look as deep as the max_depth (or the end of a short game)
-        for i in range(min(max_depth, len(game))):
-            move = game[i]
-            
+
+        for move in moves[:max_depth]:
             if move not in current_node:
-                current_node[move] = {"count": 0, "next": {}}
-            
-            # Increment the count for this specific sequence
-            current_node[move]["count"] += 1
-            
-            # Move down into the next level of the tree
-            current_node = current_node[move]["next"]
+                current_node[move] = {
+                    "count": 0,
+                    "british_wins": 0,
+                    "next": {}
+                }
+
+            node = current_node[move]
+
+            node["count"] += 1
+
+            if british_win:
+                node["british_wins"] += 1
+
+            current_node = node["next"]
+
     return tree
 
-def print_tree(tree, total_games, current_depth=1, max_depth=4, indent=""):
+def get_overall_british_wr(games):
+    british_wins = 0
+    total_games = 0
+
+    for game in games:
+        if "1-0" in game:
+            british_wins += 1
+            total_games += 1
+        elif "0-1" in game:
+            total_games += 1
+
+    return british_wins / total_games
+
+def beta_wr(british_wins, games, overall_wr, prior_strength=10):
+    alpha = overall_wr * prior_strength
+    beta = (1 - overall_wr) * prior_strength
+
+    return (
+        british_wins + alpha
+    ) / (
+        games + alpha + beta
+    )
+
+def print_tree(tree, current_depth=1, max_depth=6, min_games=3, indent="", overall_wr=0.5, prior_strength=10):
     """Recursively prints the tree sorted by the most popular moves."""
-    
-    # Sort the current branches by count (highest to lowest)
-    sorted_moves = sorted(tree.items(), key=lambda item: item[1]["count"], reverse=True)
-    
+    sorted_moves = sorted(
+        tree.items(),
+        key=lambda item: item[1]["count"],
+        reverse=True
+    )
+
     for move, data in sorted_moves:
         count = data["count"]
-        percentage = (count / total_games) * 100
-        
-        # Print the move and its stats
-        print(f"{indent}Move {current_depth}: {move} [{count} games, {percentage:.1f}%]")
-        
-        # If we haven't hit our depth limit, dive into the responses
+
+        if count < min_games:
+            continue
+
+        british_wr = beta_wr(
+            data["british_wins"],
+            count,
+            overall_wr,
+            prior_strength
+        )
+
+        print(
+            f"{indent}├── {move} "
+            f"[{count} games - "
+            f"WR {british_wr * 100:.1f}%]"
+        )
+
         if current_depth < max_depth and data["next"]:
-            print_tree(data["next"], count, current_depth + 1, max_depth, indent + "    |-- ")
+            print_tree(
+                data["next"],
+                current_depth=current_depth + 1,
+                max_depth=max_depth,
+                min_games=min_games,
+                indent=indent + "│  ",
+                overall_wr=overall_wr,
+                prior_strength=prior_strength
+            )
 
 if __name__ == "__main__":
-    filepath = 'replay_log.txt'  # Make sure this is in the same folder as the script
-    
+    filepath = "replay_log.txt"
+
     games = parse_replay_log(filepath)
+
     print(f"Total Games Parsed: {len(games)}\n")
-    print("OPENING RESPONSE TREE:")
-    print("======================")
-    
-    # Set how many moves deep you want to look (4 means looking at the first 4 moves)
-    depth_to_analyze = 4 
-    
-    move_tree = build_move_tree(games, max_depth=depth_to_analyze)
-    print_tree(move_tree, total_games=len(games), max_depth=depth_to_analyze)
+    print("OPENING BOOK")
+    print("============")
+
+    depth_to_analyze = 6
+    min_games = 5
+
+    move_tree = build_move_tree(
+        games,
+        max_depth=depth_to_analyze
+    )
+
+    print_tree(
+        move_tree,
+        max_depth=depth_to_analyze,
+        min_games=min_games
+    )
