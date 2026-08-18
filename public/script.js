@@ -116,15 +116,27 @@ const CARD_VALUE = [3, 2, 2, 1, 1, 1];
 // ==========================================================================
 let currentBitString = "";
 let lastUiState = null;
-let currentMoves = [];
-let players = { british: 'human', mysore: 'human' };
-
-// Interaction states
+let currentMoves = [];                 // Array of { idx, type, desc }
 let selectedUnit = null;               // Selected territory string on map
 let cardTargetingMode = null;          // { cardName, faction, step: 1|2, sourceNode, targetNodes, validSources, allMoves, isTwoStep }
 let stagedTradeCard = null;            // { faction, cardIndex, cardName }
-let cardClickTimer = null;             // Debounce timer for single-click (trade) vs double-click (ability)
+let players = { british: 'human', mysore: 'human' };
 let currentEvalLoopState = null;
+
+/**
+ * Central state reset — clears ALL interactive UI state (unit selection,
+ * card targeting highlights, trade staging) and refreshes the map + cards.
+ * Call this before starting any new interaction or when receiving new game state.
+ */
+function clearAllInteractionState() {
+  selectedUnit = null;
+  cardTargetingMode = null;
+  stagedTradeCard = null;
+  refreshMapHighlights();
+  renderAllCards();
+  updateActionButtons();
+  updateTurnHeaderInstruction();
+}
 
 let settings = {
   showEval: false,
@@ -675,10 +687,9 @@ function handleCardStrengthClick(faction, index, cardName) {
 }
 
 /**
- * Card Body Click Handler:
+ * Card Body Click Handler (Unified Single-Click):
  * - If clicking a greyed-out card while a trade is staged -> Complete Trade!
- * - If clicking an unactivated card:
- *   - Debounce single-click (Stage Trade) vs double-click (Activate Ability)
+ * - If clicking an active card -> Activate Ability (if available) OR Stage Trade
  */
 function handleCardBodyClick(faction, index, cardName, isUsable) {
   // DIRECT CARD-TO-CARD TRADING (No Trade Docks)
@@ -706,31 +717,37 @@ function handleCardBodyClick(faction, index, cardName, isUsable) {
     }
   }
 
-  // If clicking an unactivated card:
-  if (cardClickTimer !== null) {
-    // Second click within 250ms -> DOUBLE CLICK DETECTED!
-    clearTimeout(cardClickTimer);
-    cardClickTimer = null;
-    handleCardAbilityActivation(faction, index, cardName);
-  } else {
-    // First click: start timer for single-click trade staging
-    cardClickTimer = setTimeout(() => {
-      cardClickTimer = null;
-      handleCardTradeSelection(faction, index, cardName);
-    }, 250);
+  // If clicking an active card:
+  // Check if this card has an ability move available — if so, activate it directly.
+  // Otherwise fall through to trade staging.
+  const abilityCardNames = [
+    'Cavalry Raid', 'Sepoy Mutiny', 'French Alliance', 'Monsoon',
+    'Highlanders', 'Princely States',
+    'Divide and Rule', 'Force March', 'Royal Navy', 'Sea Trade'
+  ];
+
+  if (abilityCardNames.includes(cardName)) {
+    // Check if any ability move exists for this card
+    const hasAbilityMove = currentMoves.some(m => m.type === cardName);
+    if (hasAbilityMove) {
+      handleCardAbilityActivation(faction, index, cardName);
+      return;
+    }
+    // No ability move available — fall through to trade staging
   }
+
+  // Stage for trade (or toggle off if already staged)
+  handleCardTradeSelection(faction, index, cardName);
 }
 
 /**
- * DOUBLE-CLICK CARD BODY (Ability Activation):
+ * SINGLE-CLICK CARD BODY (Ability Activation):
  * Non-Targeted: Executes immediately.
  * Targeted: Enters Targeting Mode with glowing map targets.
  */
 function handleCardAbilityActivation(faction, index, cardName) {
-  // Clear any existing unit selections or trade stagings
-  selectedUnit = null;
-  stagedTradeCard = null;
-  refreshMapHighlights();
+  // Clear ALL previous interaction state (targeting, trade staging, unit selection)
+  clearAllInteractionState();
 
   // A. Non-Targeted Abilities (e.g. Cavalry Raid)
   if (cardName === 'Cavalry Raid') {
@@ -835,7 +852,10 @@ function handleCardTradeSelection(faction, index, cardName) {
 
   // Stage card for trade
   stagedTradeCard = { faction, cardIndex: index, cardName };
-  if (cardTargetingMode) cardTargetingMode = null;
+  if (cardTargetingMode) {
+    cardTargetingMode = null;
+    refreshMapHighlights();
+  }
   if (selectedUnit) { selectedUnit = null; refreshMapHighlights(); }
 
   renderAllCards();
@@ -1203,6 +1223,11 @@ function handleServerResponse(data) {
     showToast(`Error: ${data.error}`, 'error');
     return;
   }
+
+  // Reset ALL interaction state from the previous turn — clean slate
+  selectedUnit = null;
+  cardTargetingMode = null;
+  stagedTradeCard = null;
 
   currentBitString = data.state_str;
   lastUiState = data.ui_state;
