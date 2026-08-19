@@ -204,14 +204,18 @@ def print_tree(tree, current_depth=1, max_depth=6, min_games=3, indent="", overa
 
 import re
 from collections import Counter
+from game.constants import NODES_ABBREV
 
 def count_location_codes(filepath):
     counts = Counter()
 
+    valid_locations = list(NODES_ABBREV.values())
+    location_pattern = re.compile(r'|'.join(valid_locations))
+
     with open(filepath, "r") as f:
         for line in f:
-            codes = re.findall(r'[a-z]{3}(?=[>:]|$)', line)
-            counts.update(codes)
+            matches = location_pattern.findall(line.lower())
+            counts.update(matches)
 
     return counts
 
