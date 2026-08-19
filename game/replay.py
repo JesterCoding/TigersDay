@@ -219,6 +219,26 @@ def count_location_codes(filepath):
 
     return counts
 
+def get_popular_moves(filepath, threshold=300):
+    move_counts = Counter()
+
+    with open(filepath, "r") as f:
+        for line in f:
+            if not line or line.startswith('['):
+                continue
+            tokens = line.split()
+            valid_moves = [token for token in tokens if token not in {"+", "#", "1-0", "0-1"}]
+            move_counts.update(valid_moves)
+
+    print(f"MOVES PLAYED {threshold} TIMES")
+    print("=" * 25)
+    
+    for move, count in move_counts.most_common():
+        if count >= threshold:
+            print(f"{move} {count}")
+        else:
+            break
+
 if __name__ == "__main__":
     filepath = "replay_log.txt"
 
@@ -249,3 +269,5 @@ if __name__ == "__main__":
 
     for code, count in counts.most_common():
         print(f"{code}: {count}")
+
+    get_popular_moves(filepath)
