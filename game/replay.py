@@ -202,6 +202,19 @@ def print_tree(tree, current_depth=1, max_depth=6, min_games=3, indent="", overa
                 prior_strength=prior_strength
             )
 
+import re
+from collections import Counter
+
+def count_location_codes(filepath):
+    counts = Counter()
+
+    with open(filepath, "r") as f:
+        for line in f:
+            codes = re.findall(r'[a-z]{3}(?=[>:]|$)', line)
+            counts.update(codes)
+
+    return counts
+
 if __name__ == "__main__":
     filepath = "replay_log.txt"
 
@@ -224,3 +237,11 @@ if __name__ == "__main__":
         max_depth=depth_to_analyze,
         min_games=min_games
     )
+
+    counts = count_location_codes(filepath)
+
+    print("LOCATION CODE FREQUENCIES")
+    print("=========================")
+
+    for code, count in counts.most_common():
+        print(f"{code}: {count}")
